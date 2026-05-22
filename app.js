@@ -253,36 +253,80 @@ async function initFirebase() {
 }
 
 // ── PERSISTENCIA ──────────────────────────────────────────────
+// ── PERSISTENCIA CON BUFFER INTELIGENTE (MAPEADO REAL FIRESTORE) ──
 async function cargarProductos() {
+  // 1. BUFFER LOCAL: Carga instantánea para no esperar al script ni a Firebase
+  const local = localStorage.getItem('solemio-productos');
+  if (local) {
+    productos = JSON.parse(local);
+    renderCatalogo(); // Muestra el catálogo en 0.1 segundos
+  } else {
+    productos = demoProductos(); // Relleno inicial si usás un navegador nuevo
+    renderCatalogo();
+  }
+
+  // 2. ASINCRÓNICO: Trae la data de Firebase de fondo y actualiza el buffer
   if (db) {
     try {
       const snap = await window._fb.getDocs(window._fb.collection(db, 'productos'));
       
-      productos = snap.docs.map(d => {
-        const data = d.data();
+      if (!snap.empty) {
+        productos = snap.docs.map(d => {
+          const data = d.data();
+          
+          // Mapeamos los nombres reales de tu base de datos a las variables de tu HTML
+          return {
+            id:          d.id, // ← Guardamos el ID del documento de Firebase de forma estricta
+            nombre:      data.title        || data.nombre || data.name || '',
+            marca:       data.brand        || data.marca  || '',
+            precio:      parseFloat(data.price || data.precio || 0),
+            color:       data.color        || '',
+            talles:      data.talles       || data.sizes  || '',
+            stock:       data.availability || data.stock  || 'out of stock',
+            imagen:      data.image_link   || data.imagen || data.image || '',
+            descripcion: data.description  || data.descripcion || ''
+          };
+        });
+
+        // Guardamos los datos limpios en el buffer de LocalStorage para la próxima entrada
+        localStorage.setItem('solemio-productos', JSON.stringify(productos));
         
-        // Si los datos vienen de la API REST de Python, extraemos los valores reales
-        // de lo contrario, si son datos planos, los dejamos como están.
-        return {
-          id:          d.id,
-          nombre:      data.nombre?.stringValue      || data.name?.stringValue      || data.nombre || data.name || '',
-          marca:       data.marca?.stringValue       || data.brand?.stringValue     || data.marca  || data.brand || 'SIN MARCA',
-          precio:      parseFloat(data.precio?.doubleValue || data.precio?.integerValue || data.price?.doubleValue || data.price?.integerValue || data.precio || data.price || 0),
-          color:       data.color?.stringValue       || data.color || '',
-          talles:      data.talles?.stringValue      || data.sizes?.stringValue     || data.talles || data.sizes || '',
-          stock:       data.stock?.stringValue       || data.stock || 'out of stock',
-          imagen:      data.imagen?.stringValue      || data.image?.stringValue     || data.imagen || data.image || '',
-          descripcion: data.descripcion?.stringValue || data.description?.stringValue|| data.descripcion || data.description || ''
-        };
-      });
-      return;
-    } catch (e) { 
-      console.error("Error mapeando productos de Firebase:", e);
-      /* cae a localStorage si falla */ 
+        // Volvemos a renderizar la pantalla con lo último de la nube
+        renderCatalogo();
+        console.log("✓ Buffer actualizado con el mapeo real de Firestore.");
+      }
+    } catch (e) {
+      console.warn("No se pudo sincronizar con Firebase, usando buffer local:", e);
     }
   }
-  const local = localStorage.getItem('solemio-productos');
-  productos = local ? JSON.parse(local) : demoProductos();
+}
+
+async function persistirProducto(p) {
+  // Cuando creás o editás un producto desde el modal, lo guardamos estructurado a Firebase
+  if (db) {
+    try {
+      const firestoreData = {
+        title:        p.nombre,
+        brand:        p.marca,
+        price:        p.precio,
+        color:        p.color,
+        talles:       p.talles,
+        availability: p.stock,
+        image_link:   p.imagen,
+        description:  p.descripcion,
+        id:           p.id,
+        updated_at:   new Date().toISOString()
+      };
+      await window._fb.setDoc(window._fb.doc(db, 'productos', p.id), firestoreData);
+    } catch(e) {
+      console.error("Error guardando en Firebase:", e);
+    }
+  }
+  
+  // También actualizamos el buffer local inmediatamente para que el cambio se vea en el acto
+  const idx = productos.findIndex(x => x.id === p.id);
+  if (idx >= 0) productos[idx] = p; else productos.unshift(p);
+  localStorage.setItem('solemio-productos', JSON.stringify(productos));
 }
 
 async function cargarCompras() {
@@ -297,13 +341,6 @@ async function cargarCompras() {
   }
   const local = localStorage.getItem('solemio-compras');
   compras = local ? JSON.parse(local) : [];
-}
-
-async function persistirProducto(p) {
-  if (db) await window._fb.setDoc(window._fb.doc(db, 'productos', p.id), p);
-  const idx = productos.findIndex(x => x.id === p.id);
-  if (idx >= 0) productos[idx] = p; else productos.unshift(p);
-  localStorage.setItem('solemio-productos', JSON.stringify(productos));
 }
 
 async function eliminarProductoDB(id) {
