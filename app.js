@@ -252,20 +252,19 @@ async function initFirebase() {
   }
 }
 
-// ── PERSISTENCIA ──────────────────────────────────────────────
-// ── PERSISTENCIA CON BUFFER INTELIGENTE (MAPEADO REAL FIRESTORE) ──
+// ── CARGAR PRODUCTOS CON BUFFER Y MAPEO CORRECTO ──────────────
 async function cargarProductos() {
-  // 1. BUFFER LOCAL: Carga instantánea para no esperar al script ni a Firebase
+  // 1. BUFFER LOCAL: Carga instantánea
   const local = localStorage.getItem('solemio-productos');
   if (local) {
     productos = JSON.parse(local);
-    renderCatalogo(); // Muestra el catálogo en 0.1 segundos
+    renderCatalogo(); 
   } else {
-    productos = demoProductos(); // Relleno inicial si usás un navegador nuevo
+    productos = demoProductos(); 
     renderCatalogo();
   }
 
-  // 2. ASINCRÓNICO: Trae la data de Firebase de fondo y actualiza el buffer
+  // 2. ASINCRÓNICO: Trae la data de Firebase de fondo y normaliza las claves
   if (db) {
     try {
       const snap = await window._fb.getDocs(window._fb.collection(db, 'productos'));
@@ -274,7 +273,7 @@ async function cargarProductos() {
         productos = snap.docs.map(d => {
           const data = d.data();
           
-          // Mapeamos los nombres reales de tu base de datos a las variables de tu HTML
+          // Mapeamos lo que viene de Firestore (priorizando tus nombres reales de la BD)
           return {
             id:          d.id, // ← Guardamos el ID del documento de Firebase de forma estricta
             nombre:      data.title        || data.nombre || data.name || '',
@@ -288,12 +287,12 @@ async function cargarProductos() {
           };
         });
 
-        // Guardamos los datos limpios en el buffer de LocalStorage para la próxima entrada
+        // Guardamos los datos limpios en el buffer de LocalStorage
         localStorage.setItem('solemio-productos', JSON.stringify(productos));
         
         // Volvemos a renderizar la pantalla con lo último de la nube
         renderCatalogo();
-        console.log("✓ Buffer actualizado con el mapeo real de Firestore.");
+        console.log("✓ Buffer actualizado y normalizado.");
       }
     } catch (e) {
       console.warn("No se pudo sincronizar con Firebase, usando buffer local:", e);
@@ -373,7 +372,7 @@ function demoProductos() {
   ];
 }
 
-// ── RENDER CATÁLOGO ───────────────────────────────────────────
+// ── RENDER CATÁLOGO (CON VISUALIZACIÓN DE ID Y BÚSQUEDA AMPLIADA) ──
 function renderCatalogo() {
   const q     = (document.getElementById('buscar')?.value       || '').toLowerCase();
   const marca = document.getElementById('filtro-marca')?.value  || '';
@@ -383,18 +382,27 @@ function renderCatalogo() {
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
   const mSel   = document.getElementById('filtro-marca');
   const mCur   = mSel.value;
-  mSel.innerHTML =
-    '<option value="">Todas las marcas</option>' +
-    marcas.map(m => `<option value="${m}"${m === mCur ? ' selected' : ''}>${m}</option>`).join('');
+  if (mSel) {
+    mSel.innerHTML =
+      '<option value="">Todas las marcas</option>' +
+      marcas.map(m => `<option value="${m}"${m === mCur ? ' selected' : ''}>${m}</option>`).join('');
+  }
 
+  // FILTRO INTELIGENTE: Permite buscar por Nombre, Marca o ID del producto
   const lista = productos.filter(p => {
-    if (q && !(p.nombre || '').toLowerCase().includes(q) && !(p.marca || '').toLowerCase().includes(q)) return false;
+    const coincidenciaTexto = 
+      (p.nombre || '').toLowerCase().includes(q) || 
+      (p.marca  || '').toLowerCase().includes(q) || 
+      (p.id     || '').toLowerCase().includes(q); // ← Búsqueda por ID integrada
+
+    if (q && !coincidenciaTexto) return false;
     if (marca && p.marca !== marca) return false;
     if (stock && p.stock !== stock) return false;
     return true;
   });
 
   const grid = document.getElementById('catalogo-grid');
+  if (!grid) return;
 
   if (!lista.length) {
     grid.innerHTML = `
@@ -415,6 +423,8 @@ function renderCatalogo() {
         : ''}
       <div class="prod-thumb-ph" style="${p.imagen ? 'display:none' : ''}">${ICON.shoe}</div>
       <div class="prod-body">
+        <div style="font-size: 0.7rem; color: var(--text-3); font-family: monospace; margin-bottom: 0.2rem;">ID: ${p.id}</div>
+        
         <div class="prod-name">${p.nombre}</div>
         <div class="prod-meta">${[p.color, p.talles].filter(Boolean).join(' · ')}</div>
         <div class="prod-price">${fmtARS(p.precio)}</div>
@@ -435,7 +445,6 @@ function renderCatalogo() {
       </div>
     </article>`).join('');
 }
-
 // ── MODAL PRODUCTO ─────────────────────────────────────────────
 let editingProdId = null;
 
