@@ -257,9 +257,29 @@ async function cargarProductos() {
   if (db) {
     try {
       const snap = await window._fb.getDocs(window._fb.collection(db, 'productos'));
-      productos  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      productos = snap.docs.map(d => {
+        const data = d.data();
+        
+        // Si los datos vienen de la API REST de Python, extraemos los valores reales
+        // de lo contrario, si son datos planos, los dejamos como están.
+        return {
+          id:          d.id,
+          nombre:      data.nombre?.stringValue      || data.name?.stringValue      || data.nombre || data.name || '',
+          marca:       data.marca?.stringValue       || data.brand?.stringValue     || data.marca  || data.brand || 'SIN MARCA',
+          precio:      parseFloat(data.precio?.doubleValue || data.precio?.integerValue || data.price?.doubleValue || data.price?.integerValue || data.precio || data.price || 0),
+          color:       data.color?.stringValue       || data.color || '',
+          talles:      data.talles?.stringValue      || data.sizes?.stringValue     || data.talles || data.sizes || '',
+          stock:       data.stock?.stringValue       || data.stock || 'out of stock',
+          imagen:      data.imagen?.stringValue      || data.image?.stringValue     || data.imagen || data.image || '',
+          descripcion: data.descripcion?.stringValue || data.description?.stringValue|| data.descripcion || data.description || ''
+        };
+      });
       return;
-    } catch (e) { /* cae a localStorage */ }
+    } catch (e) { 
+      console.error("Error mapeando productos de Firebase:", e);
+      /* cae a localStorage si falla */ 
+    }
   }
   const local = localStorage.getItem('solemio-productos');
   productos = local ? JSON.parse(local) : demoProductos();
