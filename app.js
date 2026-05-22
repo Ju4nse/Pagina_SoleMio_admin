@@ -130,12 +130,13 @@ async function cambiarPassword() {
    ================================================================ */
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────
-// Reemplazá estos valores con los de tu proyecto Firebase.
-// Si los dejás como están, el panel funciona con localStorage.
 const FB_CONFIG = {
-  apiKey:     "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId:  "TU_PROYECTO_ID",
+  apiKey:            "AIzaSyD5UWe2m7-Ue9Ty4qCrs0BnAgIqYmhJOC4",
+  authDomain:        "solemio-panel.firebaseapp.com",
+  projectId:         "solemio-panel",
+  storageBucket:     "solemio-panel.firebasestorage.app",
+  messagingSenderId: "223180443701",
+  appId:             "1:223180443701:web:1cef7d7c0c32833577617c",
 };
 
 // ── STATE ─────────────────────────────────────────────────────
