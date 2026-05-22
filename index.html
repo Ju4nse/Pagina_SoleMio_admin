@@ -1,191 +1,195 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
+  <title>SoleMio — Panel de Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SoleMio — Panel</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ── PANTALLA DE LOGIN ─────────────────────────────────────── -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">
-      <span class="logo-word">SoleMio</span>
-      <span class="logo-tag">Panel de administración</span>
+  <div id="login-screen" class="login-wrapper" style="display:none;">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">👟</div>
+        <h2>SoleMio</h2>
+        <p>Catálogo & Sincronización</p>
+      </div>
+      <div class="form-group">
+        <label for="login-user">Usuario</label>
+        <input type="text" id="login-user" placeholder="admin">
+      </div>
+      <div class="form-group">
+        <label for="login-pass">Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••">
+      </div>
+      <div id="login-error" class="login-error"></div>
+      <button class="btn primary" style="width:100%; margin-bottom: 0.6rem;" onclick="doLogin()">Ingresar como Admin</button>
+      <button class="btn ghost" style="width:100%" onclick="loginComoInvitado()">Ver catálogo (Invitado)</button>
     </div>
-
-    <div class="field">
-      <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="admin"
-             autocomplete="username" onkeydown="if(event.key==='Enter') doLogin()">
-    </div>
-    <div class="field" style="position:relative">
-      <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••••"
-             autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
-      <button class="toggle-pass" onclick="togglePass()" aria-label="Ver contraseña" tabindex="-1">
-        <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="login-error" id="login-error"></div>
-
-    <button class="btn primary login-btn" onclick="doLogin()">Ingresar</button>
-
-    <p class="login-hint">Acceso restringido al personal autorizado</p>
   </div>
-</div>
 
-<!-- ── APP (oculta hasta login) ─────────────────────────────── -->
-<div id="app" style="display:none">
-<div class="shell">
-
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="logo">
-      <span class="logo-word">SoleMio</span>
-      <span class="logo-tag">Panel</span>
-    </div>
-    <div class="topbar-right">
-      <nav class="nav">
-        <button class="nav-btn active" onclick="showTab('catalogo', this)">Catálogo</button>
-        <button class="nav-btn"        onclick="showTab('compras',  this)">Compras</button>
-        <button class="nav-btn"        onclick="showTab('sync',     this)">Sincronizar</button>
+  <div id="app" class="layout" style="display:none;">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">👟</span>
+        <span class="brand-text">SoleMio</span>
+      </div>
+      <nav class="menu">
+        <button class="nav-btn active" data-tab="catalog" onclick="switchTab('catalog')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          Catálogo
+        </button>
+        <button class="nav-btn" data-tab="sync" onclick="switchTab('sync')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Sincronizar
+        </button>
+        <button class="nav-btn" data-tab="config" onclick="switchTab('config')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Configuración
+        </button>
       </nav>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
-      <button class="btn sm ghost logout-btn" onclick="doLogout()" title="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- TAB: CATÁLOGO -->
-  <div id="tab-catalogo" class="tab active">
-    <div class="toolbar">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()">
+      <div class="sidebar-footer">
+        <button class="btn ghost sm" style="width:100%" onclick="doLogout()">
+          Cerrar Sesión
+        </button>
       </div>
-      <select id="filtro-marca" onchange="renderCatalogo()">
-        <option value="">Todas las marcas</option>
-      </select>
-      <select id="filtro-stock" onchange="renderCatalogo()">
-        <option value="">Todo el stock</option>
-        <option value="in stock">En stock</option>
-        <option value="out of stock">Sin stock</option>
-      </select>
-      <button class="btn primary" onclick="openProdModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Nuevo producto
-      </button>
-    </div>
-    <div id="catalogo-grid" class="prod-grid">
-      <div class="empty" style="grid-column:1/-1">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        Cargando catálogo…
+    </aside>
+
+    <main class="content">
+      <section id="tab-catalog" class="tab-content active">
+        <header class="content-header">
+          <div>
+            <h1>Catálogo de Productos</h1>
+            <p>Manejo de stock, filtros y control del buffer general</p>
+          </div>
+          <button id="btn-nuevo-prod" class="btn primary" onclick="openProdModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg>
+            Nuevo Producto
+          </button>
+        </header>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="buscar" placeholder="Buscar por Nombre, Marca o ID..." oninput="renderCatalogo()">
+          </div>
+          <div class="filters">
+            <select id="filtro-marca" onchange="renderCatalogo()">
+              <option value="">Todas las marcas</option>
+            </select>
+            <select id="filtro-stock" onchange="renderCatalogo()">
+              <option value="">Todos los estados</option>
+              <option value="in stock">En stock</option>
+              <option value="out of stock">Sin stock</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="catalogo-grid" class="products-grid"></div>
+      </section>
+
+      <section id="tab-sync" class="tab-content">
+        <header class="content-header">
+          <div>
+            <h1>Sincronización con GitHub Actions</h1>
+            <p>Disparar manualmente el script de Python que actualiza la Base de Datos</p>
+          </div>
+        </header>
+        <div class="card card-sync">
+          <h3>Acción Masiva</h3>
+          <p>Al hacer clic en el botón de abajo, se enviará una petición a GitHub para procesar las planillas de calzado pendientes. Este proceso toma alrededor de 15 minutos en impactar de fondo en la nube.</p>
+          <div style="margin-top: 1.5rem;">
+            <button id="btn-sincro" class="btn primary" onclick="sincronizarCatalogo()">Sincronizar Catálogo Ahora</button>
+          </div>
+          <div id="sincro-status" style="margin-top:1rem; font-weight:500;"></div>
+        </div>
+      </section>
+
+      <section id="tab-config" class="tab-content">
+        <header class="content-header">
+          <div>
+            <h1>Configuración del Sistema</h1>
+            <p>Ajustes de entorno para flujos y depuración manual</p>
+          </div>
+        </header>
+        <div class="card">
+          <h3>Credenciales de la API de GitHub (Despacho del Workflow)</h3>
+          <p style="margin-bottom:1rem; color:var(--text-2);">Si no usás el sistema automatizado de webhooks seguros, podés setear tus referencias de GitHub locales acá.</p>
+          <div class="form-group">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="cfg-token" placeholder="ghp_xxxxxxxxxxxxxxxx">
+          </div>
+          <div class="form-group">
+            <label>Repositorio (usuario/repo)</label>
+            <input type="text" id="cfg-repo" placeholder="nombre-usuario/solemio-panel">
+          </div>
+          <button class="btn secondary" onclick="guardarConfig()">Guardar Configuración Local</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="prod-modal" class="modal-wrapper" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">Editar Producto</h3>
+        <button class="modal-close" onclick="closeProdModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="p-id">
+        <div class="form-group">
+          <label>Nombre del Producto</label>
+          <input type="text" id="p-nombre">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Marca</label>
+            <input type="text" id="p-marca">
+          </div>
+          <div class="form-group">
+            <label>Precio ($)</label>
+            <input type="number" id="p-precio">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Color</label>
+            <input type="text" id="p-color">
+          </div>
+          <div class="form-group">
+            <label>Talles (Separados por coma)</label>
+            <input type="text" id="p-talles" placeholder="38, 39, 40">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>URL de la Imagen</label>
+          <input type="text" id="p-imagen">
+        </div>
+        <div class="form-group">
+          <label>Estado de Stock</label>
+          <select id="p-stock">
+            <option value="in stock">En stock</option>
+            <option value="out of stock">Sin stock</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descripción Extendida</label>
+          <textarea id="p-descripcion" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn ghost" onclick="closeProdModal()">Cancelar</button>
+        <button class="btn primary" onclick="saveProd()">Guardar Cambios</button>
       </div>
     </div>
   </div>
 
-  <!-- TAB: COMPRAS -->
-  <div id="tab-compras" class="tab">
-    <div class="stats-row" id="stats-row"></div>
-    <div class="section-hd">
-      <h2>Historial</h2>
-      <button class="btn primary" onclick="openPurchaseModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Registrar compra
-      </button>
-    </div>
-    <div id="purchase-list"></div>
-  </div>
-
-  <!-- TAB: SINCRONIZAR -->
-  <div id="tab-sync" class="tab">
-    <div class="runner-card">
-      <div class="runner-info">
-        <p>Actualizar catálogo desde Casa Ari</p>
-        <span>Dispara el script de Python vía GitHub Actions</span>
-        <div class="run-status" id="run-status"></div>
-      </div>
-      <button class="btn primary" id="run-btn" onclick="runScript()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-.08-3.63"/>
-        </svg>
-        Ejecutar
-      </button>
-    </div>
-    <div class="config-card">
-      <p class="config-title">Configuración de GitHub Actions</p>
-      <div class="field">
-        <label>Token de GitHub</label>
-        <input type="password" id="gh-token" placeholder="ghp_…" oninput="saveConfig()">
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Repo (usuario/repo)</label>
-          <input type="text" id="gh-repo" placeholder="miusuario/solemio" oninput="saveConfig()">
-        </div>
-        <div class="field">
-          <label>Workflow file</label>
-          <input type="text" id="gh-workflow" placeholder="catalogo.yml" oninput="saveConfig()">
-        </div>
-      </div>
-      <p class="config-hint">El token se guarda solo en este navegador (localStorage).</p>
-    </div>
-
-    <!-- CAMBIAR CONTRASEÑA -->
-    <div class="config-card" style="margin-top:1rem">
-      <p class="config-title">Cambiar contraseña</p>
-      <div class="field">
-        <label>Contraseña actual</label>
-        <input type="password" id="cp-actual" placeholder="••••••••">
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Nueva contraseña</label>
-          <input type="password" id="cp-nueva" placeholder="••••••••">
-        </div>
-        <div class="field">
-          <label>Repetir nueva</label>
-          <input type="password" id="cp-repetir" placeholder="••••••••">
-        </div>
-      </div>
-      <div id="cp-msg" style="font-size:.78rem;min-height:18px;margin-bottom:.5rem"></div>
-      <button class="btn primary" onclick="cambiarPassword()">Actualizar contraseña</button>
-    </div>
-  </div>
-
-</div><!-- /shell -->
-</div><!-- /app -->
-
-<!-- Modales -->
-<div id="modal-prod"></div>
-<div id="modal-compra"></div>
-
-<script src="app.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    window._fb = { collection, getDocs, doc, setDoc, deleteDoc, initializeApp, getFirestore };
+  </script>
+  <script src="app.js"></script>
 </body>
 </html>
