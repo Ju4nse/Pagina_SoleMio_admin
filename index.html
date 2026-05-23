@@ -8,10 +8,10 @@
 </head>
 <body>
 
-  <div id="login-screen" class="login-wrapper" style="display:none;">
+<div id="login-screen" class="login-wrapper" style="display:none;">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-logo">👟</div>
+        <img class="login-logo-img" src="logo.png" alt="SoleMio Logo" onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=120&auto=format&fit=crop&q=60'">
         <h2>SoleMio</h2>
         <p>Catálogo & Sincronización</p>
       </div>
@@ -24,8 +24,9 @@
         <input type="password" id="login-pass" placeholder="••••••••">
       </div>
       <div id="login-error" class="login-error"></div>
-      <button class="btn primary" style="width:100%; margin-bottom: 0.6rem;" onclick="doLogin()">Ingresar como Admin</button>
-      <button class="btn ghost" style="width:100%" onclick="loginComoInvitado()">Ver catálogo (Invitado)</button>
+      
+      <button class="btn primary" onclick="doLogin()">Ingresar como Admin</button>
+      <button class="btn ghost" onclick="loginComoInvitado()">Ver catálogo (Invitado)</button>
     </div>
   </div>
 
