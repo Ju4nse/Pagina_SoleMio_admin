@@ -373,7 +373,7 @@ async function cargarProductos() {
   // 3. Leer productos.json del repo del script (fuente de verdad)
   try {
     const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
-    productos = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
+    const raw = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
       id:          p.id          || p.codigo   || uid(),
       nombre:      p.nombre      || p.title    || p.name  || '',
       marca:       p.marca       || p.brand    || '',
@@ -381,9 +381,28 @@ async function cargarProductos() {
       color:       p.color       || '',
       talles:      p.talles      || p.sizes    || '',
       stock:       p.stock       || p.availability || 'out of stock',
+      cantidad:    p.cantidad    != null ? p.cantidad : null,
       imagen:      p.imagen      || p.image_link   || p.image || '',
       descripcion: p.descripcion || p.description  || '',
+      oculto:      p.oculto      || false,
     }));
+
+    // Deduplicar: si hay dos productos con el mismo ID base
+    // (ej: "ABC123" y "p_ABC123"), quedarse con el que tenga más datos
+    const seen = new Map();
+    for (const p of raw) {
+      // Normalizar: quitar prefijo "p_" para comparar
+      const baseId = p.id.replace(/^p_/, '');
+      const existing = seen.get(baseId);
+      if (!existing) {
+        seen.set(baseId, { ...p, id: baseId });
+      } else {
+        // Mantener el que tenga precio > 0, o más campos completos
+        const score  = (x) => (x.precio > 0 ? 2 : 0) + (x.imagen ? 1 : 0) + (x.descripcion ? 1 : 0);
+        if (score(p) > score(existing)) seen.set(baseId, { ...p, id: baseId });
+      }
+    }
+    productos = Array.from(seen.values());
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     renderCatalogo();
     // Log para verificar precios
@@ -507,10 +526,13 @@ function renderCatalogo() {
 
   // FILTRO INTELIGENTE: Permite buscar por Nombre, Marca o ID del producto
   const lista = productos.filter(p => {
-    const coincidenciaTexto = 
-      (p.nombre || '').toLowerCase().includes(q) || 
-      (p.marca  || '').toLowerCase().includes(q) || 
-      (p.id     || '').toLowerCase().includes(q); // ← Búsqueda por ID integrada
+    // Invitados no ven productos ocultos
+    if (p.oculto && isGuest()) return false;
+
+    const coincidenciaTexto =
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.marca  || '').toLowerCase().includes(q) ||
+      (p.id     || '').toLowerCase().includes(q);
 
     if (q && !coincidenciaTexto) return false;
     if (marca && p.marca !== marca) return false;
@@ -552,6 +574,7 @@ function renderCatalogo() {
               : 'Sin stock'}
           </span>
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
+          ${p.oculto && !isGuest() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
         </div>
         ${!isGuest() ? `
         <div class="prod-actions">
@@ -627,6 +650,13 @@ function openProdModal(id) {
           <label>Descripción</label>
           <textarea id="p-desc">${p?.descripcion || ''}</textarea>
         </div>
+        <div class="field" style="display:flex;align-items:center;gap:.5rem">
+          <input type="checkbox" id="p-oculto" ${p?.oculto ? 'checked' : ''}
+            style="width:auto;accent-color:var(--text)">
+          <label for="p-oculto" style="margin:0;cursor:pointer">
+            Ocultar producto (solo visible para admin)
+          </label>
+        </div>
 
         <div class="modal-footer">
           <button class="btn ghost" onclick="closeProdModal()">Cancelar</button>
@@ -665,6 +695,7 @@ async function saveProd() {
     stock:       cantidad > 0 ? 'in stock' : 'out of stock',
     imagen:      document.getElementById('p-imagen').value.trim(),
     descripcion: document.getElementById('p-desc').value.trim(),
+    oculto:      document.getElementById('p-oculto')?.checked || false,
   };
 
   await persistirProducto(p);
