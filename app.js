@@ -1,4 +1,3 @@
-
 /* ================================================================
    AUTH — Login con SHA-256
    ================================================================
@@ -546,7 +545,9 @@ function renderCatalogo() {
         <div class="prod-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
         <div class="prod-badges">
           <span class="badge ${p.stock === 'in stock' ? 'stock' : 'nostock'}">
-            ${p.stock === 'in stock' ? 'En stock' : 'Sin stock'}
+            ${p.stock === 'in stock'
+              ? (p.cantidad != null ? `En stock (${p.cantidad})` : 'En stock')
+              : 'Sin stock'}
           </span>
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
         </div>
@@ -599,12 +600,22 @@ function openProdModal(id) {
             <input id="p-talles" type="text" value="${p?.talles || ''}">
           </div>
         </div>
-        <div class="field">
-          <label>Stock</label>
-          <select id="p-stock">
-            <option value="in stock"    ${p?.stock === 'in stock'    ? 'selected' : ''}>En stock</option>
-            <option value="out of stock"${p?.stock === 'out of stock' ? 'selected' : ''}>Sin stock</option>
-          </select>
+        <div class="field-row">
+          <div class="field">
+            <label>Cantidad en stock</label>
+            <input id="p-cantidad" type="number" min="0" placeholder="0"
+              value="${p?.cantidad ?? ''}"
+              oninput="actualizarBadgeStock(this.value)">
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <div id="p-stock-badge" style="padding:.5rem .75rem;border:1px solid var(--border-md);border-radius:var(--radius);background:var(--bg);font-size:.85rem;display:flex;align-items:center;gap:.4rem">
+              ${(p?.cantidad ?? 1) > 0
+                ? `<span style="color:var(--green)">● En stock (${p?.cantidad ?? ''})</span>`
+                : `<span style="color:var(--red)">● Sin stock</span>`
+              }
+            </div>
+          </div>
         </div>
         <div class="field">
           <label>URL de imagen</label>
@@ -623,6 +634,15 @@ function openProdModal(id) {
     </div>`;
 }
 
+function actualizarBadgeStock(val) {
+  const n = parseInt(val) || 0;
+  const badge = document.getElementById('p-stock-badge');
+  if (!badge) return;
+  badge.innerHTML = n > 0
+    ? `<span style="color:var(--green)">● En stock (${n})</span>`
+    : `<span style="color:var(--red)">● Sin stock</span>`;
+}
+
 function closeProdModal() {
   document.getElementById('modal-prod').innerHTML = '';
 }
@@ -631,6 +651,7 @@ async function saveProd() {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio'); return; }
 
+  const cantidad = parseInt(document.getElementById('p-cantidad').value) || 0;
   const p = {
     id:          editingProdId || uid(),
     nombre,
@@ -638,7 +659,8 @@ async function saveProd() {
     precio:      parseFloat(document.getElementById('p-precio').value) || 0,
     color:       document.getElementById('p-color').value.trim(),
     talles:      document.getElementById('p-talles').value.trim(),
-    stock:       document.getElementById('p-stock').value,
+    cantidad,
+    stock:       cantidad > 0 ? 'in stock' : 'out of stock',
     imagen:      document.getElementById('p-imagen').value.trim(),
     descripcion: document.getElementById('p-desc').value.trim(),
   };
@@ -711,7 +733,10 @@ function openPurchaseModal() {
                ${window._sel.find(s => s.id === p.id) ? 'checked' : ''}
                onclick="event.stopPropagation();toggleSel('${p.id}','${p.nombre.replace(/'/g, "\\'")}',${p.precio})">
         <span style="flex:1">${p.nombre}</span>
-        <span style="color:var(--text-3);font-size:.78rem">${fmtARS(p.precio)}</span>
+        <span style="color:var(--text-3);font-size:.78rem;display:flex;gap:.4rem;align-items:center">
+          ${p.cantidad != null ? `<span style="font-size:.7rem">(${p.cantidad} disp.)</span>` : ''}
+          ${fmtARS(Math.round(p.precio * 1.5))}
+        </span>
       </div>`).join('');
 
     updateTags();
@@ -741,7 +766,7 @@ function openPurchaseModal() {
 
     const mEl = document.getElementById('c-monto');
     if (mEl && !mEl.dataset.manual) {
-      mEl.value = Math.round(window._sel.reduce((a, s) => a + s.precio, 0)) || '';
+      mEl.value = Math.round(window._sel.reduce((a, s) => a + s.precio * 1.5, 0)) || '';
     }
   }
 
@@ -758,17 +783,42 @@ async function savePurchase() {
   const notas = document.getElementById('c-notas').value.trim();
   if (!fecha) { alert('La fecha es obligatoria'); return; }
 
+  const sel = [...(window._sel || [])];
+
   const c = {
     id:        uid(),
     fecha,
     monto,
-    productos: [...(window._sel || [])],
+    productos: sel,
     notas,
   };
+
+  // ── Descontar stock de cada producto vendido ────────────────
+  let productosModificados = false;
+  for (const item of sel) {
+    const prod = productos.find(p => p.id === item.id);
+    if (!prod) continue;
+    const nuevaCantidad = Math.max(0, (prod.cantidad || 0) - (item.cantidad || 1));
+    prod.cantidad = nuevaCantidad;
+    prod.stock    = nuevaCantidad > 0 ? 'in stock' : 'out of stock';
+    productosModificados = true;
+  }
+
+  // Guardar productos actualizados si hubo cambios de stock
+  if (productosModificados) {
+    localStorage.setItem('solemio-productos', JSON.stringify(productos));
+    setWriteLock('productos');
+    try {
+      await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
+    } catch (e) {
+      console.warn('No se pudo actualizar stock en GitHub:', e.message);
+    }
+  }
 
   await persistirCompra(c);
   closePurchaseModal();
   renderCompras();
+  renderCatalogo(); // actualizar badges de stock en el catálogo
 }
 
 // ── RENDER COMPRAS ─────────────────────────────────────────────
