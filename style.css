@@ -710,134 +710,106 @@ select:focus { outline: none; border-color: var(--text-3); }
 ::-webkit-scrollbar-thumb   { background: var(--border-md); border-radius: 99px; }
 
 
-/* ── PANTALLA DE LOGIN RE-DISEÑADA ────────────────────────── */
-.login-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* ================================================================
+   LOGIN
+   ================================================================ */
+
+#login-screen {
   min-height: 100vh;
-  background: radial-gradient(circle at top right, #1e1e24, #121214);
-  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 1.5rem;
+  background: var(--bg);
+  transition: background 0.3s;
 }
 
 .login-card {
-  background: #1a1a1e;
-  border: 1px solid #2a2a32;
-  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-lg);
   padding: 2.5rem 2rem;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  text-align: center;
-  transition: transform 0.2s;
+  max-width: 360px;
+  animation: slideup 0.22s ease;
 }
 
-.login-header {
+.login-logo {
+  text-align: center;
   margin-bottom: 2rem;
 }
 
-/* Contenedor e imagen del logo de tu repo */
-.login-logo-img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 50%;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  border: 2px solid var(--accent, #3b82f6);
-}
-
-.login-header h2 {
-  color: #ffffff;
-  font-size: 1.8rem;
-  margin: 0 0 0.25rem 0;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-.login-header p {
-  color: #a1a1aa;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-/* Inputs estilizados */
-.login-card .form-group {
-  text-align: left;
-  margin-bottom: 1.25rem;
-}
-
-.login-card .form-group label {
+.login-logo .logo-word {
   display: block;
-  color: #e4e4e7;
-  font-size: 0.85rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 0.3rem;
 }
 
-.login-card .form-group input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
+.login-logo .logo-tag {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.login-card .form-group input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background: #1e1e24;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-/* Mensaje de error prolijo */
-.login-error {
-  color: #ef4444;
-  font-size: 0.85rem;
-  min-height: 1.25rem;
-  margin-bottom: 1rem;
-  text-align: left;
-}
-
-/* Ajustes de botones para el panel de login */
-.login-card .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.8rem 1.2rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
+/* ojo para ver contraseña */
+.toggle-pass {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  background: none;
   border: none;
-  box-sizing: border-box;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.toggle-pass:hover { color: var(--text-2); }
+.toggle-pass svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
 }
 
-.login-card .btn.primary {
-  background: #3b82f6;
-  color: #ffffff;
+.login-error {
+  font-size: 0.8rem;
+  color: var(--red);
+  min-height: 20px;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  animation: shake 0.3s ease;
 }
 
-.login-card .btn.primary:hover {
-  background: #2563eb;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-6px); }
+  75%       { transform: translateX(6px); }
 }
 
-.login-card .btn.ghost {
-  background: transparent;
-  color: #a1a1aa;
-  border: 1px solid #3f3f46;
-  margin-top: 0.5rem;
+.login-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
 }
 
-.login-card .btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: #ffffff;
-  border-color: #71717a;
+.login-hint {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+/* botón de logout en topbar */
+.logout-btn {
+  color: var(--text-3) !important;
+}
+.logout-btn:hover {
+  color: var(--red) !important;
+  background: var(--red-bg) !important;
 }
