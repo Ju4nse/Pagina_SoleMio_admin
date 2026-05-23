@@ -386,7 +386,9 @@ async function cargarProductos() {
     }));
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     renderCatalogo();
-    console.log(`✓ ${productos.length} productos cargados desde GitHub`);
+    // Log para verificar precios
+    const muestra = productos.slice(0, 3).map(p => `${p.nombre}: precio=${p.precio}`).join(' | ');
+    console.log(`✓ ${productos.length} productos cargados desde GitHub — muestra: ${muestra}`);
   } catch (e) {
     console.warn('No se pudo leer productos.json, usando buffer local:', e.message);
   }
