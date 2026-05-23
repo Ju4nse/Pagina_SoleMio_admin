@@ -338,6 +338,26 @@ async function ghWriteJSON(repo, file, data, mensaje) {
   return res.json();
 }
 
+// ── WRITE LOCK ────────────────────────────────────────────────
+// Cuando se hace una escritura (eliminar/guardar), se bloquea el
+// fetch remoto por 60s para que GitHub tenga tiempo de procesar
+// el commit antes de que una recarga pise los cambios locales.
+const WRITE_LOCK_TTL = 60 * 1000; // 60 segundos
+
+function setWriteLock(key) {
+  localStorage.setItem(`solemio-wlock-${key}`, Date.now().toString());
+}
+
+function hasWriteLock(key) {
+  const t = localStorage.getItem(`solemio-wlock-${key}`);
+  if (!t) return false;
+  if (Date.now() - parseInt(t) > WRITE_LOCK_TTL) {
+    localStorage.removeItem(`solemio-wlock-${key}`);
+    return false;
+  }
+  return true;
+}
+
 // ── CARGAR DATOS ───────────────────────────────────────────────
 async function cargarProductos() {
   // 1. Buffer local: render instantáneo mientras carga
@@ -345,10 +365,15 @@ async function cargarProductos() {
   if (local) { productos = JSON.parse(local); renderCatalogo(); }
   else        { productos = demoProductos();   renderCatalogo(); }
 
-  // 2. Leer productos.json del repo del script (fuente de verdad)
+  // 2. Si hay un write lock activo, no pisamos con el remoto
+  if (hasWriteLock('productos')) {
+    console.log('⏳ Write lock activo — usando buffer local para productos');
+    return;
+  }
+
+  // 3. Leer productos.json del repo del script (fuente de verdad)
   try {
     const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
-    // Normalizar formato (el script Python puede usar distintas claves)
     productos = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
       id:          p.id          || p.codigo   || uid(),
       nombre:      p.nombre      || p.title    || p.name  || '',
@@ -373,7 +398,13 @@ async function cargarCompras() {
   const local = localStorage.getItem('solemio-compras');
   if (local) compras = JSON.parse(local);
 
-  // 2. Leer compras.json del repo de la página
+  // 2. Si hay un write lock activo, no pisamos con el remoto
+  if (hasWriteLock('compras')) {
+    console.log('⏳ Write lock activo — usando buffer local para compras');
+    return;
+  }
+
+  // 3. Leer compras.json del repo de la página
   try {
     const data = await ghReadJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE);
     compras = (Array.isArray(data) ? data : (data.compras || []))
@@ -391,22 +422,21 @@ async function persistirProducto(p) {
   const idx = productos.findIndex(x => x.id === p.id);
   if (idx >= 0) productos[idx] = p; else productos.unshift(p);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
+  setWriteLock('productos'); // evitar que un reload inmediato pise el cambio
 
-  // Subir productos.json actualizado al repo del script
   try {
     await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo guardar en GitHub (se guardó localmente):', e.message);
-    alert(`Cambio guardado localmente.
-Para sincronizar con GitHub configurá el token.
-(${e.message})`);
+    alert(`Cambio guardado localmente.\nPara sincronizar con GitHub configurá el token.\n(${e.message})`);
   }
 }
 
 async function eliminarProductoDB(id) {
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
+  setWriteLock('productos');
 
   try {
     await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
@@ -419,21 +449,21 @@ async function eliminarProductoDB(id) {
 async function persistirCompra(c) {
   compras.unshift(c);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
+  setWriteLock('compras');
 
   try {
     await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Nueva compra ${c.fecha}`);
     console.log('✓ compras.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo guardar compra en GitHub:', e.message);
-    alert(`Compra guardada localmente.
-Para sincronizar configurá el token.
-(${e.message})`);
+    alert(`Compra guardada localmente.\nPara sincronizar configurá el token.\n(${e.message})`);
   }
 }
 
 async function eliminarCompraDB(id) {
   compras = compras.filter(c => c.id !== id);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
+  setWriteLock('compras');
 
   try {
     await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Eliminar compra ${id}`);
@@ -513,7 +543,7 @@ function renderCatalogo() {
         
         <div class="prod-name">${p.nombre}</div>
         <div class="prod-meta">${[p.color, p.talles].filter(Boolean).join(' · ')}</div>
-        <div class="prod-price">${fmtARS(p.precio)}</div>
+        <div class="prod-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
         <div class="prod-badges">
           <span class="badge ${p.stock === 'in stock' ? 'stock' : 'nostock'}">
             ${p.stock === 'in stock' ? 'En stock' : 'Sin stock'}
