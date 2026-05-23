@@ -15,7 +15,11 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <span class="logo-word">SoleMio</span>
+      <div class="login-img-wrap">
+        <img src="logo.png" alt="SoleMio" class="login-logo-img"
+             onerror="this.style.display='none';document.getElementById('login-logo-text').style.display='block'">
+        <span class="logo-word" id="login-logo-text" style="display:none">SoleMio</span>
+      </div>
       <span class="logo-tag">Panel de administración</span>
     </div>
 
@@ -41,6 +45,16 @@
 
     <button class="btn primary login-btn" onclick="doLogin()">Ingresar</button>
 
+    <div class="login-divider"><span>o</span></div>
+
+    <button class="btn guest-btn" onclick="doGuestLogin()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      Ver catálogo como invitado
+    </button>
+
     <p class="login-hint">Acceso restringido al personal autorizado</p>
   </div>
 </div>
@@ -61,6 +75,7 @@
         <button class="nav-btn"        onclick="showTab('compras',  this)">Compras</button>
         <button class="nav-btn"        onclick="showTab('sync',     this)">Sincronizar</button>
       </nav>
+      <span class="role-badge" id="role-badge"></span>
       <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
       <button class="btn sm ghost logout-btn" onclick="doLogout()" title="Cerrar sesión">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"

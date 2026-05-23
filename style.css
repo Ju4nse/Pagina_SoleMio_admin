@@ -813,3 +813,97 @@ select:focus { outline: none; border-color: var(--text-3); }
   color: var(--red) !important;
   background: var(--red-bg) !important;
 }
+
+
+/* ================================================================
+   LOGO EN LOGIN
+   ================================================================ */
+
+.login-img-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: .5rem;
+}
+
+.login-logo-img {
+  max-width: 180px;
+  max-height: 100px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  /* Adaptación automática al modo oscuro */
+  filter: none;
+}
+
+[data-theme="dark"] .login-logo-img {
+  /* Invertir logos oscuros para que se vean en modo noche */
+  filter: brightness(0) invert(1);
+}
+
+/* ================================================================
+   BADGE DE ROL (topbar)
+   ================================================================ */
+
+.role-badge {
+  font-size: .7rem;
+  font-weight: 500;
+  padding: .2rem .65rem;
+  border-radius: 99px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.role-badge.admin {
+  background: var(--surface2);
+  color: var(--text-3);
+}
+
+.role-badge.guest {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+
+/* ================================================================
+   MODO INVITADO — ocultar acciones de edición via CSS también
+   ================================================================ */
+
+[data-role="guest"] .prod-actions,
+[data-role="guest"] .toolbar .btn.primary {
+  display: none !important;
+}
+
+
+/* ── BOTÓN INVITADO Y DIVIDER ─────────────────────────────── */
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: .75rem 0;
+  color: var(--text-3);
+  font-size: .75rem;
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-md);
+}
+
+.guest-btn {
+  width: 100%;
+  justify-content: center;
+  padding: .6rem 1rem;
+  font-size: .875rem;
+  color: var(--text-2);
+  border-color: var(--border-md);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.guest-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}

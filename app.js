@@ -14,12 +14,22 @@
    ================================================================ */
 
 const AUTH = {
+  // ── ADMIN ──────────────────────────────────────────────────
   USER:      'admin',
   // SHA-256 de "solemio2024"
   PASS_HASH: '6eba795eea2b6fe29165de3c2d376ab8b7f526485f47df2e7a26466d0f61a61f',
+
+  // ── INVITADO ────────────────────────────────────────────────
+  GUEST_USER: 'invitado',
+  // SHA-256 de "solemio" (contraseña por defecto del modo invitado)
+  GUEST_HASH: '6a82664a67178402c61b37d5fbe265c14cbbc0a33af48a3d7d3215624026b3e4',
+
   SESSION_KEY: 'solemio-session',
   SESSION_TTL: 8 * 60 * 60 * 1000, // 8 horas en ms
 };
+
+// Modo actual: 'admin' | 'guest' | null
+let currentRole = null;
 
 async function hashStr(str) {
   const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -30,16 +40,22 @@ function isLoggedIn() {
   try {
     const raw = sessionStorage.getItem(AUTH.SESSION_KEY);
     if (!raw) return false;
-    const { expires } = JSON.parse(raw);
+    const { expires, role } = JSON.parse(raw);
     if (Date.now() > expires) { sessionStorage.removeItem(AUTH.SESSION_KEY); return false; }
+    currentRole = role || 'admin';
     return true;
   } catch { return false; }
 }
 
-function setSession() {
+function isAdmin() { return currentRole === 'admin'; }
+function isGuest() { return currentRole === 'guest'; }
+
+function setSession(role) {
   sessionStorage.setItem(AUTH.SESSION_KEY, JSON.stringify({
     expires: Date.now() + AUTH.SESSION_TTL,
+    role,
   }));
+  currentRole = role;
 }
 
 async function doLogin() {
@@ -57,16 +73,21 @@ async function doLogin() {
 
   const hash = await hashStr(pass);
 
-  // Verificar contra hash guardado en localStorage (si el usuario lo cambió)
+  // Verificar admin
   const savedHash = localStorage.getItem('solemio-pass-hash') || AUTH.PASS_HASH;
   const savedUser = localStorage.getItem('solemio-user')      || AUTH.USER;
+  // Verificar invitado
+  const guestHash = localStorage.getItem('solemio-guest-hash') || AUTH.GUEST_HASH;
+  const guestUser = localStorage.getItem('solemio-guest-user') || AUTH.GUEST_USER;
 
   if (user === savedUser && hash === savedHash) {
-    setSession();
+    setSession('admin');
+    showApp();
+  } else if (user === guestUser && hash === guestHash) {
+    setSession('guest');
     showApp();
   } else {
-    errEl.textContent  = 'Usuario o contraseña incorrectos';
-    // reset de animación
+    errEl.textContent = 'Usuario o contraseña incorrectos';
     errEl.style.animation = 'none';
     errEl.offsetHeight;
     errEl.style.animation = '';
@@ -76,6 +97,11 @@ async function doLogin() {
 
   btnEl.disabled    = false;
   btnEl.textContent = 'Ingresar';
+}
+
+function doGuestLogin() {
+  setSession('guest');
+  showApp();
 }
 
 function doLogout() {
@@ -90,6 +116,43 @@ function doLogout() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display          = 'block';
+  applyRole();
+}
+
+function applyRole() {
+  const isG = isGuest();
+
+  // Ocultar tabs que el invitado no puede ver
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    const tab = btn.getAttribute('onclick')?.match(/showTab\('(\w+)'/)?.[1];
+    if (isG && (tab === 'compras' || tab === 'sync')) {
+      btn.style.display = 'none';
+    } else {
+      btn.style.display = '';
+    }
+  });
+
+  // Ocultar botones de edición/eliminación en el catálogo
+  // (se aplica también cada vez que se renderiza el catálogo)
+  document.getElementById('app').dataset.role = isG ? 'guest' : 'admin';
+
+  // Badge de rol en topbar
+  const badge = document.getElementById('role-badge');
+  if (badge) {
+    badge.textContent = isG ? 'Invitado' : 'Admin';
+    badge.className   = 'role-badge ' + (isG ? 'guest' : 'admin');
+  }
+
+  // Si es invitado y está en una tab restringida, volver a catálogo
+  if (isG) {
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab && (activeTab.id === 'tab-compras' || activeTab.id === 'tab-sync')) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-catalogo').classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.nav-btn').classList.add('active');
+    }
+  }
 }
 
 function togglePass() {
@@ -129,20 +192,21 @@ async function cambiarPassword() {
    app.js — SoleMio Panel
    ================================================================ */
 
-// ── FIREBASE CONFIG ───────────────────────────────────────────
-const FB_CONFIG = {
-  apiKey:            "AIzaSyD5UWe2m7-Ue9Ty4qCrs0BnAgIqYmhJOC4",
-  authDomain:        "solemio-panel.firebaseapp.com",
-  projectId:         "solemio-panel",
-  storageBucket:     "solemio-panel.firebasestorage.app",
-  messagingSenderId: "223180443701",
-  appId:             "1:223180443701:web:1cef7d7c0c32833577617c",
+// ── CONFIG ────────────────────────────────────────────────────
+const CONFIG = {
+  // Repo donde el script Python guarda productos.json
+  SCRIPT_REPO:    'Ju4nse/actualizar_catalogo',
+  // Repo de la página web donde se guardan compras.json y edits manuales
+  // ⚠ Reemplazá NOMBRE_REPO_PAGES con el nombre real de tu repo de GitHub Pages
+  PAGES_REPO:     'Ju4nse/Pagina_SoleMio_admin',
+  PRODUCTOS_FILE: 'productos.json',
+  COMPRAS_FILE:   'compras.json',
 };
 
 // ── STATE ─────────────────────────────────────────────────────
 let productos = [];
 let compras   = [];
-let db        = null;
+let ghToken   = '';   // se carga desde localStorage al iniciar
 
 // ── ÍCONOS SVG ────────────────────────────────────────────────
 const ICON = {
@@ -233,131 +297,149 @@ function fmtFecha(iso) {
   return `${d}/${m}/${y}`;
 }
 
-// ── FIREBASE INIT ─────────────────────────────────────────────
-async function initFirebase() {
-  if (FB_CONFIG.apiKey === 'TU_API_KEY') return false;
+// ── GITHUB JSON — HELPERS ─────────────────────────────────────
+// Lee un JSON crudo desde GitHub (sin token, funciona con repos públicos)
+async function ghReadJSON(repo, file) {
+  const url = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`No se pudo leer ${file} (${res.status})`);
+  return res.json();
+}
+
+// Escribe/actualiza un archivo en GitHub via API (requiere token)
+async function ghWriteJSON(repo, file, data, mensaje) {
+  if (!ghToken) throw new Error('No hay token de GitHub configurado');
+
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${file}`;
+  const headers = {
+    'Authorization': `token ${ghToken}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+
+  // Obtener el SHA actual del archivo (necesario para actualizar)
+  let sha = null;
   try {
-    const { initializeApp } =
-      await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getFirestore, collection, getDocs, setDoc, deleteDoc, doc } =
-      await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const r = await fetch(apiUrl, { headers });
+    if (r.ok) { const j = await r.json(); sha = j.sha; }
+  } catch (_) {}
 
-    const app = initializeApp(FB_CONFIG);
-    db = getFirestore(app);
-    window._fb = { collection, getDocs, setDoc, deleteDoc, doc };
-    return true;
-  } catch (e) {
-    console.warn('Firebase no disponible, usando localStorage.', e);
-    return false;
+  const body = {
+    message: mensaje || `Actualizar ${file}`,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+    ...(sha ? { sha } : {}),
+  };
+
+  const res = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.message || `Error al escribir ${file} (${res.status})`);
   }
+  return res.json();
 }
 
-// ── CARGAR PRODUCTOS CON BUFFER Y MAPEO CORRECTO ──────────────
+// ── CARGAR DATOS ───────────────────────────────────────────────
 async function cargarProductos() {
-  // 1. BUFFER LOCAL: Carga instantánea
+  // 1. Buffer local: render instantáneo mientras carga
   const local = localStorage.getItem('solemio-productos');
-  if (local) {
-    productos = JSON.parse(local);
-    renderCatalogo(); 
-  } else {
-    productos = demoProductos(); 
+  if (local) { productos = JSON.parse(local); renderCatalogo(); }
+  else        { productos = demoProductos();   renderCatalogo(); }
+
+  // 2. Leer productos.json del repo del script (fuente de verdad)
+  try {
+    const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
+    // Normalizar formato (el script Python puede usar distintas claves)
+    productos = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
+      id:          p.id          || p.codigo   || uid(),
+      nombre:      p.nombre      || p.title    || p.name  || '',
+      marca:       p.marca       || p.brand    || '',
+      precio:      parseFloat(p.precio || p.price || 0),
+      color:       p.color       || '',
+      talles:      p.talles      || p.sizes    || '',
+      stock:       p.stock       || p.availability || 'out of stock',
+      imagen:      p.imagen      || p.image_link   || p.image || '',
+      descripcion: p.descripcion || p.description  || '',
+    }));
+    localStorage.setItem('solemio-productos', JSON.stringify(productos));
     renderCatalogo();
+    console.log(`✓ ${productos.length} productos cargados desde GitHub`);
+  } catch (e) {
+    console.warn('No se pudo leer productos.json, usando buffer local:', e.message);
   }
-
-  // 2. ASINCRÓNICO: Trae la data de Firebase de fondo y normaliza las claves
-  if (db) {
-    try {
-      const snap = await window._fb.getDocs(window._fb.collection(db, 'productos'));
-      
-      if (!snap.empty) {
-        productos = snap.docs.map(d => {
-          const data = d.data();
-          
-          // Mapeamos lo que viene de Firestore (priorizando tus nombres reales de la BD)
-          return {
-            id:          d.id, // ← Guardamos el ID del documento de Firebase de forma estricta
-            nombre:      data.title        || data.nombre || data.name || '',
-            marca:       data.brand        || data.marca  || '',
-            precio:      parseFloat(data.price || data.precio || 0),
-            color:       data.color        || '',
-            talles:      data.talles       || data.sizes  || '',
-            stock:       data.availability || data.stock  || 'out of stock',
-            imagen:      data.image_link   || data.imagen || data.image || '',
-            descripcion: data.description  || data.descripcion || ''
-          };
-        });
-
-        // Guardamos los datos limpios en el buffer de LocalStorage
-        localStorage.setItem('solemio-productos', JSON.stringify(productos));
-        
-        // Volvemos a renderizar la pantalla con lo último de la nube
-        renderCatalogo();
-        console.log("✓ Buffer actualizado y normalizado.");
-      }
-    } catch (e) {
-      console.warn("No se pudo sincronizar con Firebase, usando buffer local:", e);
-    }
-  }
-}
-
-async function persistirProducto(p) {
-  // Cuando creás o editás un producto desde el modal, lo guardamos estructurado a Firebase
-  if (db) {
-    try {
-      const firestoreData = {
-        title:        p.nombre,
-        brand:        p.marca,
-        price:        p.precio,
-        color:        p.color,
-        talles:       p.talles,
-        availability: p.stock,
-        image_link:   p.imagen,
-        description:  p.descripcion,
-        id:           p.id,
-        updated_at:   new Date().toISOString()
-      };
-      await window._fb.setDoc(window._fb.doc(db, 'productos', p.id), firestoreData);
-    } catch(e) {
-      console.error("Error guardando en Firebase:", e);
-    }
-  }
-  
-  // También actualizamos el buffer local inmediatamente para que el cambio se vea en el acto
-  const idx = productos.findIndex(x => x.id === p.id);
-  if (idx >= 0) productos[idx] = p; else productos.unshift(p);
-  localStorage.setItem('solemio-productos', JSON.stringify(productos));
 }
 
 async function cargarCompras() {
-  if (db) {
-    try {
-      const snap = await window._fb.getDocs(window._fb.collection(db, 'compras'));
-      compras = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.fecha > a.fecha ? 1 : -1));
-      return;
-    } catch (e) { /* cae a localStorage */ }
-  }
+  // 1. Buffer local
   const local = localStorage.getItem('solemio-compras');
-  compras = local ? JSON.parse(local) : [];
+  if (local) compras = JSON.parse(local);
+
+  // 2. Leer compras.json del repo de la página
+  try {
+    const data = await ghReadJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE);
+    compras = (Array.isArray(data) ? data : (data.compras || []))
+      .sort((a, b) => (b.fecha > a.fecha ? 1 : -1));
+    localStorage.setItem('solemio-compras', JSON.stringify(compras));
+    console.log(`✓ ${compras.length} compras cargadas desde GitHub`);
+  } catch (e) {
+    console.warn('No se pudo leer compras.json, usando buffer local:', e.message);
+  }
+}
+
+// ── GUARDAR DATOS ──────────────────────────────────────────────
+async function persistirProducto(p) {
+  // Actualizar state local inmediatamente
+  const idx = productos.findIndex(x => x.id === p.id);
+  if (idx >= 0) productos[idx] = p; else productos.unshift(p);
+  localStorage.setItem('solemio-productos', JSON.stringify(productos));
+
+  // Subir productos.json actualizado al repo del script
+  try {
+    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
+    console.log('✓ productos.json actualizado en GitHub');
+  } catch (e) {
+    console.warn('No se pudo guardar en GitHub (se guardó localmente):', e.message);
+    alert(`Cambio guardado localmente.
+Para sincronizar con GitHub configurá el token.
+(${e.message})`);
+  }
 }
 
 async function eliminarProductoDB(id) {
-  if (db) await window._fb.deleteDoc(window._fb.doc(db, 'productos', id));
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
+
+  try {
+    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
+    console.log('✓ productos.json actualizado en GitHub');
+  } catch (e) {
+    console.warn('No se pudo eliminar en GitHub:', e.message);
+  }
 }
 
 async function persistirCompra(c) {
-  if (db) await window._fb.setDoc(window._fb.doc(db, 'compras', c.id), c);
   compras.unshift(c);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
+
+  try {
+    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Nueva compra ${c.fecha}`);
+    console.log('✓ compras.json actualizado en GitHub');
+  } catch (e) {
+    console.warn('No se pudo guardar compra en GitHub:', e.message);
+    alert(`Compra guardada localmente.
+Para sincronizar configurá el token.
+(${e.message})`);
+  }
 }
 
 async function eliminarCompraDB(id) {
-  if (db) await window._fb.deleteDoc(window._fb.doc(db, 'compras', id));
   compras = compras.filter(c => c.id !== id);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
+
+  try {
+    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Eliminar compra ${id}`);
+  } catch (e) {
+    console.warn('No se pudo eliminar compra en GitHub:', e.message);
+  }
 }
 
 // ── DEMO DATA ─────────────────────────────────────────────────
@@ -377,6 +459,10 @@ function renderCatalogo() {
   const q     = (document.getElementById('buscar')?.value       || '').toLowerCase();
   const marca = document.getElementById('filtro-marca')?.value  || '';
   const stock = document.getElementById('filtro-stock')?.value  || '';
+
+  // Mostrar/ocultar botón nuevo producto según rol
+  const newBtn = document.querySelector('.toolbar .btn.primary');
+  if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
 
   // Actualizar opciones de marcas
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
@@ -434,6 +520,7 @@ function renderCatalogo() {
           </span>
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
         </div>
+        ${!isGuest() ? `
         <div class="prod-actions">
           <button class="btn sm ghost" onclick="openProdModal('${p.id}')">
             ${ICON.edit} Editar
@@ -441,7 +528,7 @@ function renderCatalogo() {
           <button class="btn sm danger" onclick="confirmarEliminar('${p.id}')">
             ${ICON.trash}
           </button>
-        </div>
+        </div>` : ''}
       </div>
     </article>`).join('');
 }
@@ -713,7 +800,8 @@ async function confirmarEliminarCompra(id) {
 
 // ── GITHUB ACTIONS ─────────────────────────────────────────────
 function saveConfig() {
-  localStorage.setItem('gh-token',    document.getElementById('gh-token').value);
+  ghToken = document.getElementById('gh-token').value.trim();
+  localStorage.setItem('gh-token',    ghToken);
   localStorage.setItem('gh-repo',     document.getElementById('gh-repo').value);
   localStorage.setItem('gh-workflow', document.getElementById('gh-workflow').value);
 }
@@ -722,9 +810,55 @@ function loadConfig() {
   const t = localStorage.getItem('gh-token');
   const r = localStorage.getItem('gh-repo');
   const w = localStorage.getItem('gh-workflow');
-  if (t) document.getElementById('gh-token').value    = t;
+  if (t) { ghToken = t; document.getElementById('gh-token').value    = t; }
   if (r) document.getElementById('gh-repo').value     = r;
   if (w) document.getElementById('gh-workflow').value = w;
+}
+
+async function pollWorkflowResult(token, repo, startedAt) {
+  const status  = document.getElementById('run-status');
+  const headers = {
+    'Authorization': `token ${token}`,
+    'Accept': 'application/vnd.github.v3+json',
+  };
+
+  const MAX_INTENTOS = 24; // 24 x 10s = 4 minutos máximo
+  let intento = 0;
+
+  while (intento < MAX_INTENTOS) {
+    await new Promise(r => setTimeout(r, 10000));
+    intento++;
+    status.innerHTML = `<span class="spin">↻</span> Ejecutando… (~${intento * 10}s)`;
+
+    try {
+      const res  = await fetch(
+        `https://api.github.com/repos/${repo}/actions/runs?per_page=5`,
+        { headers }
+      );
+      const data = await res.json();
+      const run  = (data.workflow_runs || []).find(r =>
+        r.path && r.path.includes('catalogo')
+      );
+
+      if (!run) continue;
+
+      if (run.status === 'completed') {
+        if (run.conclusion === 'success') {
+          // Recargar productos.json automáticamente tras éxito
+          status.innerHTML = `<span class="spin">↻</span> Script finalizado, recargando catálogo…`;
+          await cargarProductos();
+          status.innerHTML = `<span style="color:var(--green)">✓ Catálogo actualizado correctamente</span>`;
+        } else {
+          status.innerHTML = `<span style="color:var(--red)">✗ El script falló — puede que la página de Casa Ari esté caída. <a href="${run.html_url}" target="_blank" style="color:var(--red);text-decoration:underline">Ver detalle en GitHub</a></span>`;
+        }
+        document.getElementById('run-btn').disabled = false;
+        return;
+      }
+    } catch (e) { /* seguir intentando */ }
+  }
+
+  status.innerHTML = `<span style="color:var(--text-2)">No se pudo confirmar el resultado. Revisá <a href="https://github.com/${repo}/actions" target="_blank" style="color:var(--blue)">GitHub Actions</a> directamente.</span>`;
+  document.getElementById('run-btn').disabled = false;
 }
 
 async function runScript() {
@@ -742,6 +876,8 @@ async function runScript() {
   btn.disabled     = true;
   status.innerHTML = '<span class="spin">↻</span> Enviando solicitud…';
 
+  const startedAt = new Date().toISOString().slice(0, 19);
+
   try {
     const res = await fetch(
       `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
@@ -757,16 +893,16 @@ async function runScript() {
     );
 
     if (res.status === 204) {
-      status.innerHTML = '<span style="color:var(--green)">✓ Workflow iniciado — tarda ~1–2 min</span>';
+      status.innerHTML = '<span class="spin">↻</span> Workflow iniciado, esperando resultado…';
+      pollWorkflowResult(token, repo, startedAt);
     } else {
       const j = await res.json().catch(() => ({}));
       throw new Error(j.message || `HTTP ${res.status}`);
     }
   } catch (e) {
     status.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
+    btn.disabled = false;
   }
-
-  btn.disabled = false;
 }
 
 // ── INIT ───────────────────────────────────────────────────────
@@ -779,11 +915,10 @@ async function init() {
     document.getElementById("login-screen").style.display = "flex";
     return;
   }
-  showApp();
-  await initFirebase();
+  showApp();       // aplica rol y oculta tabs
+  loadConfig();    // carga ghToken antes de fetch
   await Promise.all([cargarProductos(), cargarCompras()]);
   renderCatalogo();
-  loadConfig();
 }
 
 init();
