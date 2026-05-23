@@ -193,10 +193,9 @@ async function cambiarPassword() {
 
 // ── CONFIG ────────────────────────────────────────────────────
 const CONFIG = {
-  // Repo donde el script Python guarda productos.json
+  // Repo del script Python (privado) — solo para escrituras con token
   SCRIPT_REPO:    'Ju4nse/actualizar_catalogo',
-  // Repo de la página web donde se guardan compras.json y edits manuales
-  // ⚠ Reemplazá NOMBRE_REPO_PAGES con el nombre real de tu repo de GitHub Pages
+  // Repo de la página (público) — lectura sin token, accesible desde cualquier dispositivo
   PAGES_REPO:     'Ju4nse/Pagina_SoleMio_admin',
   PRODUCTOS_FILE: 'productos.json',
   COMPRAS_FILE:   'compras.json',
@@ -297,12 +296,24 @@ function fmtFecha(iso) {
 }
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
-// Lee un JSON crudo desde GitHub (sin token, funciona con repos públicos)
 async function ghReadJSON(repo, file) {
-  const url = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`No se pudo leer ${file} (${res.status})`);
-  return res.json();
+  // 1. Intentar con raw.githubusercontent (repos públicos, sin token)
+  const rawUrl = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+  const rawRes = await fetch(rawUrl);
+  if (rawRes.ok) return rawRes.json();
+
+  // 2. Si falla (repo privado), usar la API con el token guardado
+  if (!ghToken) throw new Error(`Repo privado y sin token — no se pudo leer ${file}`);
+  const apiRes = await fetch(`https://api.github.com/repos/${repo}/contents/${file}`, {
+    headers: {
+      'Authorization': `token ${ghToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+    }
+  });
+  if (!apiRes.ok) throw new Error(`No se pudo leer ${file} (${apiRes.status})`);
+  const j = await apiRes.json();
+  // La API de GitHub devuelve el contenido codificado en base64
+  return JSON.parse(atob(j.content.replace(/\n/g, '')));
 }
 
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
@@ -359,10 +370,20 @@ function hasWriteLock(key) {
 
 // ── CARGAR DATOS ───────────────────────────────────────────────
 async function cargarProductos() {
-  // 1. Buffer local: render instantáneo mientras carga
+  // 1. Buffer local: render instantáneo solo si hay datos reales guardados
   const local = localStorage.getItem('solemio-productos');
-  if (local) { productos = JSON.parse(local); renderCatalogo(); }
-  else        { productos = demoProductos();   renderCatalogo(); }
+  if (local) {
+    productos = JSON.parse(local);
+    renderCatalogo(); // rol ya está seteado porque loadConfig() fue primero
+  } else {
+    // Sin datos locales: mostrar spinner hasta que llegue el remoto
+    const grid = document.getElementById('catalogo-grid');
+    if (grid) grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      Cargando catálogo…</div>`;
+  }
 
   // 2. Si hay un write lock activo, no pisamos con el remoto
   if (hasWriteLock('productos')) {
@@ -372,7 +393,7 @@ async function cargarProductos() {
 
   // 3. Leer productos.json del repo del script (fuente de verdad)
   try {
-    const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
+    const data = await ghReadJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE);
     const raw = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
       id:          p.id          || p.codigo   || uid(),
       nombre:      p.nombre      || p.title    || p.name  || '',
@@ -384,7 +405,7 @@ async function cargarProductos() {
       cantidad:    p.cantidad    != null ? p.cantidad : null,
       imagen:      p.imagen      || p.image_link   || p.image || '',
       descripcion: p.descripcion || p.description  || '',
-      oculto:      p.oculto      || false,
+      oculto:      p.oculto === true || p.oculto === 'true',
     }));
 
     // Deduplicar: si hay dos productos con el mismo ID base
@@ -445,7 +466,7 @@ async function persistirProducto(p) {
   setWriteLock('productos'); // evitar que un reload inmediato pise el cambio
 
   try {
-    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
+    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo guardar en GitHub (se guardó localmente):', e.message);
@@ -459,7 +480,7 @@ async function eliminarProductoDB(id) {
   setWriteLock('productos');
 
   try {
-    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
+    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo eliminar en GitHub:', e.message);
@@ -842,7 +863,7 @@ async function savePurchase() {
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     setWriteLock('productos');
     try {
-      await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
+      await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
     } catch (e) {
       console.warn('No se pudo actualizar stock en GitHub:', e.message);
     }
@@ -1020,18 +1041,19 @@ async function runScript() {
 
 // ── INIT ───────────────────────────────────────────────────────
 async function init() {
-  initTheme(); // aplicar tema antes de mostrar cualquier pantalla
+  initTheme();
 
-  // Verificar sesión activa
   if (!isLoggedIn()) {
     document.getElementById("app").style.display = "none";
     document.getElementById("login-screen").style.display = "flex";
     return;
   }
-  showApp();       // aplica rol y oculta tabs
-  loadConfig();    // carga ghToken antes de fetch
+
+  // Cargar config PRIMERO — necesitamos ghToken y currentRole antes de cualquier render
+  loadConfig();
+  showApp(); // aplica rol después de loadConfig
+
   await Promise.all([cargarProductos(), cargarCompras()]);
-  renderCatalogo();
 }
 
 init();
