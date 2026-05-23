@@ -81,8 +81,9 @@ function doLogout() {
 }
 
 // ── PERSISTENCIA CON BUFFER INTELIGENTE (FIRESTORE REAL) ──────
+// ── CARGAR PRODUCTOS DESDE TU GITHUB (100% GRATIS Y SIN LÍMITES) ──
 async function cargarProductos() {
-  // 1. BUFFER LOCAL: Apertura instantánea sin esperas
+  // 1. BUFFER LOCAL: Carga inmediata en 0.01 segundos para que la app vuele
   const local = localStorage.getItem('solemio-productos');
   if (local) {
     productos = JSON.parse(local);
@@ -92,34 +93,38 @@ async function cargarProductos() {
     renderCatalogo();
   }
 
-  // 2. ASINCRÓNICO: Sincroniza datos planos de Firebase mapeándolos al español
-  if (db) {
-    try {
-      const snap = await window._fb.getDocs(window._fb.collection(db, 'productos'));
-      if (!snap.empty) {
-        productos = snap.docs.map(d => {
-          const data = d.data();
-          return {
-            id:          d.id, // ← Captura estricta del ID del documento
-            nombre:      data.title        || data.nombre || data.name || '',
-            marca:       data.brand        || data.marca  || '',
-            precio:      parseFloat(data.price || data.precio || 0),
-            color:       data.color        || '',
-            talles:      data.talles       || data.sizes  || '',
-            stock:       data.availability || data.stock  || 'out of stock',
-            imagen:      data.image_link   || data.imagen || data.image || '',
-            descripcion: data.description  || data.descripcion || ''
-          };
-        });
+  // 2. FETCH DIRECTO A TU JSON DE GITHUB: Trae los datos reales en segundo plano
+  try {
+    // Le metemos un timestamp (?t=...) para que el navegador no te cachee el JSON viejo
+    const res = await fetch(`productos.json?t=${new Date().getTime()}`);
+    
+    if (res.ok) {
+      const datosFrescos = await res.json();
+      
+      if (Array.isArray(datosFrescos)) {
+        // Mapeamos los datos del JSON (title, image_link) a las variables que usa tu HTML
+        productos = datosFrescos.map(data => ({
+          id:          data.id || "p_" + Date.now(),
+          nombre:      data.title || data.nombre || '',
+          marca:       data.brand || data.marca || '',
+          precio:      parseFloat(data.price || data.precio || 0),
+          color:       data.color || '',
+          talles:      data.talles || '',
+          stock:       data.availability || data.stock || 'out of stock',
+          imagen:      data.image_link || data.imagen || '',
+          descripcion: data.description || data.descripcion || ''
+        }));
 
-        // Actualiza el buffer del navegador
+        // Guardamos los datos nuevos en el buffer del navegador para la próxima visita
         localStorage.setItem('solemio-productos', JSON.stringify(productos));
+        
+        // Volvemos a dibujar la pantalla con el stock e imágenes actualizadas
         renderCatalogo();
-        console.log("✓ Buffer local refrescado desde Firestore.");
+        console.log("✓ Catálogo sincronizado exitosamente desde el JSON de GitHub.");
       }
-    } catch (e) {
-      console.warn("Fallo de conexión a la nube, reteniendo buffer local:", e);
     }
+  } catch (e) {
+    console.warn("No se pudo descargar productos.json, usando los datos del buffer previo:", e);
   }
 }
 
