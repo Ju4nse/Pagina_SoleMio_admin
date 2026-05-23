@@ -1,191 +1,68 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
+  <title>SoleMio — Catálogo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SoleMio — Panel</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ── PANTALLA DE LOGIN ─────────────────────────────────────── -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">
-      <span class="logo-word">SoleMio</span>
-      <span class="logo-tag">Panel de administración</span>
+  <div id="login-screen" class="login-wrapper" style="display:none;">
+    <div class="login-card">
+      <div class="login-header">
+        <img class="login-logo-img" src="logo.png" alt="Logo" onerror="this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=120&auto=format&fit=crop&q=60'">
+        <h2>SoleMio</h2>
+      </div>
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="login-user" placeholder="admin">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••">
+      </div>
+      <div id="login-error" class="login-error"></div>
+      <button class="btn primary" onclick="doLogin()">Ingresar como Admin</button>
+      <button class="btn ghost" onclick="loginComoInvitado()">Ver catálogo (Invitado)</button>
     </div>
-
-    <div class="field">
-      <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="admin"
-             autocomplete="username" onkeydown="if(event.key==='Enter') doLogin()">
-    </div>
-    <div class="field" style="position:relative">
-      <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••••"
-             autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
-      <button class="toggle-pass" onclick="togglePass()" aria-label="Ver contraseña" tabindex="-1">
-        <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="login-error" id="login-error"></div>
-
-    <button class="btn primary login-btn" onclick="doLogin()">Ingresar</button>
-
-    <p class="login-hint">Acceso restringido al personal autorizado</p>
   </div>
-</div>
 
-<!-- ── APP (oculta hasta login) ─────────────────────────────── -->
-<div id="app" style="display:none">
-<div class="shell">
-
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="logo">
-      <span class="logo-word">SoleMio</span>
-      <span class="logo-tag">Panel</span>
-    </div>
-    <div class="topbar-right">
-      <nav class="nav">
-        <button class="nav-btn active" onclick="showTab('catalogo', this)">Catálogo</button>
-        <button class="nav-btn"        onclick="showTab('compras',  this)">Compras</button>
-        <button class="nav-btn"        onclick="showTab('sync',     this)">Sincronizar</button>
+  <div id="app" class="layout" style="display:none;">
+    <aside class="sidebar">
+      <div class="brand">👟 SoleMio</div>
+      <nav class="menu">
+        <button class="nav-btn active" data-tab="catalog" onclick="switchTab('catalog')">Catálogo</button>
+        <button class="nav-btn" data-tab="sync" onclick="switchTab('sync')">Sincronizar</button>
+        <button class="nav-btn" data-tab="config" onclick="switchTab('config')">Config</button>
       </nav>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
-      <button class="btn sm ghost logout-btn" onclick="doLogout()" title="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-    </div>
-  </header>
+      <button class="btn ghost sm" style="width:100%" onclick="doLogout()">Cerrar Sesión</button>
+    </aside>
 
-  <!-- TAB: CATÁLOGO -->
-  <div id="tab-catalogo" class="tab active">
-    <div class="toolbar">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()">
-      </div>
-      <select id="filtro-marca" onchange="renderCatalogo()">
-        <option value="">Todas las marcas</option>
-      </select>
-      <select id="filtro-stock" onchange="renderCatalogo()">
-        <option value="">Todo el stock</option>
-        <option value="in stock">En stock</option>
-        <option value="out of stock">Sin stock</option>
-      </select>
-      <button class="btn primary" onclick="openProdModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Nuevo producto
-      </button>
-    </div>
-    <div id="catalogo-grid" class="prod-grid">
-      <div class="empty" style="grid-column:1/-1">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        Cargando catálogo…
-      </div>
-    </div>
+    <main class="content">
+      <section id="tab-catalog" class="tab-content active">
+        <div class="toolbar">
+          <input type="text" id="buscar" placeholder="Buscar por nombre, marca o ID..." oninput="renderCatalogo()">
+        </div>
+        <div id="catalogo-grid" class="products-grid"></div>
+      </section>
+
+      <section id="tab-sync" class="tab-content">
+        <h3>Sincronización</h3>
+        <p>Disparar actualización desde Excel:</p>
+        <button id="btn-sincro" class="btn primary" onclick="sincronizarCatalogo()">Sincronizar Ahora</button>
+        <div id="sincro-status" style="margin-top:1rem;"></div>
+      </section>
+
+      <section id="tab-config" class="tab-content">
+        <h3>Configuración</h3>
+        <input type="password" id="cfg-token" placeholder="GitHub PAT">
+        <input type="text" id="cfg-repo" placeholder="usuario/repo">
+        <button class="btn primary" onclick="guardarConfig()">Guardar</button>
+      </section>
+    </main>
   </div>
 
-  <!-- TAB: COMPRAS -->
-  <div id="tab-compras" class="tab">
-    <div class="stats-row" id="stats-row"></div>
-    <div class="section-hd">
-      <h2>Historial</h2>
-      <button class="btn primary" onclick="openPurchaseModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Registrar compra
-      </button>
-    </div>
-    <div id="purchase-list"></div>
-  </div>
-
-  <!-- TAB: SINCRONIZAR -->
-  <div id="tab-sync" class="tab">
-    <div class="runner-card">
-      <div class="runner-info">
-        <p>Actualizar catálogo desde Casa Ari</p>
-        <span>Dispara el script de Python vía GitHub Actions</span>
-        <div class="run-status" id="run-status"></div>
-      </div>
-      <button class="btn primary" id="run-btn" onclick="runScript()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <path d="M20.49 15a9 9 0 1 1-.08-3.63"/>
-        </svg>
-        Ejecutar
-      </button>
-    </div>
-    <div class="config-card">
-      <p class="config-title">Configuración de GitHub Actions</p>
-      <div class="field">
-        <label>Token de GitHub</label>
-        <input type="password" id="gh-token" placeholder="ghp_…" oninput="saveConfig()">
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Repo (usuario/repo)</label>
-          <input type="text" id="gh-repo" placeholder="miusuario/solemio" oninput="saveConfig()">
-        </div>
-        <div class="field">
-          <label>Workflow file</label>
-          <input type="text" id="gh-workflow" placeholder="catalogo.yml" oninput="saveConfig()">
-        </div>
-      </div>
-      <p class="config-hint">El token se guarda solo en este navegador (localStorage).</p>
-    </div>
-
-    <!-- CAMBIAR CONTRASEÑA -->
-    <div class="config-card" style="margin-top:1rem">
-      <p class="config-title">Cambiar contraseña</p>
-      <div class="field">
-        <label>Contraseña actual</label>
-        <input type="password" id="cp-actual" placeholder="••••••••">
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Nueva contraseña</label>
-          <input type="password" id="cp-nueva" placeholder="••••••••">
-        </div>
-        <div class="field">
-          <label>Repetir nueva</label>
-          <input type="password" id="cp-repetir" placeholder="••••••••">
-        </div>
-      </div>
-      <div id="cp-msg" style="font-size:.78rem;min-height:18px;margin-bottom:.5rem"></div>
-      <button class="btn primary" onclick="cambiarPassword()">Actualizar contraseña</button>
-    </div>
-  </div>
-
-</div><!-- /shell -->
-</div><!-- /app -->
-
-<!-- Modales -->
-<div id="modal-prod"></div>
-<div id="modal-compra"></div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
