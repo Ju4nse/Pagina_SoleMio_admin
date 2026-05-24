@@ -223,7 +223,7 @@ const CONFIG = {
 // ── STATE ─────────────────────────────────────────────────────
 let productos = [];
 let compras   = [];
-let ghToken   = '';   // se carga desde localStorage al iniciar
+let Token   = '';   // se carga desde localStorage al iniciar
 
 // ── ÍCONOS SVG ────────────────────────────────────────────────
 const ICON = {
@@ -286,7 +286,7 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  const saved = localStorage.getItem('solemio-theme') || 'light';
+  const saved = localStorage.getItem('solemio-theme') || 'lit';
   document.documentElement.dataset.theme = saved;
   document.getElementById('theme-btn').innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
 }
@@ -317,27 +317,31 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  // 1. Intentar con raw.githubusercontent (repos públicos, sin token)
-  const rawUrl = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
-  const rawRes = await fetch(rawUrl, {
-     cache: 'no-store'
-   });
-  if (rawRes.ok) return rawRes.json();
-
-  // 2. Si falla (repo privado), usar la API con el token guardado
-  if (!ghToken) throw new Error(`Repo privado y sin token — no se pudo leer ${file}`);
-  const apiRes = await fetch(`https://api.github.com/repos/${repo}/contents/${file}`, {
-    headers: {
-      'Authorization': `token ${ghToken}`,
-      'Accept': 'application/vnd.github.v3+json',
+  const apiRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
+    {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        ...(ghToken ? {
+          'Authorization': `token ${ghToken}`
+        } : {})
+      },
+      cache: 'no-store'
     }
-  });
-  if (!apiRes.ok) throw new Error(`No se pudo leer ${file} (${apiRes.status})`);
-  const j = await apiRes.json();
-  // La API de GitHub devuelve el contenido codificado en base64
-  return JSON.parse(atob(j.content.replace(/\n/g, '')));
-}
+  );
 
+  if (!apiRes.ok) {
+    throw new Error(`No se pudo leer ${file} (${apiRes.status})`);
+  }
+
+  const j = await apiRes.json();
+
+  return JSON.parse(
+    decodeURIComponent(
+      escape(atob(j.content.replace(/\n/g, '')))
+    )
+  );
+}
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
   if (!ghToken) throw new Error('No hay token de GitHub configurado');
