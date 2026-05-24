@@ -223,7 +223,7 @@ const CONFIG = {
 // ── STATE ─────────────────────────────────────────────────────
 let productos = [];
 let compras   = [];
-let Token   = '';   // se carga desde localStorage al iniciar
+let ghToken = '';   // se carga desde localStorage al iniciar
 
 // ── ÍCONOS SVG ────────────────────────────────────────────────
 const ICON = {
@@ -286,7 +286,7 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  const saved = localStorage.getItem('solemio-theme') || 'lit';
+  const saved = localStorage.getItem('solemio-theme') || 'light';
   document.documentElement.dataset.theme = saved;
   document.getElementById('theme-btn').innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
 }
@@ -506,7 +506,7 @@ async function ghWriteJSON(repo, file, data, mensaje) {
 // Cuando se hace una escritura (eliminar/guardar), se bloquea el
 // fetch remoto por 60s para que GitHub tenga tiempo de procesar
 // el commit antes de que una recarga pise los cambios locales.
-const WRITE_LOCK_TTL = 10 * 1000; // 60 segundos
+const WRITE_LOCK_TTL = 60 * 1000; // 60 segundos
 
 function setWriteLock(key) {
   localStorage.setItem(`solemio-wlock-${key}`, Date.now().toString());
@@ -716,6 +716,10 @@ async function cargarCompras() {
       .sort((a, b) => (b.fecha > a.fecha ? 1 : -1));
     localStorage.setItem('solemio-compras', JSON.stringify(compras));
     console.log(`✓ ${compras.length} compras cargadas desde GitHub`);
+    // Si el usuario ya está viendo la tab de compras, actualizar la vista
+    if (document.getElementById('tab-compras')?.classList.contains('active')) {
+      renderCompras();
+    }
   } catch (e) {
     console.warn('No se pudo leer compras.json, usando buffer local:', e.message);
   }
@@ -1245,7 +1249,6 @@ function loadConfig() {
   const r = localStorage.getItem('gh-repo');
   const w = localStorage.getItem('gh-workflow');
   if (t) ghToken = t;
-  if (r) localStorage.getItem('gh-repo');   // solo validar que existe
 }
 
 function fillSyncInputs() {
