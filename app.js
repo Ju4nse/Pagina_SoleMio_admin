@@ -130,8 +130,9 @@ async function startApp() {
   loadConfig();           // 1. ghToken disponible
   applyRole();            // 2. UI según rol (tabs, badges) — ANTES de renderizar
   mostrarPantallaApp();   // 3. mostrar la app
-  await Promise.all([cargarProductos(), cargarCompras()]); // 4. datos + render
-}
+   
+  await cargarProductos();
+  await cargarCompras();
 
 function applyRole() {
   const isG = isGuest();
@@ -315,7 +316,9 @@ function fmtFecha(iso) {
 async function ghReadJSON(repo, file) {
   // 1. Intentar con raw.githubusercontent (repos públicos, sin token)
   const rawUrl = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
-  const rawRes = await fetch(rawUrl);
+  const rawRes = await fetch(rawUrl, {
+     cache: 'no-store'
+   });
   if (rawRes.ok) return rawRes.json();
 
   // 2. Si falla (repo privado), usar la API con el token guardado
@@ -368,7 +371,7 @@ async function ghWriteJSON(repo, file, data, mensaje) {
 // Cuando se hace una escritura (eliminar/guardar), se bloquea el
 // fetch remoto por 60s para que GitHub tenga tiempo de procesar
 // el commit antes de que una recarga pise los cambios locales.
-const WRITE_LOCK_TTL = 60 * 1000; // 60 segundos
+const WRITE_LOCK_TTL = 10 * 1000; // 60 segundos
 
 function setWriteLock(key) {
   localStorage.setItem(`solemio-wlock-${key}`, Date.now().toString());
