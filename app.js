@@ -317,35 +317,51 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  const apiRes = await fetch(
-    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
-    {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      cache: 'no-store'
+  // Primero API (más fresca)
+  try {
+    const apiRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.raw+json'
+        },
+        cache: 'no-store'
+      }
+    );
+
+    if (apiRes.ok) {
+      const text = await apiRes.text();
+
+      if (text.trim()) {
+        return JSON.parse(text);
+      }
     }
-  );
+  } catch (e) {
+    console.warn('API falló, usando raw:', e);
+  }
 
-  if (!apiRes.ok) {
+  // Fallback raw (más estable)
+  const rawUrl =
+    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+
+  const rawRes = await fetch(rawUrl, {
+    cache: 'reload'
+  });
+
+  if (!rawRes.ok) {
     throw new Error(
-      `No se pudo leer ${file} (${apiRes.status})`
+      `No se pudo leer ${file} (${rawRes.status})`
     );
   }
 
-  const j = await apiRes.json();
+  const text = await rawRes.text();
 
-  if (!j.content) {
-    throw new Error(
-      `GitHub API no devolvió contenido para ${file}`
-    );
+  if (!text.trim()) {
+    throw new Error(`${file} vacío`);
   }
 
-  return JSON.parse(
-    atob(j.content.replace(/\n/g, ''))
-  );
+  return JSON.parse(text);
 }
-
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
   if (!ghToken) {
@@ -495,7 +511,28 @@ async function cargarProductos() {
         if (score(p) > score(existing)) seen.set(baseId, { ...p, id: baseId });
       }
     }
-    productos = Array.from(seen.values());
+    const localProductos =
+     JSON.parse(
+       localStorage.getItem('solemio-productos')
+       || '[]'
+     );
+   
+   const localMap = new Map(
+     localProductos.map(p => [p.id, p])
+   );
+   
+   productos = Array.from(seen.values()).map(p => {
+     const local = localMap.get(p.id);
+   
+     return local
+       ? {
+           ...p,
+           oculto: local.oculto ?? p.oculto,
+           cantidad:
+             local.cantidad ?? p.cantidad
+         }
+       : p;
+   });
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     renderCatalogo();
     // Log para verificar precios
