@@ -124,6 +124,82 @@ function mostrarPantallaLogin() {
   document.getElementById('login-screen').style.display = 'flex';
 }
 
+
+// ── POLLING — detectar cambios en GitHub cada 30s ─────────────
+// Solo descarga el SHA del archivo (liviano, ~200 bytes).
+// Si cambió desde la última vez, recarga los datos y re-renderiza.
+let _pollInterval = null;
+const _knownSHA = {};
+
+async function getSHA(repo, file) {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${file}`,
+      {
+        headers: ghToken ? { 'Authorization': `token ${ghToken}` } : {},
+        cache: 'no-store',
+      }
+    );
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j.sha || null;
+  } catch { return null; }
+}
+
+async function checkForUpdates() {
+  // No verificar si hay un write lock activo (acabamos de escribir nosotros)
+  if (hasWriteLock('productos') || hasWriteLock('compras')) return;
+
+  const shaProds = await getSHA(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
+  const shaComps = await getSHA(CONFIG.PAGES_REPO,  CONFIG.COMPRAS_FILE);
+
+  let hayNovedad = false;
+
+  if (shaProds && shaProds !== _knownSHA.productos) {
+    if (_knownSHA.productos) {
+      // SHA cambió desde la última vez → recargar
+      console.log('🔄 productos.json cambió en GitHub — recargando...');
+      await cargarProductos();
+    }
+    _knownSHA.productos = shaProds;
+    hayNovedad = true;
+  }
+
+  if (shaComps && shaComps !== _knownSHA.compras) {
+    if (_knownSHA.compras) {
+      console.log('🔄 compras.json cambió en GitHub — recargando...');
+      await cargarCompras();
+      if (document.getElementById('tab-compras')?.classList.contains('active')) {
+        renderCompras();
+      }
+    }
+    _knownSHA.compras = shaComps;
+    hayNovedad = true;
+  }
+}
+
+function iniciarPolling() {
+  if (_pollInterval) clearInterval(_pollInterval);
+  // Primera verificación al arrancar (guarda el SHA inicial sin recargar)
+  checkForUpdates();
+  // Luego verificar cada 30 segundos
+  _pollInterval = setInterval(checkForUpdates, 30_000);
+}
+
+function detenerPolling() {
+  if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+}
+
+// Pausar polling cuando la pestaña está en segundo plano (ahorra requests)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    detenerPolling();
+  } else {
+    // Al volver a la pestaña, verificar inmediatamente y reanudar
+    iniciarPolling();
+  }
+});
+
 // Secuencia de arranque garantizada — siempre en este orden:
 // 1. token  2. rol visual  3. datos  4. render
 async function startApp() {
@@ -135,6 +211,7 @@ async function startApp() {
 
   await cargarProductos();
   await cargarCompras();
+  iniciarPolling(); // detectar cambios de otros dispositivos
 }
 
 function applyRole() {
@@ -316,121 +393,34 @@ function fmtFecha(iso) {
 }
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
+// Usa la API de GitHub primero (siempre fresco, sin cache CDN).
+// raw.githubusercontent.com tiene cache de hasta 5 min — no sirve para sync.
 async function ghReadJSON(repo, file) {
-  const rawUrl =
-    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${file}`;
+  const headers = { 'Accept': 'application/vnd.github.v3+json' };
+  if (ghToken) headers['Authorization'] = `token ${ghToken}`;
 
-  try {
-    console.log('Intentando RAW:', rawUrl);
+  const apiRes = await fetch(apiUrl, { headers, cache: 'no-store' });
 
-    const rawRes = await fetch(rawUrl, {
-      cache: 'no-store'
-    });
-
-    console.log('RAW status:', rawRes.status);
-
-    const text = await rawRes.text();
-
-    console.log(
-      'RAW chars:',
-      text.length,
-      'preview:',
-      text.slice(0, 80)
-    );
-
-    if (!rawRes.ok) {
-      throw new Error(`RAW HTTP ${rawRes.status}`);
-    }
-
-    if (!text.trim()) {
-      throw new Error('RAW vacío');
-    }
-
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      throw new Error(`RAW JSON inválido: ${e.message}`);
-    }
-
-  } catch (err) {
-    console.warn(
-      `RAW falló (${err.message}), probando API...`
-    );
-
-    const apiUrl =
-      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`;
-
-    console.log('Intentando API:', apiUrl);
-
-    const apiRes = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      cache: 'no-store'
-    });
-
-    console.log('API status:', apiRes.status);
-
-    const j = await apiRes.json();
-
-    console.log('API response:', j);
-
-    if (!apiRes.ok) {
-      throw new Error(
-        j.message || `API HTTP ${apiRes.status}`
-      );
-    }
-
-    // Archivo chico
-    if (j.content && j.encoding === 'base64') {
-      console.log('Usando base64');
-
-      return JSON.parse(
-        atob(j.content.replace(/\n/g, ''))
-      );
-    }
-
-    // Archivo grande
-    if (j.download_url) {
-      console.log(
-        'Archivo grande, usando download_url:',
-        j.download_url
-      );
-
-      const res = await fetch(
-        `${j.download_url}?t=${Date.now()}`,
-        {
-          cache: 'no-store'
-        }
-      );
-
-      console.log(
-        'download_url status:',
-        res.status
-      );
-
-      const text = await res.text();
-
-      console.log(
-        'download_url chars:',
-        text.length,
-        'preview:',
-        text.slice(0, 80)
-      );
-
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        throw new Error(
-          `download_url JSON inválido: ${e.message}`
-        );
-      }
-    }
-
-    throw new Error(
-      `GitHub API no devolvió contenido para ${file}`
-    );
+  if (!apiRes.ok) {
+    throw new Error(`No se pudo leer ${file} (HTTP ${apiRes.status})`);
   }
+
+  const j = await apiRes.json();
+
+  // Archivo normal: contenido en base64
+  if (j.content && j.encoding === 'base64') {
+    return JSON.parse(atob(j.content.replace(/\n/g, '')));
+  }
+
+  // Archivo grande (>1MB): GitHub devuelve download_url sin contenido inline
+  if (j.download_url) {
+    const res = await fetch(`${j.download_url}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`download_url falló (HTTP ${res.status})`);
+    return res.json();
+  }
+
+  throw new Error(`GitHub API no devolvió contenido para ${file}`);
 }
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
