@@ -317,30 +317,59 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  const apiRes = await fetch(
-    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
-    {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        ...(ghToken ? {
-          'Authorization': `token ${ghToken}`
-        } : {})
-      },
+  const rawUrl =
+    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+
+  try {
+    const rawRes = await fetch(rawUrl, {
       cache: 'no-store'
+    });
+
+    const text = await rawRes.text();
+
+    if (!rawRes.ok) {
+      throw new Error(`HTTP ${rawRes.status}`);
     }
-  );
 
-  if (!apiRes.ok) {
-    throw new Error(`No se pudo leer ${file} (${apiRes.status})`);
+    if (!text.trim()) {
+      throw new Error(`${file} llegó vacío`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('Contenido recibido:', text.slice(0, 300));
+      throw new Error(`JSON inválido: ${e.message}`);
+    }
+
+  } catch (err) {
+    console.warn(`Raw falló (${err.message}), probando GitHub API...`);
+
+    const apiRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          ...(ghToken ? {
+            'Authorization': `token ${ghToken}`
+          } : {})
+        },
+        cache: 'no-store'
+      }
+    );
+
+    if (!apiRes.ok) {
+      throw new Error(`API GitHub falló (${apiRes.status})`);
+    }
+
+    const j = await apiRes.json();
+
+    if (!j.content) {
+      throw new Error('GitHub API no devolvió contenido');
+    }
+
+    return JSON.parse(atob(j.content.replace(/\n/g, '')));
   }
-
-  const j = await apiRes.json();
-
-  return JSON.parse(
-    decodeURIComponent(
-      escape(atob(j.content.replace(/\n/g, '')))
-    )
-  );
 }
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
