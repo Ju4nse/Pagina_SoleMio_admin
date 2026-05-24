@@ -317,30 +317,33 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  // Primero API (más fresca)
+  // 1. Intentar API GitHub primero (más fresca)
   try {
     const apiRes = await fetch(
       `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
       {
         headers: {
-          'Accept': 'application/vnd.github.raw+json'
+          'Accept': 'application/vnd.github.v3+json'
         },
         cache: 'no-store'
       }
     );
 
     if (apiRes.ok) {
-      const text = await apiRes.text();
+      const j = await apiRes.json();
 
-      if (text.trim()) {
-        return JSON.parse(text);
+      // caso normal: API devuelve content base64
+      if (j.content) {
+        return JSON.parse(
+          atob(j.content.replace(/\n/g, ''))
+        );
       }
     }
   } catch (e) {
-    console.warn('API falló, usando raw:', e);
+    console.warn('API GitHub falló:', e);
   }
 
-  // Fallback raw (más estable)
+  // 2. Fallback raw
   const rawUrl =
     `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
 
