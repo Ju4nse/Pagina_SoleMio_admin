@@ -510,18 +510,52 @@ async function cargarCompras() {
 
 // ── GUARDAR DATOS ──────────────────────────────────────────────
 async function persistirProducto(p) {
-  // Actualizar state local inmediatamente
-  const idx = productos.findIndex(x => x.id === p.id);
-  if (idx >= 0) productos[idx] = p; else productos.unshift(p);
-  localStorage.setItem('solemio-productos', JSON.stringify(productos));
-  setWriteLock('productos'); // evitar que un reload inmediato pise el cambio
+  // Normalizar ID
+  p.id = p.id.replace(/^p_/, '');
+
+  // Buscar usando ID normalizado
+  const idx = productos.findIndex(
+    x => x.id.replace(/^p_/, '') === p.id
+  );
+
+  if (idx >= 0) {
+    // Mantener datos existentes y pisar solo cambios
+    productos[idx] = {
+      ...productos[idx],
+      ...p,
+      id: p.id
+    };
+  } else {
+    productos.unshift(p);
+  }
+
+  localStorage.setItem(
+    'solemio-productos',
+    JSON.stringify(productos)
+  );
+
+  setWriteLock('productos');
 
   try {
-    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
+    await ghWriteJSON(
+      CONFIG.SCRIPT_REPO,
+      CONFIG.PRODUCTOS_FILE,
+      productos,
+      `Editar producto: ${p.nombre}`
+    );
+
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
-    console.warn('No se pudo guardar en GitHub (se guardó localmente):', e.message);
-    alert(`Cambio guardado localmente.\nPara sincronizar con GitHub configurá el token.\n(${e.message})`);
+    console.warn(
+      'No se pudo guardar en GitHub (se guardó localmente):',
+      e.message
+    );
+
+    alert(
+      `Cambio guardado localmente.\n` +
+      `Para sincronizar con GitHub configurá el token.\n` +
+      `(${e.message})`
+    );
   }
 }
 
@@ -757,7 +791,7 @@ async function saveProd() {
 
   const cantidad = parseInt(document.getElementById('p-cantidad').value) || 0;
   const p = {
-    id:          editingProdId || uid(),
+    id: (editingProdId || uid()).replace(/^p_/, ''),
     nombre,
     marca:       document.getElementById('p-marca').value.trim(),
     precio:      parseFloat(document.getElementById('p-precio').value) || 0,
