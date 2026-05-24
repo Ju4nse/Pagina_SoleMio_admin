@@ -147,34 +147,28 @@ async function getSHA(repo, file) {
 }
 
 async function checkForUpdates() {
-  // No verificar si hay un write lock activo (acabamos de escribir nosotros)
-  if (hasWriteLock('productos') || hasWriteLock('compras')) return;
-
   const shaProds = await getSHA(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
   const shaComps = await getSHA(CONFIG.PAGES_REPO,  CONFIG.COMPRAS_FILE);
 
-  let hayNovedad = false;
-
   if (shaProds && shaProds !== _knownSHA.productos) {
     if (_knownSHA.productos) {
-      // SHA cambió desde la última vez → recargar
+      // SHA cambió — forzar recarga ignorando el write lock
+      // (el lock protege contra recargas accidentales, no contra cambios reales remotos)
       console.log('🔄 productos.json cambió en GitHub — recargando...');
-      await cargarProductos();
+      await cargarProductos(true);
     }
     _knownSHA.productos = shaProds;
-    hayNovedad = true;
   }
 
   if (shaComps && shaComps !== _knownSHA.compras) {
     if (_knownSHA.compras) {
       console.log('🔄 compras.json cambió en GitHub — recargando...');
-      await cargarCompras();
+      await cargarCompras(true);
       if (document.getElementById('tab-compras')?.classList.contains('active')) {
         renderCompras();
       }
     }
     _knownSHA.compras = shaComps;
-    hayNovedad = true;
   }
 }
 
@@ -513,9 +507,22 @@ function hasWriteLock(key) {
 }
 
 // ── CARGAR DATOS ───────────────────────────────────────────────
-async function cargarProductos() {
-  // Spinner
+async function cargarProductos(forzar = false) {
+  // forzar=true: el polling detectó un cambio real → ignorar write lock
   const grid = document.getElementById('catalogo-grid');
+
+  // ─────────────────────────────────────────────
+  // 1. Si acabamos de escribir Y no es forzado → usar local
+  // ─────────────────────────────────────────────
+  if (!forzar && hasWriteLock('productos')) {
+    const local = localStorage.getItem('solemio-productos');
+    if (local) {
+      productos = JSON.parse(local);
+      renderCatalogo();
+      console.log('⏳ Write lock activo — usando buffer local');
+      return;
+    }
+  }
 
   if (grid) {
     grid.innerHTML = `
@@ -529,24 +536,6 @@ async function cargarProductos() {
         </svg>
         Cargando catálogo…
       </div>`;
-  }
-
-  // ─────────────────────────────────────────────
-  // 1. Si acabamos de escribir → usar local
-  // ─────────────────────────────────────────────
-  if (hasWriteLock('productos')) {
-    const local =
-      localStorage.getItem('solemio-productos');
-
-    if (local) {
-      productos = JSON.parse(local);
-      renderCatalogo();
-
-      console.log(
-        '⏳ Write lock activo — usando buffer local'
-      );
-      return;
-    }
   }
 
   // ─────────────────────────────────────────────
@@ -688,13 +677,13 @@ async function cargarProductos() {
   }
 }
 
-async function cargarCompras() {
+async function cargarCompras(forzar = false) {
   // 1. Buffer local
   const local = localStorage.getItem('solemio-compras');
   if (local) compras = JSON.parse(local);
 
-  // 2. Si hay un write lock activo, no pisamos con el remoto
-  if (hasWriteLock('compras')) {
+  // 2. Si hay write lock Y no es forzado → respetar cache local
+  if (!forzar && hasWriteLock('compras')) {
     console.log('⏳ Write lock activo — usando buffer local para compras');
     return;
   }
