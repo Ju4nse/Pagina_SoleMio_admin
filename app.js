@@ -335,12 +335,7 @@ async function ghReadJSON(repo, file) {
       throw new Error(`${file} llegó vacío`);
     }
 
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error('Contenido recibido:', text.slice(0, 300));
-      throw new Error(`JSON inválido: ${e.message}`);
-    }
+    return JSON.parse(text);
 
   } catch (err) {
     console.warn(`Raw falló (${err.message}), probando GitHub API...`);
@@ -349,10 +344,7 @@ async function ghReadJSON(repo, file) {
       `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
       {
         headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          ...(ghToken ? {
-            'Authorization': `token ${ghToken}`
-          } : {})
+          'Accept': 'application/vnd.github.v3+json'
         },
         cache: 'no-store'
       }
