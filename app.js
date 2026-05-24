@@ -486,11 +486,20 @@ async function ghWriteJSON(repo, file, data, mensaje) {
 
   return save();
 }
-// ── WRITE LOCK ────────────────────────────────────────────────
-// Cuando se hace una escritura (eliminar/guardar), se bloquea el
-// fetch remoto por 60s para que GitHub tenga tiempo de procesar
-// el commit antes de que una recarga pise los cambios locales.
+// ── WRITE LOCK + SHA TRACKING ────────────────────────────────
+// Después de escribir, actualizamos _knownSHA con el SHA nuevo
+// para que el polling sepa que ese cambio ya lo conocemos
+// y no lo trate como un cambio "externo" que hay que recargar.
 const WRITE_LOCK_TTL = 60 * 1000; // 60 segundos
+
+function actualizarSHALocal(file, respuestaGitHub) {
+  // La API de GitHub devuelve { content: { sha: '...' } } después de un PUT
+  const sha = respuestaGitHub?.content?.sha;
+  if (!sha) return;
+  if (file === CONFIG.PRODUCTOS_FILE) _knownSHA.productos = sha;
+  if (file === CONFIG.COMPRAS_FILE)   _knownSHA.compras   = sha;
+  console.log(`📌 SHA local actualizado para ${file}: ${sha.slice(0,7)}`);
+}
 
 function setWriteLock(key) {
   localStorage.setItem(`solemio-wlock-${key}`, Date.now().toString());
@@ -761,7 +770,8 @@ async function eliminarProductoDB(id) {
   setWriteLock('productos');
 
   try {
-    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
+    const r = await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
+    actualizarSHALocal(CONFIG.PRODUCTOS_FILE, r);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo eliminar en GitHub:', e.message);
@@ -788,7 +798,8 @@ async function eliminarCompraDB(id) {
   setWriteLock('compras');
 
   try {
-    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Eliminar compra ${id}`);
+    const r = await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.COMPRAS_FILE, compras, `Eliminar compra ${id}`);
+    actualizarSHALocal(CONFIG.COMPRAS_FILE, r);
   } catch (e) {
     console.warn('No se pudo eliminar compra en GitHub:', e.message);
   }
@@ -1144,7 +1155,8 @@ async function savePurchase() {
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     setWriteLock('productos');
     try {
-      await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
+      const rStock = await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
+      actualizarSHALocal(CONFIG.PRODUCTOS_FILE, rStock);
     } catch (e) {
       console.warn('No se pudo actualizar stock en GitHub:', e.message);
     }
