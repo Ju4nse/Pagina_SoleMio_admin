@@ -317,53 +317,34 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  // 1. Intentar API GitHub primero (más fresca)
-  try {
-    const apiRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        cache: 'no-store'
-      }
-    );
+  const apiUrl =
+    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`;
 
-    if (apiRes.ok) {
-      const j = await apiRes.json();
-
-      // caso normal: API devuelve content base64
-      if (j.content) {
-        return JSON.parse(
-          atob(j.content.replace(/\n/g, ''))
-        );
-      }
-    }
-  } catch (e) {
-    console.warn('API GitHub falló:', e);
-  }
-
-  // 2. Fallback raw
-  const rawUrl =
-    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
-
-  const rawRes = await fetch(rawUrl, {
-    cache: 'reload'
+  const res = await fetch(apiUrl, {
+    headers: {
+      'Accept':
+        'application/vnd.github.v3+json'
+    },
+    cache: 'no-store'
   });
 
-  if (!rawRes.ok) {
+  if (!res.ok) {
     throw new Error(
-      `No se pudo leer ${file} (${rawRes.status})`
+      `GitHub API falló (${res.status})`
     );
   }
 
-  const text = await rawRes.text();
+  const j = await res.json();
 
-  if (!text.trim()) {
-    throw new Error(`${file} vacío`);
+  if (!j.content) {
+    throw new Error(
+      `GitHub API no devolvió contenido para ${file}`
+    );
   }
 
-  return JSON.parse(text);
+  return JSON.parse(
+    atob(j.content.replace(/\n/g, ''))
+  );
 }
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
