@@ -1,3 +1,4 @@
+
 /* ================================================================
    AUTH — Login con SHA-256
    ================================================================
@@ -81,10 +82,10 @@ async function doLogin() {
 
   if (user === savedUser && hash === savedHash) {
     setSession('admin');
-    showApp();
+    await startApp();
   } else if (user === guestUser && hash === guestHash) {
     setSession('guest');
-    showApp();
+    await startApp();
   } else {
     errEl.textContent = 'Usuario o contraseña incorrectos';
     errEl.style.animation = 'none';
@@ -98,24 +99,39 @@ async function doLogin() {
   btnEl.textContent = 'Ingresar';
 }
 
-function doGuestLogin() {
+async function doGuestLogin() {
   setSession('guest');
-  showApp();
+  await startApp();
 }
 
 function doLogout() {
   sessionStorage.removeItem(AUTH.SESSION_KEY);
-  document.getElementById('app').style.display          = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  currentRole = null;
+  // No limpiamos localStorage — conservamos el cache para que el próximo
+  // login muestre datos inmediatamente. El rol correcto se aplica en startApp().
+  mostrarPantallaLogin();
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').textContent = '';
 }
 
-function showApp() {
+function mostrarPantallaApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display          = 'block';
-  applyRole();
+}
+
+function mostrarPantallaLogin() {
+  document.getElementById('app').style.display          = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// Secuencia de arranque garantizada — siempre en este orden:
+// 1. token  2. rol visual  3. datos  4. render
+async function startApp() {
+  loadConfig();           // 1. ghToken disponible
+  applyRole();            // 2. UI según rol (tabs, badges) — ANTES de renderizar
+  mostrarPantallaApp();   // 3. mostrar la app
+  await Promise.all([cargarProductos(), cargarCompras()]); // 4. datos + render
 }
 
 function applyRole() {
@@ -370,25 +386,29 @@ function hasWriteLock(key) {
 
 // ── CARGAR DATOS ───────────────────────────────────────────────
 async function cargarProductos() {
-  // 1. Buffer local: render instantáneo solo si hay datos reales guardados
+  // Mostrar spinner (rol ya está seteado porque startApp() lo hizo antes)
+  const grid = document.getElementById('catalogo-grid');
+  if (grid) grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    Cargando catálogo…</div>`;
+
+  // 1. Write lock activo: acaba de haber una escritura, usar cache local
+  if (hasWriteLock('productos')) {
+    const local = localStorage.getItem('solemio-productos');
+    if (local) { productos = JSON.parse(local); }
+    // render con rol ya seteado
+    renderCatalogo();
+    console.log('⏳ Write lock activo — usando buffer local');
+    return;
+  }
+
+  // 2. Mostrar cache local mientras llega el remoto (render inmediato)
   const local = localStorage.getItem('solemio-productos');
   if (local) {
     productos = JSON.parse(local);
-    renderCatalogo(); // rol ya está seteado porque loadConfig() fue primero
-  } else {
-    // Sin datos locales: mostrar spinner hasta que llegue el remoto
-    const grid = document.getElementById('catalogo-grid');
-    if (grid) grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      Cargando catálogo…</div>`;
-  }
-
-  // 2. Si hay un write lock activo, no pisamos con el remoto
-  if (hasWriteLock('productos')) {
-    console.log('⏳ Write lock activo — usando buffer local para productos');
-    return;
+    renderCatalogo(); // rol ya está seteado — oculto funciona correctamente
   }
 
   // 3. Leer productos.json del repo del script (fuente de verdad)
@@ -1044,16 +1064,11 @@ async function init() {
   initTheme();
 
   if (!isLoggedIn()) {
-    document.getElementById("app").style.display = "none";
-    document.getElementById("login-screen").style.display = "flex";
+    mostrarPantallaLogin();
     return;
   }
 
-  // Cargar config PRIMERO — necesitamos ghToken y currentRole antes de cualquier render
-  loadConfig();
-  showApp(); // aplica rol después de loadConfig
-
-  await Promise.all([cargarProductos(), cargarCompras()]);
+  await startApp();
 }
 
 init();
