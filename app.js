@@ -321,56 +321,80 @@ async function ghReadJSON(repo, file) {
     `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
 
   try {
-    // 1. Intentar RAW primero (más rápido)
+    console.log('Intentando RAW:', rawUrl);
+
     const rawRes = await fetch(rawUrl, {
       cache: 'no-store'
     });
 
-    if (rawRes.ok) {
-      const text = await rawRes.text();
+    console.log('RAW status:', rawRes.status);
 
-      if (text.trim()) {
-        return JSON.parse(text);
-      }
+    const text = await rawRes.text();
+
+    console.log(
+      'RAW chars:',
+      text.length,
+      'preview:',
+      text.slice(0, 80)
+    );
+
+    if (!rawRes.ok) {
+      throw new Error(`RAW HTTP ${rawRes.status}`);
     }
 
-    throw new Error('Raw falló');
+    if (!text.trim()) {
+      throw new Error('RAW vacío');
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`RAW JSON inválido: ${e.message}`);
+    }
 
   } catch (err) {
     console.warn(
-      `Raw falló (${err.message}), probando GitHub API...`
+      `RAW falló (${err.message}), probando API...`
     );
 
-    // 2. Metadata del archivo
-    const apiRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        cache: 'no-store'
-      }
-    );
+    const apiUrl =
+      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`;
 
-    if (!apiRes.ok) {
-      throw new Error(
-        `GitHub API falló (${apiRes.status})`
-      );
-    }
+    console.log('Intentando API:', apiUrl);
+
+    const apiRes = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      cache: 'no-store'
+    });
+
+    console.log('API status:', apiRes.status);
 
     const j = await apiRes.json();
 
-    // Archivo chico → viene base64
+    console.log('API response:', j);
+
+    if (!apiRes.ok) {
+      throw new Error(
+        j.message || `API HTTP ${apiRes.status}`
+      );
+    }
+
+    // Archivo chico
     if (j.content && j.encoding === 'base64') {
+      console.log('Usando base64');
+
       return JSON.parse(
         atob(j.content.replace(/\n/g, ''))
       );
     }
 
-    // Archivo grande → usar download_url
+    // Archivo grande
     if (j.download_url) {
       console.log(
-        'Archivo grande, usando download_url'
+        'Archivo grande, usando download_url:',
+        j.download_url
       );
 
       const res = await fetch(
@@ -380,13 +404,27 @@ async function ghReadJSON(repo, file) {
         }
       );
 
-      if (!res.ok) {
+      console.log(
+        'download_url status:',
+        res.status
+      );
+
+      const text = await res.text();
+
+      console.log(
+        'download_url chars:',
+        text.length,
+        'preview:',
+        text.slice(0, 80)
+      );
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
         throw new Error(
-          `download_url falló (${res.status})`
+          `download_url JSON inválido: ${e.message}`
         );
       }
-
-      return await res.json();
     }
 
     throw new Error(
