@@ -457,92 +457,177 @@ function hasWriteLock(key) {
 
 // ── CARGAR DATOS ───────────────────────────────────────────────
 async function cargarProductos() {
-  // Mostrar spinner (rol ya está seteado porque startApp() lo hizo antes)
+  // Spinner
   const grid = document.getElementById('catalogo-grid');
-  if (grid) grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-    </svg>
-    Cargando catálogo…</div>`;
 
-  // 1. Write lock activo: acaba de haber una escritura, usar cache local
+  if (grid) {
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <svg viewBox="0 0 24 24" fill="none"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        Cargando catálogo…
+      </div>`;
+  }
+
+  // ─────────────────────────────────────────────
+  // 1. Si acabamos de escribir → usar local
+  // ─────────────────────────────────────────────
   if (hasWriteLock('productos')) {
-    const local = localStorage.getItem('solemio-productos');
-    if (local) { productos = JSON.parse(local); }
-    // render con rol ya seteado
-    renderCatalogo();
-    console.log('⏳ Write lock activo — usando buffer local');
-    return;
+    const local =
+      localStorage.getItem('solemio-productos');
+
+    if (local) {
+      productos = JSON.parse(local);
+      renderCatalogo();
+
+      console.log(
+        '⏳ Write lock activo — usando buffer local'
+      );
+      return;
+    }
   }
 
-  // 2. Mostrar cache local mientras llega el remoto (render inmediato)
-  const local = localStorage.getItem('solemio-productos');
+  // ─────────────────────────────────────────────
+  // 2. Mostrar cache rápido mientras carga GitHub
+  // ─────────────────────────────────────────────
+  const local =
+    localStorage.getItem('solemio-productos');
+
   if (local) {
-    productos = JSON.parse(local);
-    renderCatalogo(); // rol ya está seteado — oculto funciona correctamente
+    try {
+      productos = JSON.parse(local);
+      renderCatalogo();
+    } catch (_) {}
   }
 
-  // 3. Leer productos.json del repo del script (fuente de verdad)
+  // ─────────────────────────────────────────────
+  // 3. Leer GitHub (fuente de verdad)
+  // ─────────────────────────────────────────────
   try {
-    const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
-    const raw = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
-      id:          p.id          || p.codigo   || uid(),
-      nombre:      p.nombre      || p.title    || p.name  || '',
-      marca:       p.marca       || p.brand    || '',
-      precio:      parseFloat(p.precio || p.price || 0),
-      color:       p.color       || '',
-      talles:      p.talles      || p.sizes    || '',
-      stock:       p.stock       || p.availability || 'out of stock',
-      cantidad:    p.cantidad    != null ? p.cantidad : null,
-      imagen:      p.imagen      || p.image_link   || p.image || '',
-      descripcion: p.descripcion || p.description  || '',
-      oculto:      p.oculto === true || p.oculto === 'true',
+    const data = await ghReadJSON(
+      CONFIG.SCRIPT_REPO,
+      CONFIG.PRODUCTOS_FILE
+    );
+
+    const raw = (
+      Array.isArray(data)
+        ? data
+        : (data.productos || [])
+    ).map(p => ({
+      id:
+        (p.id || p.codigo || uid())
+          .toString()
+          .replace(/^p_/, ''),
+
+      nombre:
+        p.nombre ||
+        p.title ||
+        p.name ||
+        '',
+
+      marca:
+        p.marca ||
+        p.brand ||
+        '',
+
+      precio: parseFloat(
+        p.precio ||
+        p.price ||
+        0
+      ),
+
+      color:
+        p.color ||
+        '',
+
+      talles:
+        p.talles ||
+        p.sizes ||
+        '',
+
+      stock:
+        p.stock ||
+        p.availability ||
+        'out of stock',
+
+      cantidad:
+        p.cantidad != null
+          ? p.cantidad
+          : null,
+
+      imagen:
+        p.imagen ||
+        p.image_link ||
+        p.image ||
+        '',
+
+      descripcion:
+        p.descripcion ||
+        p.description ||
+        '',
+
+      oculto:
+        p.oculto === true ||
+        p.oculto === 'true',
     }));
 
-    // Deduplicar: si hay dos productos con el mismo ID base
-    // (ej: "ABC123" y "p_ABC123"), quedarse con el que tenga más datos
+    // ─────────────────────────────────────────────
+    // 4. Deduplicar IDs (p_xxx vs xxx)
+    // ─────────────────────────────────────────────
     const seen = new Map();
+
     for (const p of raw) {
-      // Normalizar: quitar prefijo "p_" para comparar
-      const baseId = p.id.replace(/^p_/, '');
-      const existing = seen.get(baseId);
+      const existing = seen.get(p.id);
+
       if (!existing) {
-        seen.set(baseId, { ...p, id: baseId });
-      } else {
-        // Mantener el que tenga precio > 0, o más campos completos
-        const score  = (x) => (x.precio > 0 ? 2 : 0) + (x.imagen ? 1 : 0) + (x.descripcion ? 1 : 0);
-        if (score(p) > score(existing)) seen.set(baseId, { ...p, id: baseId });
+        seen.set(p.id, p);
+        continue;
+      }
+
+      // quedarse con el más completo
+      const score = x =>
+        (x.precio > 0 ? 2 : 0) +
+        (x.imagen ? 1 : 0) +
+        (x.descripcion ? 1 : 0);
+
+      if (score(p) > score(existing)) {
+        seen.set(p.id, p);
       }
     }
-    const localProductos =
-     JSON.parse(
-       localStorage.getItem('solemio-productos')
-       || '[]'
-     );
-   
-   const localMap = new Map(
-     localProductos.map(p => [p.id, p])
-   );
-   
-   productos = Array.from(seen.values()).map(p => {
-     const local = localMap.get(p.id);
-   
-     return local
-       ? {
-           ...p,
-           oculto: local.oculto ?? p.oculto,
-           cantidad:
-             local.cantidad ?? p.cantidad
-         }
-       : p;
-   });
-    localStorage.setItem('solemio-productos', JSON.stringify(productos));
+
+    productos =
+      Array.from(seen.values());
+
+    // Guardar cache local
+    localStorage.setItem(
+      'solemio-productos',
+      JSON.stringify(productos)
+    );
+
     renderCatalogo();
-    // Log para verificar precios
-    const muestra = productos.slice(0, 3).map(p => `${p.nombre}: precio=${p.precio}`).join(' | ');
-    console.log(`✓ ${productos.length} productos cargados desde GitHub — muestra: ${muestra}`);
+
+    const muestra = productos
+      .slice(0, 3)
+      .map(
+        p =>
+          `${p.nombre}: precio=${p.precio}`
+      )
+      .join(' | ');
+
+    console.log(
+      `✓ ${productos.length} productos cargados desde GitHub — muestra: ${muestra}`
+    );
+
   } catch (e) {
-    console.warn('No se pudo leer productos.json, usando buffer local:', e.message);
+    console.warn(
+      'No se pudo leer productos.json, usando buffer local:',
+      e.message
+    );
   }
 }
 
