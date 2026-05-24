@@ -294,6 +294,7 @@ function showTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'compras') renderCompras();
+  if (name === 'sync')    fillSyncInputs();
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -960,12 +961,25 @@ function saveConfig() {
 }
 
 function loadConfig() {
+  // Solo cargar en memoria — NO tocar el DOM aquí
+  // Los inputs se rellenan cuando el tab sync se muestra (fillSyncInputs)
   const t = localStorage.getItem('gh-token');
   const r = localStorage.getItem('gh-repo');
   const w = localStorage.getItem('gh-workflow');
-  if (t) { ghToken = t; document.getElementById('gh-token').value    = t; }
-  if (r) document.getElementById('gh-repo').value     = r;
-  if (w) document.getElementById('gh-workflow').value = w;
+  if (t) ghToken = t;
+  if (r) localStorage.getItem('gh-repo');   // solo validar que existe
+}
+
+function fillSyncInputs() {
+  const t = localStorage.getItem('gh-token');
+  const r = localStorage.getItem('gh-repo');
+  const w = localStorage.getItem('gh-workflow');
+  const elT = document.getElementById('gh-token');
+  const elR = document.getElementById('gh-repo');
+  const elW = document.getElementById('gh-workflow');
+  if (elT && t) elT.value = t;
+  if (elR && r) elR.value = r;
+  if (elW && w) elW.value = w;
 }
 
 async function pollWorkflowResult(token, repo, startedAt) {
