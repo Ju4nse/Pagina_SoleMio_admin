@@ -560,8 +560,8 @@ function renderCatalogo() {
 
   // Actualizar opciones de marcas
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
-  const mSel   = document.getElementById('filtro-marca');
-  const mCur   = mSel.value;
+  const mSel = document.getElementById('filtro-marca');
+  const mCur = mSel?.value || '';
   if (mSel) {
     mSel.innerHTML =
       '<option value="">Todas las marcas</option>' +
