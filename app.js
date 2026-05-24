@@ -133,6 +133,7 @@ async function startApp() {
    
   await cargarProductos();
   await cargarCompras();
+}
 
 function applyRole() {
   const isG = isGuest();
