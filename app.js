@@ -1,4 +1,3 @@
-
 /* ================================================================
    AUTH — Login con SHA-256
    ================================================================
@@ -413,7 +412,7 @@ async function cargarProductos() {
 
   // 3. Leer productos.json del repo del script (fuente de verdad)
   try {
-    const data = await ghReadJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE);
+    const data = await ghReadJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE);
     const raw = (Array.isArray(data) ? data : (data.productos || [])).map(p => ({
       id:          p.id          || p.codigo   || uid(),
       nombre:      p.nombre      || p.title    || p.name  || '',
@@ -486,7 +485,7 @@ async function persistirProducto(p) {
   setWriteLock('productos'); // evitar que un reload inmediato pise el cambio
 
   try {
-    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
+    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Editar producto: ${p.nombre}`);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo guardar en GitHub (se guardó localmente):', e.message);
@@ -500,7 +499,7 @@ async function eliminarProductoDB(id) {
   setWriteLock('productos');
 
   try {
-    await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
+    await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Eliminar producto ${id}`);
     console.log('✓ productos.json actualizado en GitHub');
   } catch (e) {
     console.warn('No se pudo eliminar en GitHub:', e.message);
@@ -883,7 +882,7 @@ async function savePurchase() {
     localStorage.setItem('solemio-productos', JSON.stringify(productos));
     setWriteLock('productos');
     try {
-      await ghWriteJSON(CONFIG.PAGES_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
+      await ghWriteJSON(CONFIG.SCRIPT_REPO, CONFIG.PRODUCTOS_FILE, productos, `Stock actualizado por compra ${fecha}`);
     } catch (e) {
       console.warn('No se pudo actualizar stock en GitHub:', e.message);
     }
