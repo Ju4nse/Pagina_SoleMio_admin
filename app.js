@@ -127,10 +127,12 @@ function mostrarPantallaLogin() {
 // Secuencia de arranque garantizada — siempre en este orden:
 // 1. token  2. rol visual  3. datos  4. render
 async function startApp() {
-  loadConfig();           // 1. ghToken disponible
-  applyRole();            // 2. UI según rol (tabs, badges) — ANTES de renderizar
-  mostrarPantallaApp();   // 3. mostrar la app
-   
+  loadConfig();
+  applyRole();
+  mostrarPantallaApp();
+
+  await new Promise(r => requestAnimationFrame(r));
+
   await cargarProductos();
   await cargarCompras();
 }
