@@ -317,34 +317,82 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  const apiUrl =
-    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`;
+  const rawUrl =
+    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
 
-  const res = await fetch(apiUrl, {
-    headers: {
-      'Accept':
-        'application/vnd.github.v3+json'
-    },
-    cache: 'no-store'
-  });
+  try {
+    // 1. Intentar RAW primero (más rápido)
+    const rawRes = await fetch(rawUrl, {
+      cache: 'no-store'
+    });
 
-  if (!res.ok) {
-    throw new Error(
-      `GitHub API falló (${res.status})`
+    if (rawRes.ok) {
+      const text = await rawRes.text();
+
+      if (text.trim()) {
+        return JSON.parse(text);
+      }
+    }
+
+    throw new Error('Raw falló');
+
+  } catch (err) {
+    console.warn(
+      `Raw falló (${err.message}), probando GitHub API...`
     );
-  }
 
-  const j = await res.json();
+    // 2. Metadata del archivo
+    const apiRes = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
+      {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        cache: 'no-store'
+      }
+    );
 
-  if (!j.content) {
+    if (!apiRes.ok) {
+      throw new Error(
+        `GitHub API falló (${apiRes.status})`
+      );
+    }
+
+    const j = await apiRes.json();
+
+    // Archivo chico → viene base64
+    if (j.content && j.encoding === 'base64') {
+      return JSON.parse(
+        atob(j.content.replace(/\n/g, ''))
+      );
+    }
+
+    // Archivo grande → usar download_url
+    if (j.download_url) {
+      console.log(
+        'Archivo grande, usando download_url'
+      );
+
+      const res = await fetch(
+        `${j.download_url}?t=${Date.now()}`,
+        {
+          cache: 'no-store'
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(
+          `download_url falló (${res.status})`
+        );
+      }
+
+      return await res.json();
+    }
+
     throw new Error(
       `GitHub API no devolvió contenido para ${file}`
     );
   }
-
-  return JSON.parse(
-    atob(j.content.replace(/\n/g, ''))
-  );
 }
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
