@@ -317,84 +317,105 @@ function fmtFecha(iso) {
 
 // ── GITHUB JSON — HELPERS ─────────────────────────────────────
 async function ghReadJSON(repo, file) {
-  const rawUrl =
-    `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
-
-  try {
-    const rawRes = await fetch(rawUrl, {
+  const apiRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
+    {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json'
+      },
       cache: 'no-store'
-    });
-
-    const text = await rawRes.text();
-
-    if (!rawRes.ok) {
-      throw new Error(`HTTP ${rawRes.status}`);
     }
+  );
 
-    if (!text.trim()) {
-      throw new Error(`${file} llegó vacío`);
-    }
-
-    return JSON.parse(text);
-
-  } catch (err) {
-    console.warn(`Raw falló (${err.message}), probando GitHub API...`);
-
-    const apiRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}?t=${Date.now()}`,
-      {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        cache: 'no-store'
-      }
+  if (!apiRes.ok) {
+    throw new Error(
+      `No se pudo leer ${file} (${apiRes.status})`
     );
-
-    if (!apiRes.ok) {
-      throw new Error(`API GitHub falló (${apiRes.status})`);
-    }
-
-    const j = await apiRes.json();
-
-    if (!j.content) {
-      throw new Error('GitHub API no devolvió contenido');
-    }
-
-    return JSON.parse(atob(j.content.replace(/\n/g, '')));
   }
+
+  const j = await apiRes.json();
+
+  if (!j.content) {
+    throw new Error(
+      `GitHub API no devolvió contenido para ${file}`
+    );
+  }
+
+  return JSON.parse(
+    atob(j.content.replace(/\n/g, ''))
+  );
 }
+
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
 async function ghWriteJSON(repo, file, data, mensaje) {
-  if (!ghToken) throw new Error('No hay token de GitHub configurado');
+  if (!ghToken) {
+    throw new Error('No hay token de GitHub configurado');
+  }
 
-  const apiUrl = `https://api.github.com/repos/${repo}/contents/${file}`;
+  const apiUrl =
+    `https://api.github.com/repos/${repo}/contents/${file}`;
+
   const headers = {
     'Authorization': `token ${ghToken}`,
     'Accept': 'application/vnd.github.v3+json',
     'Content-Type': 'application/json',
   };
 
-  // Obtener el SHA actual del archivo (necesario para actualizar)
-  let sha = null;
-  try {
+  async function save(retry = false) {
     const r = await fetch(apiUrl, { headers });
-    if (r.ok) { const j = await r.json(); sha = j.sha; }
-  } catch (_) {}
 
-  const body = {
-    message: mensaje || `Actualizar ${file}`,
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
-    ...(sha ? { sha } : {}),
-  };
+    if (!r.ok) {
+      throw new Error(
+        `No se pudo obtener SHA (${r.status})`
+      );
+    }
 
-  const res = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}));
-    throw new Error(j.message || `Error al escribir ${file} (${res.status})`);
+    const j = await r.json();
+
+    const body = {
+      message:
+        mensaje || `Actualizar ${file}`,
+      content: btoa(
+        unescape(
+          encodeURIComponent(
+            JSON.stringify(data, null, 2)
+          )
+        )
+      ),
+      sha: j.sha
+    };
+
+    const res = await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (res.status === 409 && !retry) {
+      console.warn(
+        '409 conflicto — reintentando...'
+      );
+
+      await new Promise(r => setTimeout(r, 1000));
+
+      return save(true);
+    }
+
+    if (!res.ok) {
+      const err =
+        await res.json().catch(() => ({}));
+
+      throw new Error(
+        err.message ||
+        `Error al escribir ${file} (${res.status})`
+      );
+    }
+
+    return res.json();
   }
-  return res.json();
-}
 
+  return save();
+}
 // ── WRITE LOCK ────────────────────────────────────────────────
 // Cuando se hace una escritura (eliminar/guardar), se bloquea el
 // fetch remoto por 60s para que GitHub tenga tiempo de procesar
