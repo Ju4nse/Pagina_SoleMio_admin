@@ -378,7 +378,7 @@ async function ghWriteJSON(repo, file, data, mensaje) {
       content: btoa(
         unescape(
           encodeURIComponent(
-            JSON.stringify(data, null, 2)
+            JSON.stringify(data)
           )
         )
       ),
