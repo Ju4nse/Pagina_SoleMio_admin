@@ -1078,4 +1078,25 @@ async function init() {
   await startApp();
 }
 
+// ── Exponer funciones globales para los onclick del HTML ──────
+window.doLogin                 = doLogin;
+window.doGuestLogin            = doGuestLogin;
+window.doLogout                = doLogout;
+window.toggleTheme             = toggleTheme;
+window.togglePass              = togglePass;
+window.showTab                 = showTab;
+window.renderCatalogo          = renderCatalogo;
+window.openProdModal           = openProdModal;
+window.closeProdModal          = closeProdModal;
+window.saveProd                = saveProd;
+window.actualizarBadgeStock    = actualizarBadgeStock;
+window.confirmarEliminar       = confirmarEliminar;
+window.openPurchaseModal       = openPurchaseModal;
+window.closePurchaseModal      = closePurchaseModal;
+window.savePurchase            = savePurchase;
+window.confirmarEliminarCompra = confirmarEliminarCompra;
+window.runScript               = runScript;
+window.saveConfig              = saveConfig;
+window.cambiarPassword         = cambiarPassword;
+
 init();
