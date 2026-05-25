@@ -157,9 +157,8 @@ function mostrarPantallaLogin() {
    ================================================================ */
 
 // ── Pegá acá tus claves públicas de Supabase ──────────────────
-const SUPABASE_URL      = 'https://TU_PROYECTO.supabase.co';  // <-- reemplazá
-const SUPABASE_ANON_KEY = 'TU_ANON_KEY';                      // <-- reemplazá
-
+const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co'  // <-- reemplazá
+const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f'
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
