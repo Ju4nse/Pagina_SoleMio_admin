@@ -1,16 +1,37 @@
 /* ================================================================
    AUTH — Login con SHA-256
-   ================================================================
-
-   CÓMO CAMBIAR LA CONTRASEÑA HARDCODEADA:
-   1. Abrí la consola del navegador (F12)
-   2. Pegá: await hashStr("tu_nueva_contraseña")
-   3. Copiá el resultado y reemplazá PASS_HASH abajo.
-
-   Usuario por defecto : admin
-   Contraseña por defecto: solemio2024
-
    ================================================================ */
+
+// ── RATE LIMITING — máx 5 intentos fallidos, bloqueo 5 min ───
+const RATE = {
+  MAX_INTENTOS: 5,
+  BLOQUEO_MS:   5 * 60 * 1000, // 5 minutos
+  KEY_INTENTOS: 'solemio-login-intentos',
+  KEY_BLOQUEADO: 'solemio-login-bloqueado',
+};
+
+function loginBloqueado() {
+  const hasta = parseInt(localStorage.getItem(RATE.KEY_BLOQUEADO) || '0');
+  if (Date.now() < hasta) return Math.ceil((hasta - Date.now()) / 60000);
+  return 0;
+}
+
+function registrarIntentoFallido() {
+  const intentos = parseInt(localStorage.getItem(RATE.KEY_INTENTOS) || '0') + 1;
+  localStorage.setItem(RATE.KEY_INTENTOS, intentos);
+  if (intentos >= RATE.MAX_INTENTOS) {
+    const hasta = Date.now() + RATE.BLOQUEO_MS;
+    localStorage.setItem(RATE.KEY_BLOQUEADO, hasta);
+    localStorage.removeItem(RATE.KEY_INTENTOS);
+    return -1; // señal de bloqueo
+  }
+  return RATE.MAX_INTENTOS - intentos; // intentos restantes
+}
+
+function resetearIntentos() {
+  localStorage.removeItem(RATE.KEY_INTENTOS);
+  localStorage.removeItem(RATE.KEY_BLOQUEADO);
+}
 
 const AUTH = {
   // ── ADMIN ──────────────────────────────────────────────────
@@ -39,8 +60,11 @@ function isLoggedIn() {
   try {
     const raw = sessionStorage.getItem(AUTH.SESSION_KEY);
     if (!raw) return false;
-    const { expires, role } = JSON.parse(raw);
+    const { expires, role, fp } = JSON.parse(raw);
     if (Date.now() > expires) { sessionStorage.removeItem(AUTH.SESSION_KEY); return false; }
+    // Verificar fingerprint
+    const currentFp = `${navigator.language}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+    if (fp && fp !== currentFp) { sessionStorage.removeItem(AUTH.SESSION_KEY); return false; }
     currentRole = role || 'admin';
     return true;
   } catch { return false; }
@@ -50,43 +74,65 @@ function isAdmin() { return currentRole === 'admin'; }
 function isGuest() { return currentRole === 'guest'; }
 
 function setSession(role) {
+  // Fingerprint básico — navigator.language + timezone como salt
+  // No es criptográfico pero dificulta reutilizar sesiones copiadas
+  const fp = `${navigator.language}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
   sessionStorage.setItem(AUTH.SESSION_KEY, JSON.stringify({
     expires: Date.now() + AUTH.SESSION_TTL,
     role,
+    fp,
   }));
   currentRole = role;
 }
 
 async function doLogin() {
-  const user    = document.getElementById('login-user').value.trim();
-  const pass    = document.getElementById('login-pass').value;
-  const errEl   = document.getElementById('login-error');
-  const btnEl   = document.querySelector('.login-btn');
+  const errEl = document.getElementById('login-error');
+  const btnEl = document.querySelector('.login-btn');
+
+  // Verificar bloqueo por intentos fallidos
+  const minsBloqueado = loginBloqueado();
+  if (minsBloqueado > 0) {
+    errEl.textContent = `Demasiados intentos. Esperá ${minsBloqueado} min.`;
+    return;
+  }
+
+  // Sanitizar inputs — solo alfanumérico y algunos especiales
+  const user = document.getElementById('login-user').value.trim().slice(0, 32);
+  const pass = document.getElementById('login-pass').value.slice(0, 128);
+
+  if (!user || !pass) {
+    errEl.textContent = 'Completá usuario y contraseña';
+    return;
+  }
 
   errEl.textContent = '';
   btnEl.disabled    = true;
   btnEl.textContent = 'Verificando…';
 
-  // pequeña pausa para evitar timing attacks
-  await new Promise(r => setTimeout(r, 350));
+  // Pausa fija para evitar timing attacks (no revela si el usuario existe)
+  await new Promise(r => setTimeout(r, 350 + Math.random() * 150));
 
-  const hash = await hashStr(pass);
-
-  // Verificar admin
+  const hash      = await hashStr(pass);
   const savedHash = localStorage.getItem('solemio-pass-hash') || AUTH.PASS_HASH;
   const savedUser = localStorage.getItem('solemio-user')      || AUTH.USER;
-  // Verificar invitado
   const guestHash = localStorage.getItem('solemio-guest-hash') || AUTH.GUEST_HASH;
   const guestUser = localStorage.getItem('solemio-guest-user') || AUTH.GUEST_USER;
 
   if (user === savedUser && hash === savedHash) {
+    resetearIntentos();
     setSession('admin');
     await startApp();
   } else if (user === guestUser && hash === guestHash) {
+    resetearIntentos();
     setSession('guest');
     await startApp();
   } else {
-    errEl.textContent = 'Usuario o contraseña incorrectos';
+    const restantes = registrarIntentoFallido();
+    if (restantes === -1) {
+      errEl.textContent = 'Demasiados intentos. Cuenta bloqueada 5 minutos.';
+    } else {
+      errEl.textContent = `Usuario o contraseña incorrectos (${restantes} intento${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''})`;
+    }
     errEl.style.animation = 'none';
     errEl.offsetHeight;
     errEl.style.animation = '';
@@ -105,9 +151,10 @@ async function doGuestLogin() {
 
 function doLogout() {
   sessionStorage.removeItem(AUTH.SESSION_KEY);
+  sessionStorage.removeItem('solemio-gh-token'); // limpiar token al cerrar sesión
+  ghToken     = '';
   currentRole = null;
-  // No limpiamos localStorage — conservamos el cache para que el próximo
-  // login muestre datos inmediatamente. El rol correcto se aplica en startApp().
+  detenerPolling();
   mostrarPantallaLogin();
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
@@ -132,13 +179,13 @@ let _pollInterval = null;
 const _knownSHA = {};
 
 async function getSHA(repo, file) {
+  // Usamos la API solo cuando hay token (admin).
+  // El invitado no necesita polling — no puede editar nada.
+  if (!ghToken) return null;
   try {
     const res = await fetch(
       `https://api.github.com/repos/${repo}/contents/${file}`,
-      {
-        headers: ghToken ? { 'Authorization': `token ${ghToken}` } : {},
-        cache: 'no-store',
-      }
+      { headers: { 'Authorization': `token ${ghToken}` }, cache: 'no-store' }
     );
     if (!res.ok) return null;
     const j = await res.json();
@@ -390,30 +437,30 @@ function fmtFecha(iso) {
 // Usa la API de GitHub primero (siempre fresco, sin cache CDN).
 // raw.githubusercontent.com tiene cache de hasta 5 min — no sirve para sync.
 async function ghReadJSON(repo, file) {
-  const apiUrl = `https://api.github.com/repos/${repo}/contents/${file}`;
-  const headers = { 'Accept': 'application/vnd.github.v3+json' };
-  if (ghToken) headers['Authorization'] = `token ${ghToken}`;
+  // Lectura: siempre usar raw.githubusercontent con timestamp para romper cache CDN.
+  // La API de GitHub bloquea con CORS cuando no hay token (modo invitado / incógnito).
+  const rawUrl = `https://raw.githubusercontent.com/${repo}/main/${file}?t=${Date.now()}`;
+  const rawRes = await fetch(rawUrl, { cache: 'no-store' });
 
-  const apiRes = await fetch(apiUrl, { headers, cache: 'no-store' });
-
-  if (!apiRes.ok) {
-    throw new Error(`No se pudo leer ${file} (HTTP ${apiRes.status})`);
+  if (rawRes.ok) {
+    const text = await rawRes.text();
+    if (text.trim()) return JSON.parse(text);
   }
 
+  // Fallback: API con token (solo cuando el admin está logueado)
+  if (!ghToken) throw new Error(`No se pudo leer ${file} — repo inaccesible sin token`);
+
+  const apiRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${file}`,
+    { headers: { 'Authorization': `token ${ghToken}`, 'Accept': 'application/vnd.github.v3+json' }, cache: 'no-store' }
+  );
+  if (!apiRes.ok) throw new Error(`No se pudo leer ${file} (HTTP ${apiRes.status})`);
   const j = await apiRes.json();
-
-  // Archivo normal: contenido en base64
-  if (j.content && j.encoding === 'base64') {
-    return JSON.parse(atob(j.content.replace(/\n/g, '')));
-  }
-
-  // Archivo grande (>1MB): GitHub devuelve download_url sin contenido inline
+  if (j.content && j.encoding === 'base64') return JSON.parse(atob(j.content.replace(/\n/g, '')));
   if (j.download_url) {
-    const res = await fetch(`${j.download_url}?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`download_url falló (HTTP ${res.status})`);
-    return res.json();
+    const r = await fetch(`${j.download_url}?t=${Date.now()}`, { cache: 'no-store' });
+    return r.json();
   }
-
   throw new Error(`GitHub API no devolvió contenido para ${file}`);
 }
 // Escribe/actualiza un archivo en GitHub via API (requiere token)
@@ -715,6 +762,16 @@ async function cargarCompras(forzar = false) {
 
 // ── GUARDAR DATOS ──────────────────────────────────────────────
 async function persistirProducto(p) {
+  if (!isAdmin()) { console.warn('Acceso denegado'); return; }
+  // Sanitizar y limitar longitud de campos
+  p.nombre      = String(p.nombre      || '').slice(0, 200).trim();
+  p.marca       = String(p.marca       || '').slice(0, 100).trim();
+  p.color       = String(p.color       || '').slice(0, 100).trim();
+  p.talles      = String(p.talles      || '').slice(0, 100).trim();
+  p.descripcion = String(p.descripcion || '').slice(0, 500).trim();
+  p.precio      = Math.max(0, parseFloat(p.precio)  || 0);
+  p.cantidad    = Math.max(0, parseInt(p.cantidad)   || 0);
+  if (p.imagen && !/^https?:\/\//.test(p.imagen)) p.imagen = '';
   // Normalizar ID
   p.id = p.id.replace(/^p_/, '');
 
@@ -765,6 +822,7 @@ async function persistirProducto(p) {
 }
 
 async function eliminarProductoDB(id) {
+  if (!isAdmin()) { console.warn('Acceso denegado: solo admin puede eliminar productos'); return; }
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
   setWriteLock('productos');
@@ -779,6 +837,10 @@ async function eliminarProductoDB(id) {
 }
 
 async function persistirCompra(c) {
+  if (!isAdmin()) { console.warn('Acceso denegado: solo admin puede registrar compras'); return; }
+  // Sanitizar campos
+  c.notas = String(c.notas || '').slice(0, 500).trim();
+  c.monto = Math.max(0, parseFloat(c.monto) || 0);
   compras.unshift(c);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
   setWriteLock('compras');
@@ -793,6 +855,7 @@ async function persistirCompra(c) {
 }
 
 async function eliminarCompraDB(id) {
+  if (!isAdmin()) { console.warn('Acceso denegado: solo admin puede eliminar compras'); return; }
   compras = compras.filter(c => c.id !== id);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
   setWriteLock('compras');
@@ -1228,22 +1291,21 @@ async function confirmarEliminarCompra(id) {
 // ── GITHUB ACTIONS ─────────────────────────────────────────────
 function saveConfig() {
   ghToken = document.getElementById('gh-token').value.trim();
-  localStorage.setItem('gh-token',    ghToken);
+  // Token en sessionStorage (se borra al cerrar el navegador, no persiste entre sesiones)
+  sessionStorage.setItem('solemio-gh-token', ghToken);
+  // Repo y workflow son datos de config, no secretos — van en localStorage
   localStorage.setItem('gh-repo',     document.getElementById('gh-repo').value);
   localStorage.setItem('gh-workflow', document.getElementById('gh-workflow').value);
 }
 
 function loadConfig() {
-  // Solo cargar en memoria — NO tocar el DOM aquí
-  // Los inputs se rellenan cuando el tab sync se muestra (fillSyncInputs)
-  const t = localStorage.getItem('gh-token');
-  const r = localStorage.getItem('gh-repo');
-  const w = localStorage.getItem('gh-workflow');
+  // Cargar token desde sessionStorage — nunca desde localStorage
+  const t = sessionStorage.getItem('solemio-gh-token');
   if (t) ghToken = t;
 }
 
 function fillSyncInputs() {
-  const t = localStorage.getItem('gh-token');
+  const t = sessionStorage.getItem('solemio-gh-token');
   const r = localStorage.getItem('gh-repo');
   const w = localStorage.getItem('gh-workflow');
   const elT = document.getElementById('gh-token');
