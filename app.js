@@ -136,7 +136,7 @@ function mostrarPantallaLogin() {
 
 // ── Reemplazá SUPABASE_ANON_KEY con la nueva clave que generaste ──
 const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrdHdwa3RteGJmYXB3anN1Z3J4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MzAyMDMsImV4cCI6MjA5NTMwNjIwM30.0rKGdVD8G258H1ST4yn0Niwtu_QzKx0ifJiNRMPdgX8';  // 
+const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';  // 
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
