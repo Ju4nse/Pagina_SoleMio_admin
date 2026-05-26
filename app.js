@@ -1,3 +1,12 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+/* ================================================================
+   SUPABASE — claves (reemplazá SUPABASE_ANON_KEY con la nueva)
+   ================================================================ */
+const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';  // <-- pegá la nueva acá
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 /* ================================================================
    AUTH — Supabase Auth + modo invitado
    ================================================================ */
@@ -134,12 +143,8 @@ function mostrarPantallaLogin() {
    SUPABASE — cliente
    ================================================================ */
 
-// ── Reemplazá SUPABASE_ANON_KEY con la nueva clave que generaste ──
-const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';  // 
-
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// SUPABASE_URL y SUPABASE_ANON_KEY se definen al principio del archivo
+// junto con el import (ver línea 1)
 
 
 /* ================================================================
