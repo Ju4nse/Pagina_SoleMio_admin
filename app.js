@@ -1071,7 +1071,7 @@ async function init() {
         .select('email')
         .eq('email', session.user.email)
         .maybeSingle();
-      console.log('Admin check:', data, error);
+      console.log('Admin check — data:', data, '| error:', adminError, '| email buscado:', session.user.email);
       if (data) {
         currentRole = 'admin';
         if (document.getElementById('login-screen').style.display !== 'none') {
