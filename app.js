@@ -72,7 +72,7 @@ async function doLogin() {
   const pass = document.getElementById('login-pass').value.slice(0, 128);
 
   if (!user || !pass) { errEl.textContent = 'Completá usuario y contraseña'; return; }
-
+  console.log('Intentando login con:', user);
   errEl.textContent = '';
   btnEl.disabled    = true;
   btnEl.textContent = 'Verificando…';
@@ -89,7 +89,7 @@ async function doLogin() {
 
   // ── Admin: Supabase Auth ───────────────────────────────────
   const { error } = await sb.auth.signInWithPassword({ email: user, password: pass });
-
+  console.log('Respuesta Supabase:', error);
   if (error) {
     const restantes = registrarIntentoFallido();
     if (restantes === -1) {
