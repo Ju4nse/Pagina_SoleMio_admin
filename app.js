@@ -1,5 +1,5 @@
 /* ================================================================
-   AUTH — Login con SHA-256
+   AUTH — Supabase Auth + modo invitado
    ================================================================ */
 
 // ── RATE LIMITING — máx 5 intentos fallidos, bloqueo 5 min ──
@@ -32,46 +32,20 @@ function resetearIntentos() {
   localStorage.removeItem(RATE.KEY_BLOQUEADO);
 }
 
-const AUTH = {
-  USER:       'admin',
-  PASS_HASH:  '6eba795eea2b6fe29165de3c2d376ab8b7f526485f47df2e7a26466d0f61a61f',
-  GUEST_USER: 'invitado',
-  GUEST_HASH: '6a82664a67178402c61b37d5fbe265c14cbbc0a33af48a3d7d3215624026b3e4',
-  SESSION_KEY: 'solemio-session',
-  SESSION_TTL: 8 * 60 * 60 * 1000,
-};
+// Contraseña del modo invitado (no admin — solo lectura)
+const GUEST_PASS = 'solemio';   // <-- cambiala si querés
 
-let currentRole = null;
-
-async function hashStr(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function isLoggedIn() {
-  try {
-    const raw = sessionStorage.getItem(AUTH.SESSION_KEY);
-    if (!raw) return false;
-    const { expires, role, fp } = JSON.parse(raw);
-    if (Date.now() > expires) { sessionStorage.removeItem(AUTH.SESSION_KEY); return false; }
-    const currentFp = `${navigator.language}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
-    if (fp && fp !== currentFp) { sessionStorage.removeItem(AUTH.SESSION_KEY); return false; }
-    currentRole = role || 'admin';
-    return true;
-  } catch { return false; }
-}
+let currentRole = null;   // 'admin' | 'guest' | null
 
 function isAdmin() { return currentRole === 'admin'; }
 function isGuest() { return currentRole === 'guest'; }
 
-function setSession(role) {
-  const fp = `${navigator.language}|${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
-  sessionStorage.setItem(AUTH.SESSION_KEY, JSON.stringify({
-    expires: Date.now() + AUTH.SESSION_TTL,
-    role,
-    fp,
-  }));
-  currentRole = role;
+function isLoggedIn() {
+  // Admin: verificar sesión activa de Supabase
+  // (sb.auth.getSession() es sync en memoria si ya se cargó)
+  if (currentRole) return true;
+  // El rol se restaura en init() via sb.auth.onAuthStateChange
+  return false;
 }
 
 async function doLogin() {
@@ -84,7 +58,8 @@ async function doLogin() {
     return;
   }
 
-  const user = document.getElementById('login-user').value.trim().slice(0, 32);
+  // El campo "usuario" ahora acepta email o la palabra "invitado"
+  const user = document.getElementById('login-user').value.trim().slice(0, 128);
   const pass = document.getElementById('login-pass').value.slice(0, 128);
 
   if (!user || !pass) { errEl.textContent = 'Completá usuario y contraseña'; return; }
@@ -93,23 +68,20 @@ async function doLogin() {
   btnEl.disabled    = true;
   btnEl.textContent = 'Verificando…';
 
-  await new Promise(r => setTimeout(r, 350 + Math.random() * 150));
-
-  const hash      = await hashStr(pass);
-  const savedHash = localStorage.getItem('solemio-pass-hash') || AUTH.PASS_HASH;
-  const savedUser = localStorage.getItem('solemio-user')      || AUTH.USER;
-  const guestHash = localStorage.getItem('solemio-guest-hash') || AUTH.GUEST_HASH;
-  const guestUser = localStorage.getItem('solemio-guest-user') || AUTH.GUEST_USER;
-
-  if (user === savedUser && hash === savedHash) {
+  // ── Modo invitado ──────────────────────────────────────────
+  if (user.toLowerCase() === 'invitado' && pass === GUEST_PASS) {
     resetearIntentos();
-    setSession('admin');
+    currentRole = 'guest';
     await startApp();
-  } else if (user === guestUser && hash === guestHash) {
-    resetearIntentos();
-    setSession('guest');
-    await startApp();
-  } else {
+    btnEl.disabled    = false;
+    btnEl.textContent = 'Ingresar';
+    return;
+  }
+
+  // ── Admin: Supabase Auth ───────────────────────────────────
+  const { error } = await sb.auth.signInWithPassword({ email: user, password: pass });
+
+  if (error) {
     const restantes = registrarIntentoFallido();
     if (restantes === -1) {
       errEl.textContent = 'Demasiados intentos. Cuenta bloqueada 5 minutos.';
@@ -121,28 +93,34 @@ async function doLogin() {
     errEl.style.animation = '';
     document.getElementById('login-pass').value = '';
     document.getElementById('login-pass').focus();
+    btnEl.disabled    = false;
+    btnEl.textContent = 'Ingresar';
+    return;
   }
 
-  btnEl.disabled    = false;
-  btnEl.textContent = 'Ingresar';
+  // Supabase Auth exitoso → onAuthStateChange se encarga del resto
+  resetearIntentos();
+  // startApp() lo llama onAuthStateChange con event 'SIGNED_IN'
 }
 
 async function doGuestLogin() {
-  setSession('guest');
+  currentRole = 'guest';
   await startApp();
 }
 
-function doLogout() {
-  sessionStorage.removeItem(AUTH.SESSION_KEY);
-  currentRole = null;
+async function doLogout() {
   detenerRealtime();
+  if (currentRole === 'admin') {
+    await sb.auth.signOut();
+  }
+  currentRole = null;
   mostrarPantallaLogin();
-  document.getElementById('login-user').value  = '';
-  document.getElementById('login-pass').value  = '';
+  document.getElementById('login-user').value        = '';
+  document.getElementById('login-pass').value        = '';
   document.getElementById('login-error').textContent = '';
 }
 
-function mostrarPantallaApp()   {
+function mostrarPantallaApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display          = 'block';
 }
@@ -156,15 +134,18 @@ function mostrarPantallaLogin() {
    SUPABASE — cliente
    ================================================================ */
 
-// ── Pegá acá tus claves públicas de Supabase ──────────────────
-const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co'  // <-- reemplazá
-const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f'
+// ── Reemplazá SUPABASE_ANON_KEY con la nueva clave que generaste ──
+const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
+const SUPABASE_ANON_KEY = 'REEMPLAZAR_CON_NUEVA_ANON_KEY';  // <-- la vieja fue expuesta, usá la nueva
+
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── REALTIME — reemplaza el polling de SHA de GitHub ──────────
-// Supabase notifica en tiempo real cuando el script Python
-// hace upsert o cuando vos editás directo en el dashboard.
+
+/* ================================================================
+   REALTIME — reemplaza el polling de SHA de GitHub
+   ================================================================ */
+
 let _realtimeCanalProductos = null;
 let _realtimeCanalCompras   = null;
 
@@ -199,13 +180,11 @@ function detenerRealtime() {
   if (_realtimeCanalCompras)   { sb.removeChannel(_realtimeCanalCompras);   _realtimeCanalCompras   = null; }
 }
 
-// Pausar realtime cuando la pestaña está en segundo plano
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     detenerRealtime();
   } else if (isLoggedIn()) {
     iniciarRealtime();
-    // Al volver, forzar recarga por si hubo cambios mientras estaba en segundo plano
     cargarProductos();
     cargarCompras();
   }
@@ -213,7 +192,7 @@ document.addEventListener('visibilitychange', () => {
 
 
 /* ================================================================
-   CONFIG (solo queda para el workflow de GitHub Actions)
+   CONFIG — solo para disparar el workflow de GitHub Actions
    ================================================================ */
 
 const CONFIG = {
@@ -238,8 +217,8 @@ function fillSyncInputs() {
   const t = sessionStorage.getItem('solemio-gh-token');
   const r = localStorage.getItem('gh-repo');
   const w = localStorage.getItem('gh-workflow');
-  if (document.getElementById('gh-token') && t) document.getElementById('gh-token').value = t;
-  if (document.getElementById('gh-repo')  && r) document.getElementById('gh-repo').value  = r;
+  if (document.getElementById('gh-token')    && t) document.getElementById('gh-token').value    = t;
+  if (document.getElementById('gh-repo')     && r) document.getElementById('gh-repo').value     = r;
   if (document.getElementById('gh-workflow') && w) document.getElementById('gh-workflow').value = w;
 }
 
@@ -329,7 +308,6 @@ function fmtFecha(iso) {
   return `${d}/${m}/${y}`;
 }
 
-// Resuelve la imagen a mostrar: imagen_custom tiene prioridad sobre imagen_scraper
 function resolverImagen(p) {
   return p.imagen_custom || p.imagen_scraper || p.imagen || '';
 }
@@ -357,19 +335,31 @@ async function cargarProductos() {
     try { productos = JSON.parse(local); renderCatalogo(); } catch (_) {}
   }
 
-  const { data, error } = await sb
-    .from('productos')
-    .select('*')
-    .order('marca');
+  // Paginación para superar el límite de 1000 filas de Supabase
+  const PAGINA = 1000;
+  let todos = [];
+  let desde = 0;
 
-  if (error) {
-    console.warn('Error cargando productos desde Supabase:', error.message);
-    return;
+  while (true) {
+    const { data, error } = await sb
+      .from('productos')
+      .select('*')
+      .order('marca')
+      .range(desde, desde + PAGINA - 1);
+
+    if (error) {
+      console.warn('Error cargando productos desde Supabase:', error.message);
+      break;
+    }
+
+    todos = todos.concat(data);
+    if (data.length < PAGINA) break;  // última página
+    desde += PAGINA;
   }
 
-  productos = data.map(p => ({
+  productos = todos.map(p => ({
     ...p,
-    imagen: resolverImagen(p),   // campo unificado para el render
+    imagen: resolverImagen(p),
   }));
 
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
@@ -410,19 +400,17 @@ async function cargarCompras() {
 async function persistirProducto(p) {
   if (!isAdmin()) { console.warn('Acceso denegado'); return; }
 
-  // Sanitizar
   p.nombre         = String(p.nombre         || '').slice(0, 200).trim();
   p.marca          = String(p.marca          || '').slice(0, 100).trim();
   p.color          = String(p.color          || '').slice(0, 100).trim();
   p.talles         = String(p.talles         || '').slice(0, 100).trim();
-  p.precio         = Math.max(0, parseFloat(p.precio)    || 0);
-  p.num_stock      = Math.max(0, parseInt(p.num_stock)   || 0);
+  p.precio         = Math.max(0, parseFloat(p.precio)  || 0);
+  p.num_stock      = Math.max(0, parseInt(p.num_stock) || 0);
   p.imagen_custom  = (p.imagen_custom  || '').trim();
   p.imagen_scraper = (p.imagen_scraper || '').trim();
   if (p.imagen_custom  && !/^https?:\/\//.test(p.imagen_custom))  p.imagen_custom  = '';
   if (p.imagen_scraper && !/^https?:\/\//.test(p.imagen_scraper)) p.imagen_scraper = '';
 
-  // Preparar fila para Supabase — sin el campo virtual 'imagen'
   const { imagen: _img, ...fila } = p;
 
   const { error } = await sb
@@ -435,7 +423,6 @@ async function persistirProducto(p) {
     return;
   }
 
-  // Actualizar local sin esperar el evento realtime
   const idx = productos.findIndex(x => x.id === p.id);
   const productoConImagen = { ...fila, imagen: resolverImagen(fila) };
   if (idx >= 0) productos[idx] = productoConImagen;
@@ -450,10 +437,7 @@ async function eliminarProductoDB(id) {
 
   const { error } = await sb.from('productos').delete().eq('id', id);
 
-  if (error) {
-    console.warn('Error eliminando producto:', error.message);
-    return;
-  }
+  if (error) { console.warn('Error eliminando producto:', error.message); return; }
 
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
@@ -518,11 +502,10 @@ function renderCatalogo() {
       (p.nombre || '').toLowerCase().includes(q) ||
       (p.marca  || '').toLowerCase().includes(q) ||
       (p.id     || '').toLowerCase().includes(q);
-    if (q && !q_ok)             return false;
-    if (marca && p.marca !== marca) return false;
-    // filtro-stock espera 'in stock'/'out of stock' — adaptamos al boolean de Supabase
-    if (stock === 'in stock'    && !p.stock)  return false;
-    if (stock === 'out of stock' && p.stock)  return false;
+    if (q && !q_ok)                              return false;
+    if (marca && p.marca !== marca)              return false;
+    if (stock === 'in stock'     && !p.stock)   return false;
+    if (stock === 'out of stock' &&  p.stock)   return false;
     return true;
   });
 
@@ -541,8 +524,8 @@ function renderCatalogo() {
   }
 
   grid.innerHTML = lista.map((p, i) => {
-    const img      = p.imagen;   // ya resuelto en cargarProductos / persistirProducto
-    const enStock  = p.stock === true || p.stock === 'in stock';
+    const img     = p.imagen;
+    const enStock = p.stock === true || p.stock === 'in stock';
     const cantidad = p.num_stock ?? null;
 
     return `
@@ -825,10 +808,8 @@ async function savePurchase() {
   if (!fecha) { alert('La fecha es obligatoria'); return; }
 
   const sel = [...(window._sel || [])];
+  const c   = { id: uid(), fecha, monto, productos: sel, notas };
 
-  const c = { id: uid(), fecha, monto, productos: sel, notas };
-
-  // Descontar stock de cada producto vendido
   for (const item of sel) {
     const prod = productos.find(p => p.id === item.id);
     if (!prod) continue;
@@ -908,7 +889,7 @@ async function confirmarEliminarCompra(id) {
    GITHUB ACTIONS — solo para disparar el workflow del scraper
    ================================================================ */
 
-async function pollWorkflowResult(token, repo, startedAt) {
+async function pollWorkflowResult(token, repo) {
   const status  = document.getElementById('run-status');
   const headers = {
     'Authorization': `token ${token}`,
@@ -935,8 +916,6 @@ async function pollWorkflowResult(token, repo, startedAt) {
 
       if (run.status === 'completed') {
         if (run.conclusion === 'success') {
-          // El Realtime de Supabase ya va a recargar automáticamente
-          // cuando el script Python haga el upsert, pero forzamos igual
           status.innerHTML = `<span class="spin">↻</span> Script finalizado, recargando catálogo…`;
           await cargarProductos();
           status.innerHTML = `<span style="color:var(--green)">✓ Catálogo actualizado correctamente</span>`;
@@ -984,7 +963,7 @@ async function runScript() {
 
     if (res.status === 204) {
       status.innerHTML = '<span class="spin">↻</span> Workflow iniciado, esperando resultado…';
-      pollWorkflowResult(token, repo, new Date().toISOString().slice(0, 19));
+      pollWorkflowResult(token, repo);
     } else {
       const j = await res.json().catch(() => ({}));
       throw new Error(j.message || `HTTP ${res.status}`);
@@ -1033,24 +1012,26 @@ function togglePass() {
 }
 
 async function cambiarPassword() {
-  const actual  = document.getElementById('cp-actual').value;
+  if (!isAdmin()) return;
+
   const nueva   = document.getElementById('cp-nueva').value;
   const repetir = document.getElementById('cp-repetir').value;
   const msgEl   = document.getElementById('cp-msg');
 
   msgEl.style.color = 'var(--red)';
-  if (!actual || !nueva || !repetir) { msgEl.textContent = 'Completá todos los campos'; return; }
-  if (nueva.length < 8)              { msgEl.textContent = 'Mínimo 8 caracteres'; return; }
-  if (nueva !== repetir)             { msgEl.textContent = 'Las contraseñas no coinciden'; return; }
+  if (!nueva || !repetir)  { msgEl.textContent = 'Completá los campos'; return; }
+  if (nueva.length < 8)    { msgEl.textContent = 'Mínimo 8 caracteres'; return; }
+  if (nueva !== repetir)   { msgEl.textContent = 'Las contraseñas no coinciden'; return; }
 
-  const hashActual = await hashStr(actual);
-  const savedHash  = localStorage.getItem('solemio-pass-hash') || AUTH.PASS_HASH;
-  if (hashActual !== savedHash) { msgEl.textContent = 'La contraseña actual es incorrecta'; return; }
+  const { error } = await sb.auth.updateUser({ password: nueva });
 
-  localStorage.setItem('solemio-pass-hash', await hashStr(nueva));
+  if (error) {
+    msgEl.textContent = `Error: ${error.message}`;
+    return;
+  }
+
   msgEl.style.color = 'var(--green)';
   msgEl.textContent  = '✓ Contraseña actualizada correctamente';
-  document.getElementById('cp-actual').value  = '';
   document.getElementById('cp-nueva').value   = '';
   document.getElementById('cp-repetir').value = '';
 }
@@ -1074,8 +1055,46 @@ async function startApp() {
 
 async function init() {
   initTheme();
-  if (!isLoggedIn()) { mostrarPantallaLogin(); return; }
-  await startApp();
+
+  // Escuchar cambios de sesión de Supabase Auth
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      // Verificar que el email está en la tabla admins
+      const { data } = await sb
+        .from('admins')
+        .select('email')
+        .eq('email', session.user.email)
+        .maybeSingle();
+
+      if (data) {
+        currentRole = 'admin';
+        if (document.getElementById('login-screen').style.display !== 'none') {
+          await startApp();
+        }
+      } else {
+        // Email autenticado pero no es admin — cerrar sesión
+        await sb.auth.signOut();
+        currentRole = null;
+        const errEl = document.getElementById('login-error');
+        if (errEl) errEl.textContent = 'Este usuario no tiene permisos de administrador.';
+      }
+    } else if (event === 'SIGNED_OUT') {
+      if (currentRole === 'admin') {
+        currentRole = null;
+        mostrarPantallaLogin();
+      }
+    }
+  });
+
+  // Verificar si ya hay sesión activa (recarga de página)
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    // onAuthStateChange ya se disparó con SIGNED_IN — no hacer nada más
+    return;
+  }
+
+  // Sin sesión de Supabase — mostrar login
+  mostrarPantallaLogin();
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
