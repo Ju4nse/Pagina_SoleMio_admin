@@ -1061,29 +1061,36 @@ async function startApp() {
 async function init() {
   initTheme();
 
-  // Escuchar cambios de sesión de Supabase Auth
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
-      console.log('onAuthStateChange:', event, session?.user?.email);
       // Verificar que el email está en la tabla admins
-      const { data } = await sb
+      const { data, error: adminError } = await sb
         .from('admins')
         .select('email')
         .eq('email', session.user.email)
         .maybeSingle();
-      console.log('Admin check — data:', data, '| error:', adminError, '| email buscado:', session.user.email);
+
+      if (adminError) {
+        console.warn('Error consultando admins:', adminError.message);
+        await sb.auth.signOut();
+        currentRole = null;
+        const errEl = document.getElementById('login-error');
+        if (errEl) errEl.textContent = 'Error verificando permisos. Intentá de nuevo.';
+        return;
+      }
+
       if (data) {
         currentRole = 'admin';
         if (document.getElementById('login-screen').style.display !== 'none') {
           await startApp();
         }
       } else {
-        // Email autenticado pero no es admin — cerrar sesión
         await sb.auth.signOut();
         currentRole = null;
         const errEl = document.getElementById('login-error');
         if (errEl) errEl.textContent = 'Este usuario no tiene permisos de administrador.';
       }
+
     } else if (event === 'SIGNED_OUT') {
       if (currentRole === 'admin') {
         currentRole = null;
@@ -1094,13 +1101,10 @@ async function init() {
 
   // Verificar si ya hay sesión activa (recarga de página)
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    // onAuthStateChange ya se disparó con SIGNED_IN — no hacer nada más
-    return;
+  if (!session) {
+    mostrarPantallaLogin();
   }
-
-  // Sin sesión de Supabase — mostrar login
-  mostrarPantallaLogin();
+  // Si hay sesión, onAuthStateChange ya se encarga
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
