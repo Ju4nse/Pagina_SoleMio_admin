@@ -1064,13 +1064,14 @@ async function init() {
   // Escuchar cambios de sesión de Supabase Auth
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
+      console.log('onAuthStateChange:', event, session?.user?.email);
       // Verificar que el email está en la tabla admins
       const { data } = await sb
         .from('admins')
         .select('email')
         .eq('email', session.user.email)
         .maybeSingle();
-
+      console.log('Admin check:', data, error);
       if (data) {
         currentRole = 'admin';
         if (document.getElementById('login-screen').style.display !== 'none') {
