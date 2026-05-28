@@ -1069,6 +1069,9 @@ async function init() {
           currentRole = 'admin';
           await startApp();
         }
+        // Siempre re-habilitar el botón al terminar (por si una recarga lo dejó bloqueado)
+        const btnEl = document.querySelector('.login-btn');
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
       } else {
         await sb.auth.signOut();
         currentRole = null;
@@ -1081,6 +1084,9 @@ async function init() {
       currentRole = null;
       _appStarted = false;
       mostrarPantallaLogin();
+      // Re-habilitar botón por si quedó en "Verificando…"
+      const btnEl = document.querySelector('.login-btn');
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
     }
   });
 
