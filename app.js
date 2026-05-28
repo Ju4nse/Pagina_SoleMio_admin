@@ -1,11 +1,24 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 /* ================================================================
-   SUPABASE — claves (reemplazá SUPABASE_ANON_KEY con la nueva)
+   SUPABASE — singleton (evita múltiples instancias GoTrueClient)
    ================================================================ */
 const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';  // <-- pegá la nueva acá
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';
+
+const sb = (() => {
+  const KEY = '__solemio_sb__';
+  if (window[KEY]) return window[KEY];
+  window[KEY] = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      storageKey:       'solemio-auth',
+      autoRefreshToken: true,
+      persistSession:   true,
+    },
+  });
+  return window[KEY];
+})();
+
 
 /* ================================================================
    AUTH — Supabase Auth + modo invitado
@@ -41,21 +54,14 @@ function resetearIntentos() {
   localStorage.removeItem(RATE.KEY_BLOQUEADO);
 }
 
-// Contraseña del modo invitado (no admin — solo lectura)
-const GUEST_PASS = 'solemio';   // <-- cambiala si querés
+const GUEST_PASS = 'solemio';
 
 let currentRole = null;   // 'admin' | 'guest' | null
+let _appStarted = false;  // guard para evitar doble startApp()
 
-function isAdmin() { return currentRole === 'admin'; }
-function isGuest() { return currentRole === 'guest'; }
-
-function isLoggedIn() {
-  // Admin: verificar sesión activa de Supabase
-  // (sb.auth.getSession() es sync en memoria si ya se cargó)
-  if (currentRole) return true;
-  // El rol se restaura en init() via sb.auth.onAuthStateChange
-  return false;
-}
+function isAdmin()    { return currentRole === 'admin'; }
+function isGuest()    { return currentRole === 'guest'; }
+function isLoggedIn() { return currentRole !== null; }
 
 async function doLogin() {
   const errEl = document.getElementById('login-error');
@@ -67,12 +73,11 @@ async function doLogin() {
     return;
   }
 
-  // El campo "usuario" ahora acepta email o la palabra "invitado"
   const user = document.getElementById('login-user').value.trim().slice(0, 128);
   const pass = document.getElementById('login-pass').value.slice(0, 128);
 
   if (!user || !pass) { errEl.textContent = 'Completá usuario y contraseña'; return; }
-  console.log('Intentando login con:', user);
+
   errEl.textContent = '';
   btnEl.disabled    = true;
   btnEl.textContent = 'Verificando…';
@@ -89,7 +94,7 @@ async function doLogin() {
 
   // ── Admin: Supabase Auth ───────────────────────────────────
   const { error } = await sb.auth.signInWithPassword({ email: user, password: pass });
-  console.log('Respuesta Supabase:', error);
+
   if (error) {
     const restantes = registrarIntentoFallido();
     if (restantes === -1) {
@@ -107,9 +112,8 @@ async function doLogin() {
     return;
   }
 
-  // Supabase Auth exitoso → onAuthStateChange se encarga del resto
+  // Supabase Auth exitoso → onAuthStateChange maneja el resto
   resetearIntentos();
-  // startApp() lo llama onAuthStateChange con event 'SIGNED_IN'
 }
 
 async function doGuestLogin() {
@@ -119,6 +123,7 @@ async function doGuestLogin() {
 
 async function doLogout() {
   detenerRealtime();
+  _appStarted = false;
   if (currentRole === 'admin') {
     await sb.auth.signOut();
   }
@@ -133,22 +138,19 @@ function mostrarPantallaApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display          = 'block';
 }
+
 function mostrarPantallaLogin() {
+  _appStarted = false;
+  currentRole = null;
   document.getElementById('app').style.display          = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+  const btnEl = document.querySelector('.login-btn');
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
 }
 
 
 /* ================================================================
-   SUPABASE — cliente
-   ================================================================ */
-
-// SUPABASE_URL y SUPABASE_ANON_KEY se definen al principio del archivo
-// junto con el import (ver línea 1)
-
-
-/* ================================================================
-   REALTIME — reemplaza el polling de SHA de GitHub
+   REALTIME
    ================================================================ */
 
 let _realtimeCanalProductos = null;
@@ -161,10 +163,7 @@ function iniciarRealtime() {
     .channel('productos-cambios')
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'productos' },
-      () => {
-        console.log('🔄 Productos cambiaron en Supabase — recargando...');
-        cargarProductos();
-      }
+      () => { console.log('🔄 Productos cambiaron'); cargarProductos(); }
     )
     .subscribe();
 
@@ -172,10 +171,7 @@ function iniciarRealtime() {
     .channel('compras-cambios')
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'compras' },
-      () => {
-        console.log('🔄 Compras cambiaron en Supabase — recargando...');
-        cargarCompras();
-      }
+      () => { console.log('🔄 Compras cambiaron'); cargarCompras(); }
     )
     .subscribe();
 }
@@ -197,12 +193,8 @@ document.addEventListener('visibilitychange', () => {
 
 
 /* ================================================================
-   CONFIG — solo para disparar el workflow de GitHub Actions
+   CONFIG — GitHub Actions
    ================================================================ */
-
-const CONFIG = {
-  SCRIPT_REPO: 'Ju4nse/actualizar_catalogo',
-};
 
 let ghToken = '';
 
@@ -260,9 +252,6 @@ const ICON = {
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
     <polyline points="9 22 9 12 15 12 15 22"/></svg>`,
   cart: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
-  cartEmpty: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
 };
@@ -334,13 +323,11 @@ async function cargarProductos() {
       </div>`;
   }
 
-  // Mostrar cache mientras carga
   const local = localStorage.getItem('solemio-productos');
   if (local) {
     try { productos = JSON.parse(local); renderCatalogo(); } catch (_) {}
   }
 
-  // Paginación para superar el límite de 1000 filas de Supabase
   const PAGINA = 1000;
   let todos = [];
   let desde = 0;
@@ -353,23 +340,19 @@ async function cargarProductos() {
       .range(desde, desde + PAGINA - 1);
 
     if (error) {
-      console.warn('Error cargando productos desde Supabase:', error.message);
+      console.warn('Error cargando productos:', error.message);
       break;
     }
 
     todos = todos.concat(data);
-    if (data.length < PAGINA) break;  // última página
+    if (data.length < PAGINA) break;
     desde += PAGINA;
   }
 
-  productos = todos.map(p => ({
-    ...p,
-    imagen: resolverImagen(p),
-  }));
-
+  productos = todos.map(p => ({ ...p, imagen: resolverImagen(p) }));
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
   renderCatalogo();
-  console.log(`✓ ${productos.length} productos cargados desde Supabase`);
+  console.log(`✓ ${productos.length} productos cargados`);
 }
 
 async function cargarCompras() {
@@ -384,13 +367,13 @@ async function cargarCompras() {
     .order('fecha', { ascending: false });
 
   if (error) {
-    console.warn('Error cargando compras desde Supabase:', error.message);
+    console.warn('Error cargando compras:', error.message);
     return;
   }
 
   compras = data;
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
-  console.log(`✓ ${compras.length} compras cargadas desde Supabase`);
+  console.log(`✓ ${compras.length} compras cargadas`);
 
   if (document.getElementById('tab-compras')?.classList.contains('active')) {
     renderCompras();
@@ -434,19 +417,16 @@ async function persistirProducto(p) {
   else          productos.unshift(productoConImagen);
 
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
-  console.log('✓ Producto guardado en Supabase');
 }
 
 async function eliminarProductoDB(id) {
   if (!isAdmin()) { console.warn('Acceso denegado'); return; }
 
   const { error } = await sb.from('productos').delete().eq('id', id);
-
   if (error) { console.warn('Error eliminando producto:', error.message); return; }
 
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
-  console.log('✓ Producto eliminado de Supabase');
 }
 
 async function persistirCompra(c) {
@@ -465,14 +445,12 @@ async function persistirCompra(c) {
 
   compras.unshift(c);
   localStorage.setItem('solemio-compras', JSON.stringify(compras));
-  console.log('✓ Compra guardada en Supabase');
 }
 
 async function eliminarCompraDB(id) {
   if (!isAdmin()) { console.warn('Acceso denegado'); return; }
 
   const { error } = await sb.from('compras').delete().eq('id', id);
-
   if (error) { console.warn('Error eliminando compra:', error.message); return; }
 
   compras = compras.filter(c => c.id !== id);
@@ -489,9 +467,11 @@ function renderCatalogo() {
   const marca = document.getElementById('filtro-marca')?.value || '';
   const stock = document.getElementById('filtro-stock')?.value || '';
 
+  // Ocultar botón "Nuevo producto" para invitados
   const newBtn = document.querySelector('.toolbar .btn.primary');
   if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
 
+  // Reconstruir selector de marcas
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
   const mSel   = document.getElementById('filtro-marca');
   const mCur   = mSel?.value || '';
@@ -507,10 +487,10 @@ function renderCatalogo() {
       (p.nombre || '').toLowerCase().includes(q) ||
       (p.marca  || '').toLowerCase().includes(q) ||
       (p.id     || '').toLowerCase().includes(q);
-    if (q && !q_ok)                              return false;
-    if (marca && p.marca !== marca)              return false;
-    if (stock === 'in stock'     && !p.stock)   return false;
-    if (stock === 'out of stock' &&  p.stock)   return false;
+    if (q && !q_ok)                             return false;
+    if (marca && p.marca !== marca)             return false;
+    if (stock === 'in stock'     && !p.stock)  return false;
+    if (stock === 'out of stock' &&  p.stock)  return false;
     return true;
   });
 
@@ -533,6 +513,11 @@ function renderCatalogo() {
     const enStock = p.stock === true || p.stock === 'in stock';
     const cantidad = p.num_stock ?? null;
 
+    // Invitado: solo ve "En stock" / "Sin stock", sin cantidad
+    const badgeStock = enStock
+      ? (isAdmin() && cantidad != null ? `En stock (${cantidad})` : 'En stock')
+      : 'Sin stock';
+
     return `
     <article class="prod-card" style="animation-delay:${i * 30}ms">
       ${img
@@ -546,16 +531,12 @@ function renderCatalogo() {
         <div class="prod-meta">${[p.color, p.talles].filter(Boolean).join(' · ')}</div>
         <div class="prod-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
         <div class="prod-badges">
-          <span class="badge ${enStock ? 'stock' : 'nostock'}">
-            ${enStock
-              ? (cantidad != null ? `En stock (${cantidad})` : 'En stock')
-              : 'Sin stock'}
-          </span>
+          <span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
-          ${p.oculto && !isGuest() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
-          ${p.imagen_custom && !isGuest() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
+          ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
+          ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
-        ${!isGuest() ? `
+        ${isAdmin() ? `
         <div class="prod-actions">
           <button class="btn sm ghost" onclick="openProdModal('${p.id}')">
             ${ICON.edit} Editar
@@ -630,7 +611,7 @@ function openProdModal(id) {
         <div class="field">
           <label>Foto custom
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
-              — si la cargás acá reemplaza la foto del scraper en el catálogo
+              — reemplaza la foto del scraper en el catálogo
             </span>
           </label>
           <input id="p-imagen-custom" type="url" placeholder="https://…" value="${p?.imagen_custom || ''}">
@@ -641,7 +622,7 @@ function openProdModal(id) {
         <div class="field">
           <label>Foto del scraper
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
-              — la trae el script automáticamente, no hace falta tocarla
+              — la trae el script automáticamente
             </span>
           </label>
           <input id="p-imagen-scraper" type="url" placeholder="https://…" value="${p?.imagen_scraper || p?.imagen || ''}">
@@ -713,8 +694,7 @@ async function confirmarEliminar(id) {
    ================================================================ */
 
 function openPurchaseModal() {
-  const seleccionados = [];
-  window._sel = seleccionados;
+  window._sel = [];
   const today = new Date().toISOString().slice(0, 10);
 
   document.getElementById('modal-compra').innerHTML = `
@@ -748,6 +728,22 @@ function openPurchaseModal() {
         </div>
       </div>
     </div>`;
+
+  function updateTags() {
+    const tags = document.getElementById('c-tags');
+    if (!tags) return;
+    tags.innerHTML = window._sel.length
+      ? window._sel.map(s =>
+          `<span class="sel-tag">${s.nombre}
+             <button onclick="removeSel('${s.id}')" aria-label="Quitar">×</button>
+           </span>`).join('')
+      : '<span style="font-size:.75rem;color:var(--text-3)">Ninguno seleccionado</span>';
+
+    const mEl = document.getElementById('c-monto');
+    if (mEl && !mEl.dataset.manual) {
+      mEl.value = Math.round(window._sel.reduce((a, s) => a + s.precio * 1.5, 0)) || '';
+    }
+  }
 
   window.renderProdSel = function () {
     const q      = (document.getElementById('c-buscar')?.value || '').toLowerCase();
@@ -783,22 +779,6 @@ function openPurchaseModal() {
     if (idx >= 0) { window._sel.splice(idx, 1); window.renderProdSel(); }
   };
 
-  function updateTags() {
-    const tags = document.getElementById('c-tags');
-    if (!tags) return;
-    tags.innerHTML = window._sel.length
-      ? window._sel.map(s =>
-          `<span class="sel-tag">${s.nombre}
-             <button onclick="removeSel('${s.id}')" aria-label="Quitar">×</button>
-           </span>`).join('')
-      : '<span style="font-size:.75rem;color:var(--text-3)">Ninguno seleccionado</span>';
-
-    const mEl = document.getElementById('c-monto');
-    if (mEl && !mEl.dataset.manual) {
-      mEl.value = Math.round(window._sel.reduce((a, s) => a + s.precio * 1.5, 0)) || '';
-    }
-  }
-
   window.renderProdSel();
 }
 
@@ -819,11 +799,7 @@ async function savePurchase() {
     const prod = productos.find(p => p.id === item.id);
     if (!prod) continue;
     const nuevo_num_stock = Math.max(0, (prod.num_stock || 0) - (item.cantidad || 1));
-    await persistirProducto({
-      ...prod,
-      num_stock: nuevo_num_stock,
-      stock:     nuevo_num_stock > 0,
-    });
+    await persistirProducto({ ...prod, num_stock: nuevo_num_stock, stock: nuevo_num_stock > 0 });
   }
 
   await persistirCompra(c);
@@ -858,7 +834,7 @@ function renderCompras() {
   const el = document.getElementById('purchase-list');
 
   if (!compras.length) {
-    el.innerHTML = `<div class="empty">${ICON.cartEmpty} No hay compras registradas todavía</div>`;
+    el.innerHTML = `<div class="empty">${ICON.cart} No hay compras registradas todavía</div>`;
     return;
   }
 
@@ -891,7 +867,7 @@ async function confirmarEliminarCompra(id) {
 
 
 /* ================================================================
-   GITHUB ACTIONS — solo para disparar el workflow del scraper
+   GITHUB ACTIONS
    ================================================================ */
 
 async function pollWorkflowResult(token, repo) {
@@ -1024,16 +1000,13 @@ async function cambiarPassword() {
   const msgEl   = document.getElementById('cp-msg');
 
   msgEl.style.color = 'var(--red)';
-  if (!nueva || !repetir)  { msgEl.textContent = 'Completá los campos'; return; }
-  if (nueva.length < 8)    { msgEl.textContent = 'Mínimo 8 caracteres'; return; }
-  if (nueva !== repetir)   { msgEl.textContent = 'Las contraseñas no coinciden'; return; }
+  if (!nueva || !repetir) { msgEl.textContent = 'Completá los campos'; return; }
+  if (nueva.length < 8)   { msgEl.textContent = 'Mínimo 8 caracteres'; return; }
+  if (nueva !== repetir)  { msgEl.textContent = 'Las contraseñas no coinciden'; return; }
 
   const { error } = await sb.auth.updateUser({ password: nueva });
 
-  if (error) {
-    msgEl.textContent = `Error: ${error.message}`;
-    return;
-  }
+  if (error) { msgEl.textContent = `Error: ${error.message}`; return; }
 
   msgEl.style.color = 'var(--green)';
   msgEl.textContent  = '✓ Contraseña actualizada correctamente';
@@ -1047,6 +1020,9 @@ async function cambiarPassword() {
    ================================================================ */
 
 async function startApp() {
+  if (_appStarted) return;
+  _appStarted = true;
+
   loadConfig();
   applyRole();
   mostrarPantallaApp();
@@ -1061,50 +1037,59 @@ async function startApp() {
 async function init() {
   initTheme();
 
+  // Estado inicial del DOM siempre conocido
+  document.getElementById('app').style.display          = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+
   sb.auth.onAuthStateChange(async (event, session) => {
+    console.log('[AUTH]', event, session?.user?.email ?? '—');
+
     if (event === 'SIGNED_IN' && session) {
-      // Verificar que el email está en la tabla admins
+
       const { data, error: adminError } = await sb
         .from('admins')
         .select('email')
         .eq('email', session.user.email)
         .maybeSingle();
 
+      console.log('[ADMINS] data:', data, '| error:', adminError?.message ?? null);
+
       if (adminError) {
         console.warn('Error consultando admins:', adminError.message);
         await sb.auth.signOut();
         currentRole = null;
+        mostrarPantallaLogin();
         const errEl = document.getElementById('login-error');
         if (errEl) errEl.textContent = 'Error verificando permisos. Intentá de nuevo.';
         return;
       }
 
       if (data) {
-        currentRole = 'admin';
-        if (document.getElementById('login-screen').style.display !== 'none') {
+        if (!_appStarted) {
+          currentRole = 'admin';
           await startApp();
         }
       } else {
         await sb.auth.signOut();
         currentRole = null;
+        mostrarPantallaLogin();
         const errEl = document.getElementById('login-error');
         if (errEl) errEl.textContent = 'Este usuario no tiene permisos de administrador.';
       }
 
     } else if (event === 'SIGNED_OUT') {
-      if (currentRole === 'admin') {
-        currentRole = null;
-        mostrarPantallaLogin();
-      }
+      currentRole = null;
+      _appStarted = false;
+      mostrarPantallaLogin();
     }
   });
 
-  // Verificar si ya hay sesión activa (recarga de página)
   const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
+  console.log('[INIT] sesión activa al cargar:', !!session);
+
+  if (!session && !isLoggedIn()) {
     mostrarPantallaLogin();
   }
-  // Si hay sesión, onAuthStateChange ya se encarga
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
