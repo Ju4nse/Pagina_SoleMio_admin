@@ -1106,6 +1106,7 @@ async function init() {
       }
 
     } else if (event === 'SIGNED_OUT') {
+       console.log('[AUTH] signed out OK');
       currentRole = null;
       _appStarted = false;
       mostrarPantallaLogin();
