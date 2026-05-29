@@ -1061,73 +1061,70 @@ async function startApp() {
 async function init() {
   initTheme();
 
-  // Estado inicial del DOM siempre conocido
+  // DOM conocido
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 
-  // Escuchar cambios de auth
+  // ─────────────────────────────────────────────
+  // Restaurar sesión primero
+  // ─────────────────────────────────────────────
+  const {
+    data: { session }
+  } = await sb.auth.getSession();
+
+  console.log('[INIT] sesión activa:', !!session);
+
+  if (session?.user) {
+    console.log('[INIT] restaurando:', session.user.email);
+
+    const { data, error } = await sb
+      .from('admins')
+      .select('email')
+      .eq('email', session.user.email)
+      .maybeSingle();
+
+    console.log('[INIT ADMINS]', data, error?.message ?? null);
+
+    if (data) {
+      currentRole = 'admin';
+      await startApp();
+      return; // IMPORTANTÍSIMO
+    }
+
+    await sb.auth.signOut();
+  }
+
+  // si no hay sesión válida → login
+  mostrarPantallaLogin();
+
+  // ─────────────────────────────────────────────
+  // Escuchar cambios DESPUÉS del init
+  // ─────────────────────────────────────────────
   sb.auth.onAuthStateChange(async (event, session) => {
     console.log('[AUTH]', event, session?.user?.email ?? '—');
 
     if (event === 'SIGNED_IN' && session) {
 
-      // Evitar doble arranque
-      if (_appStarted && currentRole === 'admin') return;
+      // evitar doble init
+      if (_appStarted) return;
 
-      const { data, error: adminError } = await sb
+      const { data, error } = await sb
         .from('admins')
         .select('email')
         .eq('email', session.user.email)
         .maybeSingle();
 
-      console.log('[ADMINS] data:', data, '| error:', adminError?.message ?? null);
-
-      if (adminError) {
-        console.warn('Error consultando admins:', adminError.message);
-
+      if (error || !data) {
         await sb.auth.signOut();
-        currentRole = null;
         mostrarPantallaLogin();
-
-        const errEl = document.getElementById('login-error');
-        if (errEl) {
-          errEl.textContent = 'Error verificando permisos. Intentá de nuevo.';
-        }
         return;
       }
 
-      if (data) {
-        currentRole = 'admin';
-
-        if (!_appStarted) {
-          await startApp();
-        }
-
-        // Asegurar UI correcta
-        mostrarPantallaApp();
-
-        // Rehabilitar botón login
-        const btnEl = document.querySelector('.login-btn');
-        if (btnEl) {
-          btnEl.disabled = false;
-          btnEl.textContent = 'Ingresar';
-        }
-
-      } else {
-        console.warn('Usuario sin permisos admin');
-
-        await sb.auth.signOut();
-        currentRole = null;
-        mostrarPantallaLogin();
-
-        const errEl = document.getElementById('login-error');
-        if (errEl) {
-          errEl.textContent = 'Este usuario no tiene permisos de administrador.';
-        }
-      }
+      currentRole = 'admin';
+      await startApp();
 
     } else if (event === 'SIGNED_OUT') {
-      console.log('[AUTH] signed out OK');
+      console.log('[AUTH] signed out');
 
       detenerRealtime();
 
@@ -1135,54 +1132,8 @@ async function init() {
       _appStarted = false;
 
       mostrarPantallaLogin();
-
-      const btnEl = document.querySelector('.login-btn');
-      if (btnEl) {
-        btnEl.disabled = false;
-        btnEl.textContent = 'Ingresar';
-      }
     }
   });
-
-  // Restaurar sesión al refrescar
-  const {
-    data: { session },
-  } = await sb.auth.getSession();
-
-  console.log('[INIT] sesión activa al cargar:', !!session);
-
-  if (session?.user) {
-    console.log('[INIT] restaurando sesión:', session.user.email);
-
-    const { data, error: adminError } = await sb
-      .from('admins')
-      .select('email')
-      .eq('email', session.user.email)
-      .maybeSingle();
-
-    console.log('[INIT ADMINS]', data, '| error:', adminError?.message ?? null);
-
-    if (adminError) {
-      console.warn('Error verificando admin al restaurar sesión:', adminError.message);
-
-      await sb.auth.signOut();
-      mostrarPantallaLogin();
-      return;
-    }
-
-    if (data) {
-      currentRole = 'admin';
-      await startApp();
-      mostrarPantallaApp();
-    } else {
-      console.warn('Sesión restaurada sin permisos admin');
-
-      await sb.auth.signOut();
-      mostrarPantallaLogin();
-    }
-  } else {
-    mostrarPantallaLogin();
-  }
 }
 // ── Exponer funciones globales para los onclick del HTML ──────
 window.doLogin                 = doLogin;
