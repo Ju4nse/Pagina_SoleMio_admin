@@ -119,6 +119,8 @@ async function doLogin() {
 async function doGuestLogin() {
   currentRole = 'guest';
   await startApp();
+  const filtroStock = document.getElementById('filtro-stock');
+  if (filtroStock) { filtroStock.value = 'in stock'; renderCatalogo(); }
 }
 
 async function doLogout() {
