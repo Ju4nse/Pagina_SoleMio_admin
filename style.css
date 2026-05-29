@@ -93,6 +93,13 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
   gap: 0.5rem;
 }
 
+.logo-img {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-word {
   font-family: 'DM Serif Display', serif;
   font-size: 1.5rem;
