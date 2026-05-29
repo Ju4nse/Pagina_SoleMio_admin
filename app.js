@@ -252,7 +252,7 @@ function fillSyncInputs() {
 
 let productos = [];
 let compras   = [];
-
+let productosVisibles = 50;
 
 /* ================================================================
    ÍCONOS SVG
@@ -488,16 +488,16 @@ async function eliminarCompraDB(id) {
    RENDER CATÁLOGO
    ================================================================ */
 
-function renderCatalogo() {
+function renderCatalogo(resetear = false) {
+  if (resetear) productosVisibles = 30;
+
   const q     = (document.getElementById('buscar')?.value      || '').toLowerCase();
   const marca = document.getElementById('filtro-marca')?.value || '';
   const stock = document.getElementById('filtro-stock')?.value || '';
 
-  // Ocultar botón "Nuevo producto" para invitados
   const newBtn = document.querySelector('.toolbar .btn.primary');
   if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
 
-  // Reconstruir selector de marcas
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
   const mSel   = document.getElementById('filtro-marca');
   const mCur   = mSel?.value || '';
@@ -513,10 +513,10 @@ function renderCatalogo() {
       (p.nombre || '').toLowerCase().includes(q) ||
       (p.marca  || '').toLowerCase().includes(q) ||
       (p.id     || '').toLowerCase().includes(q);
-    if (q && !q_ok)                             return false;
-    if (marca && p.marca !== marca)             return false;
-    if (stock === 'in stock'     && !p.stock)  return false;
-    if (stock === 'out of stock' &&  p.stock)  return false;
+    if (q && !q_ok)                            return false;
+    if (marca && p.marca !== marca)            return false;
+    if (stock === 'in stock'     && !p.stock) return false;
+    if (stock === 'out of stock' &&  p.stock) return false;
     return true;
   });
 
@@ -534,12 +534,14 @@ function renderCatalogo() {
     return;
   }
 
-  grid.innerHTML = lista.map((p, i) => {
-    const img     = p.imagen;
-    const enStock = p.stock === true || p.stock === 'in stock';
+  const visibles = lista.slice(0, productosVisibles);
+  const hayMas   = lista.length > productosVisibles;
+
+  grid.innerHTML = visibles.map((p, i) => {
+    const img      = p.imagen;
+    const enStock  = p.stock === true || p.stock === 'in stock';
     const cantidad = p.num_stock ?? null;
 
-    // Invitado: solo ve "En stock" / "Sin stock", sin cantidad
     const badgeStock = enStock
       ? (isAdmin() && cantidad != null ? `En stock (${cantidad})` : 'En stock')
       : 'Sin stock';
@@ -574,9 +576,21 @@ function renderCatalogo() {
       </div>
     </article>`;
   }).join('');
+
+  if (hayMas) {
+    grid.insertAdjacentHTML('beforeend', `
+      <div style="grid-column:1/-1;text-align:center;padding:1.5rem 0">
+        <button class="btn ghost" onclick="cargarMas()">
+          Cargar más (${productosVisibles} de ${lista.length})
+        </button>
+      </div>`);
+  }
 }
 
-
+function cargarMas() {
+  productosVisibles += 50;
+  renderCatalogo();
+}
 /* ================================================================
    MODAL PRODUCTO
    ================================================================ */
@@ -1145,6 +1159,7 @@ window.toggleTheme             = toggleTheme;
 window.togglePass              = togglePass;
 window.showTab                 = showTab;
 window.renderCatalogo          = renderCatalogo;
+window.cargarMas               = cargarMas;
 window.openProdModal           = openProdModal;
 window.closeProdModal          = closeProdModal;
 window.saveProd                = saveProd;
