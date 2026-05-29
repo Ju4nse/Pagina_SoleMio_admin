@@ -122,18 +122,43 @@ async function doGuestLogin() {
 }
 
 async function doLogout() {
-  detenerRealtime();
-  _appStarted = false;
-  if (currentRole === 'admin') {
-    await sb.auth.signOut();
-  }
-  currentRole = null;
-  mostrarPantallaLogin();
-  document.getElementById('login-user').value        = '';
-  document.getElementById('login-pass').value        = '';
-  document.getElementById('login-error').textContent = '';
-}
+  console.log('[LOGOUT] click');
 
+  try {
+    detenerRealtime();
+
+    // limpiar estado local ANTES
+    _appStarted = false;
+    currentRole = null;
+
+    // cerrar sesión supabase siempre
+    const { error } = await sb.auth.signOut();
+
+    if (error) {
+      console.error('[LOGOUT ERROR]', error);
+    }
+
+    // limpiar caches locales
+    localStorage.removeItem('solemio-auth');
+    localStorage.removeItem('solemio-productos');
+    localStorage.removeItem('solemio-compras');
+
+    // UI login
+    mostrarPantallaLogin();
+
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-error').textContent = '';
+
+    console.log('[LOGOUT] ok');
+
+    // matar estado viejo
+    window.location.reload();
+
+  } catch (e) {
+    console.error('[LOGOUT EXCEPTION]', e);
+  }
+}
 function mostrarPantallaApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display          = 'block';
