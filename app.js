@@ -1062,13 +1062,17 @@ async function init() {
   initTheme();
 
   // Estado inicial del DOM siempre conocido
-  document.getElementById('app').style.display          = 'none';
+  document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 
+  // Escuchar cambios de auth
   sb.auth.onAuthStateChange(async (event, session) => {
     console.log('[AUTH]', event, session?.user?.email ?? '—');
 
     if (event === 'SIGNED_IN' && session) {
+
+      // Evitar doble arranque
+      if (_appStarted && currentRole === 'admin') return;
 
       const { data, error: adminError } = await sb
         .from('admins')
@@ -1080,49 +1084,106 @@ async function init() {
 
       if (adminError) {
         console.warn('Error consultando admins:', adminError.message);
+
         await sb.auth.signOut();
         currentRole = null;
         mostrarPantallaLogin();
+
         const errEl = document.getElementById('login-error');
-        if (errEl) errEl.textContent = 'Error verificando permisos. Intentá de nuevo.';
+        if (errEl) {
+          errEl.textContent = 'Error verificando permisos. Intentá de nuevo.';
+        }
         return;
       }
 
       if (data) {
+        currentRole = 'admin';
+
         if (!_appStarted) {
-          currentRole = 'admin';
           await startApp();
         }
-        // Siempre re-habilitar el botón al terminar (por si una recarga lo dejó bloqueado)
+
+        // Asegurar UI correcta
+        mostrarPantallaApp();
+
+        // Rehabilitar botón login
         const btnEl = document.querySelector('.login-btn');
-        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.textContent = 'Ingresar';
+        }
+
       } else {
+        console.warn('Usuario sin permisos admin');
+
         await sb.auth.signOut();
         currentRole = null;
         mostrarPantallaLogin();
+
         const errEl = document.getElementById('login-error');
-        if (errEl) errEl.textContent = 'Este usuario no tiene permisos de administrador.';
+        if (errEl) {
+          errEl.textContent = 'Este usuario no tiene permisos de administrador.';
+        }
       }
 
     } else if (event === 'SIGNED_OUT') {
-       console.log('[AUTH] signed out OK');
+      console.log('[AUTH] signed out OK');
+
+      detenerRealtime();
+
       currentRole = null;
       _appStarted = false;
+
       mostrarPantallaLogin();
-      // Re-habilitar botón por si quedó en "Verificando…"
+
       const btnEl = document.querySelector('.login-btn');
-      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = 'Ingresar';
+      }
     }
   });
 
-  const { data: { session } } = await sb.auth.getSession();
+  // Restaurar sesión al refrescar
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+
   console.log('[INIT] sesión activa al cargar:', !!session);
 
-  if (!session && !isLoggedIn()) {
+  if (session?.user) {
+    console.log('[INIT] restaurando sesión:', session.user.email);
+
+    const { data, error: adminError } = await sb
+      .from('admins')
+      .select('email')
+      .eq('email', session.user.email)
+      .maybeSingle();
+
+    console.log('[INIT ADMINS]', data, '| error:', adminError?.message ?? null);
+
+    if (adminError) {
+      console.warn('Error verificando admin al restaurar sesión:', adminError.message);
+
+      await sb.auth.signOut();
+      mostrarPantallaLogin();
+      return;
+    }
+
+    if (data) {
+      currentRole = 'admin';
+      await startApp();
+      mostrarPantallaApp();
+    } else {
+      console.warn('Sesión restaurada sin permisos admin');
+
+      await sb.auth.signOut();
+      mostrarPantallaLogin();
+    }
+  } else {
     mostrarPantallaLogin();
   }
 }
-
 // ── Exponer funciones globales para los onclick del HTML ──────
 window.doLogin                 = doLogin;
 window.doGuestLogin            = doGuestLogin;
