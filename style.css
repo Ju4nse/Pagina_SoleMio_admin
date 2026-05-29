@@ -95,7 +95,6 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
 
 .logo-img {
   height: 80px;
-  outline: 1px solid red;
   width: auto;
   object-fit: contain;
   display: block;
