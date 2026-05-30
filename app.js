@@ -362,7 +362,7 @@ async function cargarProductos() {
     const { data, error } = await sb
       .from('productos')
       .select('*')
-      .order('marca')
+      .order('id', {ascending: true})
       .range(desde, desde + PAGINA - 1);
 
     if (error) {
