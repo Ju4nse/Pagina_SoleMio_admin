@@ -547,7 +547,7 @@ function renderCatalogo(resetear = false) {
       : 'Sin stock';
 
     return `
-    <article class="prod-card" style="animation-delay:${i * 30}ms">
+    <article class="prod-card" style="animation-delay:${i * 30}ms;cursor:pointer" onclick="openViewModal('${p.id}')">
       ${img
         ? `<img class="prod-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -566,10 +566,10 @@ function renderCatalogo(resetear = false) {
         </div>
         ${isAdmin() ? `
         <div class="prod-actions">
-          <button class="btn sm ghost" onclick="openProdModal('${p.id}')">
+          <button class="btn sm ghost" onclick="event.stopPropagation();openProdModal('${p.id}')">
             ${ICON.edit} Editar
           </button>
-          <button class="btn sm danger" onclick="confirmarEliminar('${p.id}')">
+          <button class="btn sm danger" onclick="event.stopPropagation();confirmarEliminar('${p.id}')">
             ${ICON.trash}
           </button>
         </div>` : ''}
@@ -591,6 +591,70 @@ function cargarMas() {
   productosVisibles += 50;
   renderCatalogo();
 }
+/* ================================================================
+   MODAL VER DETALLE (foto grande + todos los datos)
+   ================================================================ */
+
+function openViewModal(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+
+  const img      = p.imagen;
+  const enStock  = p.stock === true || p.stock === 'in stock';
+  const cantidad = p.num_stock ?? null;
+
+  const badgeStock = enStock
+    ? (isAdmin() && cantidad != null ? `En stock (${cantidad})` : 'En stock')
+    : 'Sin stock';
+
+  document.getElementById('modal-view').innerHTML = `
+    <div class="modal-overlay" id="mvo" onclick="if(event.target.id==='mvo') closeViewModal()">
+      <div class="modal modal-view-box">
+        <button class="modal-close-x" onclick="closeViewModal()" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+
+        ${img
+          ? `<img class="view-img" src="${img}" alt="${p.nombre}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+             <div class="view-img-ph" style="display:none">${ICON.shoe}</div>`
+          : `<div class="view-img-ph">${ICON.shoe}</div>`}
+
+        <div class="view-body">
+          <div style="font-size:.72rem;color:var(--text-3);font-family:monospace;margin-bottom:.25rem">ID: ${p.id}</div>
+          <div class="view-name">${p.nombre}</div>
+          <div class="view-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
+
+          <div class="prod-badges" style="margin:.6rem 0 1rem">
+            <span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>
+            ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
+            ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
+            ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
+          </div>
+
+          <div class="view-grid">
+            <div><label>Marca</label><span>${p.marca || '—'}</span></div>
+            <div><label>Color</label><span>${p.color || '—'}</span></div>
+            <div><label>Talles</label><span>${p.talles || '—'}</span></div>
+            <div><label>Precio base</label><span>${fmtARS(p.precio || 0)}</span></div>
+          </div>
+        </div>
+
+        ${isAdmin() ? `
+        <div class="modal-footer">
+          <button class="btn ghost" onclick="closeViewModal()">Cerrar</button>
+          <button class="btn primary" onclick="closeViewModal();openProdModal('${p.id}')">${ICON.edit} Editar</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function closeViewModal() {
+  document.getElementById('modal-view').innerHTML = '';
+}
+
 /* ================================================================
    MODAL PRODUCTO
    ================================================================ */
@@ -1160,6 +1224,8 @@ window.togglePass              = togglePass;
 window.showTab                 = showTab;
 window.renderCatalogo          = renderCatalogo;
 window.cargarMas               = cargarMas;
+window.openViewModal           = openViewModal;
+window.closeViewModal          = closeViewModal;
 window.openProdModal           = openProdModal;
 window.closeProdModal          = closeProdModal;
 window.saveProd                = saveProd;
