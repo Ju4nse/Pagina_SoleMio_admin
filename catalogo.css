@@ -1,74 +1,7 @@
 /* ================================================================
-   style.css — SoleMio Panel
+   catalogo.css — Estilos exclusivos del panel (catálogo, compras,
+   sincronización, topbar, modales)
    ================================================================ */
-
-/* ── TOKENS: MODO CLARO ──────────────────────────────────────── */
-:root {
-  --bg:        #F7F5F2;
-  --surface:   #FFFFFF;
-  --surface2:  #F0EDE8;
-  --border:    rgba(0, 0, 0, 0.08);
-  --border-md: rgba(0, 0, 0, 0.14);
-  --text:      #1A1917;
-  --text-2:    #6B6760;
-  --text-3:    #A8A49F;
-  --accent:    #1A1917;
-  --accent-fg: #F7F5F2;
-  --green:     #2D6A4F;
-  --green-bg:  #D8F3DC;
-  --red:       #9B2335;
-  --red-bg:    #FDECEA;
-  --blue:      #1B4F8C;
-  --blue-bg:   #DDEEFF;
-  --radius:    10px;
-  --radius-lg: 14px;
-  --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── TOKENS: MODO OSCURO ─────────────────────────────────────── */
-[data-theme="dark"] {
-  --bg:        #111110;
-  --surface:   #1C1B1A;
-  --surface2:  #242322;
-  --border:    rgba(255, 255, 255, 0.07);
-  --border-md: rgba(255, 255, 255, 0.13);
-  --text:      #F0EDE8;
-  --text-2:    #9A9691;
-  --text-3:    #5C5A57;
-  --accent:    #F0EDE8;
-  --accent-fg: #111110;
-  --green:     #74C69D;
-  --green-bg:  #1B3D2B;
-  --red:       #F08080;
-  --red-bg:    #3A1A1A;
-  --blue:      #80B4EE;
-  --blue-bg:   #1A2E44;
-}
-
-/* ── RESET ───────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html { font-size: 15px; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  transition: background 0.3s, color 0.3s;
-  -webkit-font-smoothing: antialiased;
-}
-
-button    { font-family: inherit; cursor: pointer; }
-input,
-select,
-textarea  { font-family: inherit; font-size: 0.9rem; }
 
 /* ── LAYOUT ──────────────────────────────────────────────────── */
 .shell {
@@ -98,21 +31,6 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
   width: auto;
   object-fit: contain;
   display: block;
-}
-
-.logo-word {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.5rem;
-  letter-spacing: -0.01em;
-  color: var(--text);
-}
-
-.logo-tag {
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .topbar-right {
@@ -242,55 +160,6 @@ select {
 }
 
 select:focus { outline: none; border-color: var(--text-3); }
-
-/* ── BUTTONS ─────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-md);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 400;
-  transition: var(--trans);
-  white-space: nowrap;
-}
-
-.btn:hover  { background: var(--surface2); }
-.btn:active { transform: scale(0.98); }
-
-.btn.primary {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
-}
-.btn.primary:hover { opacity: 0.88; }
-
-.btn.ghost {
-  border-color: transparent;
-  background: transparent;
-  color: var(--text-2);
-}
-.btn.ghost:hover { color: var(--text); background: var(--surface2); }
-
-.btn.danger {
-  color: var(--red);
-  border-color: transparent;
-  background: transparent;
-}
-.btn.danger:hover { background: var(--red-bg); }
-
-.btn.sm  { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
-
-.btn svg {
-  width: 15px;
-  height: 15px;
-  stroke: currentColor;
-  flex-shrink: 0;
-}
 
 /* ── PRODUCT GRID ────────────────────────────────────────────── */
 .prod-grid {
@@ -512,10 +381,10 @@ select:focus { outline: none; border-color: var(--text-3); }
   max-width: 460px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideup 0.18s ease;
+  animation: modalslideup 0.18s ease;
 }
 
-@keyframes slideup {
+@keyframes modalslideup {
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
@@ -533,45 +402,6 @@ select:focus { outline: none; border-color: var(--text-3); }
   width: 18px;
   height: 18px;
   stroke: var(--text-2);
-}
-
-/* ── FORM FIELDS ─────────────────────────────────────────────── */
-.field { margin-bottom: 0.875rem; }
-
-.field label {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--text-2);
-  margin-bottom: 0.3rem;
-  letter-spacing: 0.02em;
-}
-
-.field input,
-.field select,
-.field textarea {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg);
-  border: 1px solid var(--border-md);
-  border-radius: var(--radius);
-  color: var(--text);
-  transition: var(--trans);
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: var(--text-3);
-  background: var(--surface);
-}
-
-.field textarea { height: 72px; resize: vertical; }
-
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
 }
 
 .modal-footer {
@@ -808,147 +638,7 @@ select:focus { outline: none; border-color: var(--text-3); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 0.9s linear infinite; display: inline-block; }
 
-/* ── SCROLLBAR ───────────────────────────────────────────────── */
-::-webkit-scrollbar         { width: 5px; height: 5px; }
-::-webkit-scrollbar-track   { background: transparent; }
-::-webkit-scrollbar-thumb   { background: var(--border-md); border-radius: 99px; }
-
-
-/* ================================================================
-   LOGIN
-   ================================================================ */
-
-#login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: var(--bg);
-  transition: background 0.3s;
-}
-
-.login-card {
-  background: var(--surface);
-  border: 1px solid var(--border-md);
-  border-radius: var(--radius-lg);
-  padding: 2.5rem 2rem;
-  width: 100%;
-  max-width: 360px;
-  animation: slideup 0.22s ease;
-}
-
-.login-logo {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.login-logo .logo-word {
-  display: block;
-  font-family: 'DM Serif Display', serif;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  margin-bottom: 0.3rem;
-}
-
-.login-logo .logo-tag {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* ojo para ver contraseña */
-.toggle-pass {
-  position: absolute;
-  right: 10px;
-  bottom: 9px;
-  background: none;
-  border: none;
-  color: var(--text-3);
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  transition: color 0.15s;
-}
-.toggle-pass:hover { color: var(--text-2); }
-.toggle-pass svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-}
-
-.login-error {
-  font-size: 0.8rem;
-  color: var(--red);
-  min-height: 20px;
-  margin-bottom: 0.5rem;
-  text-align: center;
-  animation: shake 0.3s ease;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25%       { transform: translateX(-6px); }
-  75%       { transform: translateX(6px); }
-}
-
-.login-btn {
-  width: 100%;
-  justify-content: center;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.login-hint {
-  text-align: center;
-  font-size: 0.72rem;
-  color: var(--text-3);
-}
-
-/* botón de logout en topbar */
-.logout-btn {
-  color: var(--text-3) !important;
-}
-.logout-btn:hover {
-  color: var(--red) !important;
-  background: var(--red-bg) !important;
-}
-
-
-/* ================================================================
-   LOGO EN LOGIN
-   ================================================================ */
-
-.login-img-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: .5rem;
-}
-
-.login-logo-img {
-  max-width: 180px;
-  max-height: 100px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  /* Adaptación automática al modo oscuro */
-  filter: none;
-}
-
-[data-theme="dark"] .login-logo-img {
-  /* Invertir logos oscuros para que se vean en modo noche */
-  filter: brightness(0) invert(1);
-}
-
-/* ================================================================
-   BADGE DE ROL (topbar)
-   ================================================================ */
-
+/* ── BADGE DE ROL (topbar) ────────────────────────────────────── */
 .role-badge {
   font-size: .7rem;
   font-weight: 500;
@@ -968,46 +658,17 @@ select:focus { outline: none; border-color: var(--text-3); }
   color: var(--blue);
 }
 
-/* ================================================================
-   MODO INVITADO — ocultar acciones de edición via CSS también
-   ================================================================ */
+/* ── BOTÓN DE LOGOUT EN TOPBAR ────────────────────────────────── */
+.logout-btn {
+  color: var(--text-3) !important;
+}
+.logout-btn:hover {
+  color: var(--red) !important;
+  background: var(--red-bg) !important;
+}
 
+/* ── MODO INVITADO — ocultar acciones de edición vía CSS también ── */
 [data-role="guest"] .prod-actions,
 [data-role="guest"] .toolbar .btn.primary {
   display: none !important;
-}
-
-
-/* ── BOTÓN INVITADO Y DIVIDER ─────────────────────────────── */
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  margin: .75rem 0;
-  color: var(--text-3);
-  font-size: .75rem;
-}
-.login-divider::before,
-.login-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-md);
-}
-
-.guest-btn {
-  width: 100%;
-  justify-content: center;
-  padding: .6rem 1rem;
-  font-size: .875rem;
-  color: var(--text-2);
-  border-color: var(--border-md);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-}
-.guest-btn:hover {
-  background: var(--surface2);
-  color: var(--text);
 }

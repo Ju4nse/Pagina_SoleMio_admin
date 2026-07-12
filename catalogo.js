@@ -1,184 +1,27 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+/* ================================================================
+   catalogo.js — Backend propio del panel (catálogo, compras, sync)
+   Requiere sesión válida (admin o invitado); si no existe, redirige
+   de vuelta a login.html
+   ================================================================ */
+import { sb, esAdmin }        from './supabase-client.js';
+import { ICON, initTheme, toggleTheme } from './theme.js';
 
 /* ================================================================
-   SUPABASE — singleton (evita múltiples instancias GoTrueClient)
+   STATE
    ================================================================ */
-const SUPABASE_URL      = 'https://pktwpktmxbfapwjsugrx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Z2czITrIU3Y32ZLEjno9uw_oS2gGe6f';
-
-const sb = (() => {
-  const KEY = '__solemio_sb__';
-  if (window[KEY]) return window[KEY];
-  window[KEY] = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      storageKey:       'solemio-auth',
-      autoRefreshToken: true,
-      persistSession:   true,
-    },
-  });
-  return window[KEY];
-})();
-
-
-/* ================================================================
-   AUTH — Supabase Auth + modo invitado
-   ================================================================ */
-
-// ── RATE LIMITING — máx 5 intentos fallidos, bloqueo 5 min ──
-const RATE = {
-  MAX_INTENTOS:  5,
-  BLOQUEO_MS:    5 * 60 * 1000,
-  KEY_INTENTOS:  'solemio-login-intentos',
-  KEY_BLOQUEADO: 'solemio-login-bloqueado',
-};
-
-function loginBloqueado() {
-  const hasta = parseInt(localStorage.getItem(RATE.KEY_BLOQUEADO) || '0');
-  if (Date.now() < hasta) return Math.ceil((hasta - Date.now()) / 60000);
-  return 0;
-}
-
-function registrarIntentoFallido() {
-  const intentos = parseInt(localStorage.getItem(RATE.KEY_INTENTOS) || '0') + 1;
-  localStorage.setItem(RATE.KEY_INTENTOS, intentos);
-  if (intentos >= RATE.MAX_INTENTOS) {
-    localStorage.setItem(RATE.KEY_BLOQUEADO, Date.now() + RATE.BLOQUEO_MS);
-    localStorage.removeItem(RATE.KEY_INTENTOS);
-    return -1;
-  }
-  return RATE.MAX_INTENTOS - intentos;
-}
-
-function resetearIntentos() {
-  localStorage.removeItem(RATE.KEY_INTENTOS);
-  localStorage.removeItem(RATE.KEY_BLOQUEADO);
-}
-
-const GUEST_PASS = 'solemio';
-
-let currentRole = null;   // 'admin' | 'guest' | null
-let _appStarted = false;  // guard para evitar doble startApp()
+let currentRole        = null;   // 'admin' | 'guest'
+let productos           = [];
+let compras             = [];
+let productosVisibles   = 50;
+let editingProdId       = null;
 
 function isAdmin()    { return currentRole === 'admin'; }
 function isGuest()    { return currentRole === 'guest'; }
-function isLoggedIn() { return currentRole !== null; }
-
-async function doLogin() {
-  const errEl = document.getElementById('login-error');
-  const btnEl = document.querySelector('.login-btn');
-
-  const minsBloqueado = loginBloqueado();
-  if (minsBloqueado > 0) {
-    errEl.textContent = `Demasiados intentos. Esperá ${minsBloqueado} min.`;
-    return;
-  }
-
-  const user = document.getElementById('login-user').value.trim().slice(0, 128);
-  const pass = document.getElementById('login-pass').value.slice(0, 128);
-
-  if (!user || !pass) { errEl.textContent = 'Completá usuario y contraseña'; return; }
-
-  errEl.textContent = '';
-  btnEl.disabled    = true;
-  btnEl.textContent = 'Verificando…';
-
-  // ── Modo invitado ──────────────────────────────────────────
-  if (user.toLowerCase() === 'invitado' && pass === GUEST_PASS) {
-    resetearIntentos();
-    currentRole = 'guest';
-    await startApp();
-    btnEl.disabled    = false;
-    btnEl.textContent = 'Ingresar';
-    return;
-  }
-
-  // ── Admin: Supabase Auth ───────────────────────────────────
-  const { error } = await sb.auth.signInWithPassword({ email: user, password: pass });
-
-  if (error) {
-    const restantes = registrarIntentoFallido();
-    if (restantes === -1) {
-      errEl.textContent = 'Demasiados intentos. Cuenta bloqueada 5 minutos.';
-    } else {
-      errEl.textContent = `Usuario o contraseña incorrectos (${restantes} intento${restantes !== 1 ? 's' : ''} restante${restantes !== 1 ? 's' : ''})`;
-    }
-    errEl.style.animation = 'none';
-    errEl.offsetHeight;
-    errEl.style.animation = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('login-pass').focus();
-    btnEl.disabled    = false;
-    btnEl.textContent = 'Ingresar';
-    return;
-  }
-
-  // Supabase Auth exitoso → onAuthStateChange maneja el resto
-  resetearIntentos();
-}
-
-async function doGuestLogin() {
-  currentRole = 'guest';
-  await startApp();
-  const filtroStock = document.getElementById('filtro-stock');
-  if (filtroStock) { filtroStock.value = 'in stock'; renderCatalogo(); }
-}
-
-async function doLogout() {
-  console.log('[LOGOUT] click', currentRole);
-
-  detenerRealtime();
-
-  // si era admin, cerrar sesión Supabase
-  if (currentRole === 'admin') {
-    const { error } = await sb.auth.signOut();
-
-    if (error) {
-      console.error('[LOGOUT ERROR]', error);
-    }
-  }
-
-  // reset TOTAL del estado local
-  currentRole = null;
-  _appStarted = false;
-
-  // limpiar caches
-  localStorage.removeItem('solemio-productos');
-  localStorage.removeItem('solemio-compras');
-
-  // cerrar modales abiertos
-  document.getElementById('modal-prod').innerHTML = '';
-  document.getElementById('modal-compra').innerHTML = '';
-
-  // volver a login
-  mostrarPantallaLogin();
-
-  // limpiar inputs
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').textContent = '';
-
-  console.log('[LOGOUT] ok');
-}
-
-function mostrarPantallaApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display          = 'block';
-}
-
-function mostrarPantallaLogin() {
-  _appStarted = false;
-  currentRole = null;
-  document.getElementById('app').style.display          = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  const btnEl = document.querySelector('.login-btn');
-  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
-}
 
 
 /* ================================================================
    REALTIME
    ================================================================ */
-
 let _realtimeCanalProductos = null;
 let _realtimeCanalCompras   = null;
 
@@ -210,7 +53,7 @@ function detenerRealtime() {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     detenerRealtime();
-  } else if (isLoggedIn()) {
+  } else if (currentRole) {
     iniciarRealtime();
     cargarProductos();
     cargarCompras();
@@ -221,7 +64,6 @@ document.addEventListener('visibilitychange', () => {
 /* ================================================================
    CONFIG — GitHub Actions
    ================================================================ */
-
 let ghToken = '';
 
 function loadConfig() {
@@ -247,60 +89,8 @@ function fillSyncInputs() {
 
 
 /* ================================================================
-   STATE
+   TABS
    ================================================================ */
-
-let productos = [];
-let compras   = [];
-let productosVisibles = 50;
-
-/* ================================================================
-   ÍCONOS SVG
-   ================================================================ */
-
-const ICON = {
-  sun: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/>
-    <line x1="12" y1="1"  x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-  </svg>`,
-  moon: `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
-  edit: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
-  trash: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-    <path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="20 6 9 17 4 12"/></svg>`,
-  shoe: `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    <polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-  cart: `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
-};
-
-
-/* ================================================================
-   TEMA / TABS
-   ================================================================ */
-
-function toggleTheme() {
-  const html   = document.documentElement;
-  const isDark = html.dataset.theme === 'dark';
-  html.dataset.theme = isDark ? 'light' : 'dark';
-  document.getElementById('theme-btn').innerHTML = isDark ? ICON.moon : ICON.sun;
-  localStorage.setItem('solemio-theme', html.dataset.theme);
-}
-
-function initTheme() {
-  const saved = localStorage.getItem('solemio-theme') || 'light';
-  document.documentElement.dataset.theme = saved;
-  document.getElementById('theme-btn').innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
-}
-
 function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -314,7 +104,6 @@ function showTab(name, btn) {
 /* ================================================================
    HELPERS
    ================================================================ */
-
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 }
@@ -336,7 +125,6 @@ function resolverImagen(p) {
 /* ================================================================
    CARGAR DATOS — Supabase
    ================================================================ */
-
 async function cargarProductos() {
   const grid = document.getElementById('catalogo-grid');
   if (grid) {
@@ -410,7 +198,6 @@ async function cargarCompras() {
 /* ================================================================
    GUARDAR DATOS — Supabase
    ================================================================ */
-
 async function persistirProducto(p) {
   if (!isAdmin()) { console.warn('Acceso denegado'); return; }
 
@@ -487,7 +274,6 @@ async function eliminarCompraDB(id) {
 /* ================================================================
    RENDER CATÁLOGO
    ================================================================ */
-
 function renderCatalogo(resetear = false) {
   if (resetear) productosVisibles = 30;
 
@@ -591,10 +377,11 @@ function cargarMas() {
   productosVisibles += 50;
   renderCatalogo();
 }
+
+
 /* ================================================================
    MODAL VER DETALLE (foto grande + todos los datos)
    ================================================================ */
-
 function openViewModal(id) {
   const p = productos.find(x => x.id === id);
   if (!p) return;
@@ -655,12 +442,10 @@ function closeViewModal() {
   document.getElementById('modal-view').innerHTML = '';
 }
 
+
 /* ================================================================
    MODAL PRODUCTO
    ================================================================ */
-
-let editingProdId = null;
-
 function openProdModal(id) {
   editingProdId = id || null;
   const p     = id ? productos.find(x => x.id === id) : null;
@@ -796,7 +581,6 @@ async function confirmarEliminar(id) {
 /* ================================================================
    MODAL COMPRA
    ================================================================ */
-
 function openPurchaseModal() {
   window._sel = [];
   const today = new Date().toISOString().slice(0, 10);
@@ -916,7 +700,6 @@ async function savePurchase() {
 /* ================================================================
    RENDER COMPRAS
    ================================================================ */
-
 function renderCompras() {
   const hoy   = new Date().toISOString().slice(0, 10);
   const mes   = new Date().toISOString().slice(0, 7);
@@ -973,7 +756,6 @@ async function confirmarEliminarCompra(id) {
 /* ================================================================
    GITHUB ACTIONS
    ================================================================ */
-
 async function pollWorkflowResult(token, repo) {
   const status  = document.getElementById('run-status');
   const headers = {
@@ -1063,7 +845,6 @@ async function runScript() {
 /* ================================================================
    ROL / ACCESOS
    ================================================================ */
-
 function applyRole() {
   const isG = isGuest();
 
@@ -1091,11 +872,6 @@ function applyRole() {
   }
 }
 
-function togglePass() {
-  const input = document.getElementById('login-pass');
-  input.type  = input.type === 'password' ? 'text' : 'password';
-}
-
 async function cambiarPassword() {
   if (!isAdmin()) return;
 
@@ -1120,18 +896,43 @@ async function cambiarPassword() {
 
 
 /* ================================================================
-   INIT
+   LOGOUT
    ================================================================ */
+async function doLogout() {
+  detenerRealtime();
 
+  if (currentRole === 'admin') {
+    const { error } = await sb.auth.signOut();
+    if (error) console.error('[LOGOUT ERROR]', error);
+  }
+
+  currentRole = null;
+  sessionStorage.removeItem('solemio-role');
+  localStorage.removeItem('solemio-productos');
+  localStorage.removeItem('solemio-compras');
+
+  window.location.href = 'login.html';
+}
+
+
+/* ================================================================
+   INIT / GUARDIA DE AUTENTICACIÓN
+   ================================================================ */
 async function startApp() {
-  if (_appStarted) return;
-  _appStarted = true;
+  document.getElementById('app').style.display = 'block';
 
-  loadConfig();
+  initTheme();
   applyRole();
-  mostrarPantallaApp();
 
   await new Promise(r => requestAnimationFrame(r));
+
+  loadConfig();
+
+  // filtro de stock por defecto para invitados que vienen de "Ver como invitado"
+  if (isGuest() && new URLSearchParams(location.search).get('stock') === 'in') {
+    const filtroStock = document.getElementById('filtro-stock');
+    if (filtroStock) filtroStock.value = 'in stock';
+  }
 
   await cargarProductos();
   await cargarCompras();
@@ -1139,88 +940,36 @@ async function startApp() {
 }
 
 async function init() {
-  initTheme();
+  const rolGuardado = sessionStorage.getItem('solemio-role');
 
-  // DOM conocido
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-
-  // ─────────────────────────────────────────────
-  // Restaurar sesión primero
-  // ─────────────────────────────────────────────
-  const {
-    data: { session }
-  } = await sb.auth.getSession();
-
-  console.log('[INIT] sesión activa:', !!session);
-
-  if (session?.user) {
-    console.log('[INIT] restaurando:', session.user.email);
-
-    const { data, error } = await sb
-      .from('admins')
-      .select('email')
-      .eq('email', session.user.email)
-      .maybeSingle();
-
-    console.log('[INIT ADMINS]', data, error?.message ?? null);
-
-    if (data) {
-      currentRole = 'admin';
-      await startApp();
-      return; // IMPORTANTÍSIMO
-    }
-
-    await sb.auth.signOut();
+  if (rolGuardado === 'guest') {
+    currentRole = 'guest';
+    await startApp();
+    return;
   }
 
-  // si no hay sesión válida → login
-  mostrarPantallaLogin();
+  // Sesión de admin vía Supabase
+  const { data: { session } } = await sb.auth.getSession();
 
-  // ─────────────────────────────────────────────
-  // Escuchar cambios DESPUÉS del init
-  // ─────────────────────────────────────────────
-  sb.auth.onAuthStateChange(async (event, session) => {
-    console.log('[AUTH]', event, session?.user?.email ?? '—');
+  if (session?.user && await esAdmin(session.user.email)) {
+    currentRole = 'admin';
+    await startApp();
 
-    if (event === 'SIGNED_IN' && session) {
-
-      // evitar doble init
-      if (_appStarted) return;
-
-      const { data, error } = await sb
-        .from('admins')
-        .select('email')
-        .eq('email', session.user.email)
-        .maybeSingle();
-
-      if (error || !data) {
-        await sb.auth.signOut();
-        mostrarPantallaLogin();
-        return;
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        currentRole = null;
+        window.location.href = 'login.html';
       }
+    });
+    return;
+  }
 
-      currentRole = 'admin';
-      await startApp();
-
-    } else if (event === 'SIGNED_OUT') {
-      console.log('[AUTH] signed out');
-
-      detenerRealtime();
-
-      currentRole = null;
-      _appStarted = false;
-
-      mostrarPantallaLogin();
-    }
-  });
+  // Sin sesión válida → volver al login
+  window.location.href = 'login.html';
 }
+
 // ── Exponer funciones globales para los onclick del HTML ──────
-window.doLogin                 = doLogin;
-window.doGuestLogin            = doGuestLogin;
-window.doLogout                = doLogout;
 window.toggleTheme             = toggleTheme;
-window.togglePass              = togglePass;
 window.showTab                 = showTab;
 window.renderCatalogo          = renderCatalogo;
 window.cargarMas               = cargarMas;
@@ -1235,8 +984,9 @@ window.openPurchaseModal       = openPurchaseModal;
 window.closePurchaseModal      = closePurchaseModal;
 window.savePurchase            = savePurchase;
 window.confirmarEliminarCompra = confirmarEliminarCompra;
-window.runScript               = runScript;
-window.saveConfig              = saveConfig;
-window.cambiarPassword         = cambiarPassword;
+window.runScript                = runScript;
+window.saveConfig               = saveConfig;
+window.cambiarPassword          = cambiarPassword;
+window.doLogout                 = doLogout;
 
 init();

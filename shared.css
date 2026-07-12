@@ -1,0 +1,181 @@
+/* ================================================================
+   shared.css — Tokens, reset y componentes base
+   Usado por login.html y catalogo.html
+   ================================================================ */
+
+/* ── TOKENS: MODO CLARO ──────────────────────────────────────── */
+:root {
+  --bg:        #F7F5F2;
+  --surface:   #FFFFFF;
+  --surface2:  #F0EDE8;
+  --border:    rgba(0, 0, 0, 0.08);
+  --border-md: rgba(0, 0, 0, 0.14);
+  --text:      #1A1917;
+  --text-2:    #6B6760;
+  --text-3:    #A8A49F;
+  --accent:    #1A1917;
+  --accent-fg: #F7F5F2;
+  --green:     #2D6A4F;
+  --green-bg:  #D8F3DC;
+  --red:       #9B2335;
+  --red-bg:    #FDECEA;
+  --blue:      #1B4F8C;
+  --blue-bg:   #DDEEFF;
+  --radius:    10px;
+  --radius-lg: 14px;
+  --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── TOKENS: MODO OSCURO ─────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:        #111110;
+  --surface:   #1C1B1A;
+  --surface2:  #242322;
+  --border:    rgba(255, 255, 255, 0.07);
+  --border-md: rgba(255, 255, 255, 0.13);
+  --text:      #F0EDE8;
+  --text-2:    #9A9691;
+  --text-3:    #5C5A57;
+  --accent:    #F0EDE8;
+  --accent-fg: #111110;
+  --green:     #74C69D;
+  --green-bg:  #1B3D2B;
+  --red:       #F08080;
+  --red-bg:    #3A1A1A;
+  --blue:      #80B4EE;
+  --blue-bg:   #1A2E44;
+}
+
+/* ── RESET ───────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+  -webkit-font-smoothing: antialiased;
+}
+
+button    { font-family: inherit; cursor: pointer; }
+input,
+select,
+textarea  { font-family: inherit; font-size: 0.9rem; }
+
+/* ── LOGO (compartido entre topbar de catálogo y tarjeta de login) ── */
+.logo-word {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.logo-tag {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── BOTONES ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 400;
+  transition: var(--trans);
+  white-space: nowrap;
+}
+
+.btn:hover  { background: var(--surface2); }
+.btn:active { transform: scale(0.98); }
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+.btn.primary:hover { opacity: 0.88; }
+
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+}
+.btn.ghost:hover { color: var(--text); background: var(--surface2); }
+
+.btn.danger {
+  color: var(--red);
+  border-color: transparent;
+  background: transparent;
+}
+.btn.danger:hover { background: var(--red-bg); }
+
+.btn.sm  { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
+
+.btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── CAMPOS DE FORMULARIO ───────────────────────────────────── */
+.field { margin-bottom: 0.875rem; }
+
+.field label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.02em;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  color: var(--text);
+  transition: var(--trans);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--text-3);
+  background: var(--surface);
+}
+
+.field textarea { height: 72px; resize: vertical; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* ── SCROLLBAR ───────────────────────────────────────────────── */
+::-webkit-scrollbar         { width: 5px; height: 5px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: var(--border-md); border-radius: 99px; }
