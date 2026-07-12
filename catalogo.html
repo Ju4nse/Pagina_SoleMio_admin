@@ -47,7 +47,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()">
+          <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()" autocomplete="off">
         </div>
         <select id="filtro-marca" onchange="renderCatalogo()">
           <option value="">Todas las marcas</option>
@@ -111,16 +111,16 @@
         <p class="config-title">Configuración de GitHub Actions</p>
         <div class="field">
           <label>Token de GitHub</label>
-          <input type="password" id="gh-token" placeholder="ghp_…" oninput="saveConfig()">
+          <input type="password" id="gh-token" placeholder="ghp_…" oninput="saveConfig()" autocomplete="off">
         </div>
         <div class="field-row">
           <div class="field">
             <label>Repo (usuario/repo)</label>
-            <input type="text" id="gh-repo" placeholder="miusuario/solemio" oninput="saveConfig()">
+            <input type="text" id="gh-repo" placeholder="miusuario/solemio" oninput="saveConfig()" autocomplete="off">
           </div>
           <div class="field">
             <label>Workflow file</label>
-            <input type="text" id="gh-workflow" placeholder="catalogo.yml" oninput="saveConfig()">
+            <input type="text" id="gh-workflow" placeholder="catalogo.yml" oninput="saveConfig()" autocomplete="off">
           </div>
         </div>
         <p class="config-hint">El token se guarda solo en este navegador (localStorage).</p>
@@ -131,16 +131,16 @@
         <p class="config-title">Cambiar contraseña</p>
         <div class="field">
           <label>Contraseña actual</label>
-          <input type="password" id="cp-actual" placeholder="••••••••">
+          <input type="password" id="cp-actual" placeholder="••••••••" autocomplete="current-password">
         </div>
         <div class="field-row">
           <div class="field">
             <label>Nueva contraseña</label>
-            <input type="password" id="cp-nueva" placeholder="••••••••">
+            <input type="password" id="cp-nueva" placeholder="••••••••" autocomplete="new-password">
           </div>
           <div class="field">
             <label>Repetir nueva</label>
-            <input type="password" id="cp-repetir" placeholder="••••••••">
+            <input type="password" id="cp-repetir" placeholder="••••••••" autocomplete="new-password">
           </div>
         </div>
         <div id="cp-msg" style="font-size:.78rem;min-height:18px;margin-bottom:.5rem"></div>
