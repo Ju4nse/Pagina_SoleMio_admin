@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoleMio — Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="catalogo.css">
+</head>
+<body>
+
+<div id="app" style="display:none">
+  <div class="shell">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="logo">
+        <span class="logo-word">SoleMio</span>
+        <span class="logo-tag">Panel</span>
+      </div>
+      <div class="topbar-right">
+        <nav class="nav">
+          <button class="nav-btn active" onclick="showTab('catalogo', this)">Catálogo</button>
+          <button class="nav-btn" onclick="showTab('compras', this)">Compras</button>
+          <button class="nav-btn" onclick="showTab('sync', this)">Sincronizar</button>
+        </nav>
+        <span class="role-badge" id="role-badge"></span>
+        <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
+        <button class="btn sm ghost logout-btn" onclick="doLogout()" title="Cerrar sesión">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB: CATÁLOGO -->
+    <div id="tab-catalogo" class="tab active">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()">
+        </div>
+        <select id="filtro-marca" onchange="renderCatalogo()">
+          <option value="">Todas las marcas</option>
+        </select>
+        <select id="filtro-stock" onchange="renderCatalogo()">
+          <option value="">Todo el stock</option>
+          <option value="in stock">En stock</option>
+          <option value="out of stock">Sin stock</option>
+        </select>
+        <button class="btn primary" onclick="openProdModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Nuevo producto
+        </button>
+      </div>
+
+      <div id="catalogo-grid" class="prod-grid">
+        <div class="empty" style="grid-column:1/-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          Cargando catálogo…
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: COMPRAS -->
+    <div id="tab-compras" class="tab">
+      <div class="stats-row" id="stats-row"></div>
+      <div class="section-hd">
+        <h2>Historial</h2>
+        <button class="btn primary" onclick="openPurchaseModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Registrar compra
+        </button>
+      </div>
+      <div id="purchase-list"></div>
+    </div>
+
+    <!-- TAB: SINCRONIZAR -->
+    <div id="tab-sync" class="tab">
+      <div class="runner-card">
+        <div class="runner-info">
+          <p>Actualizar catálogo desde Casa Ari</p>
+          <span>Dispara el script de Python vía GitHub Actions</span>
+          <div class="run-status" id="run-status"></div>
+        </div>
+        <button class="btn primary" id="run-btn" onclick="runScript()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-.08-3.63"/>
+          </svg>
+          Ejecutar
+        </button>
+      </div>
+
+      <div class="config-card">
+        <p class="config-title">Configuración de GitHub Actions</p>
+        <div class="field">
+          <label>Token de GitHub</label>
+          <input type="password" id="gh-token" placeholder="ghp_…" oninput="saveConfig()">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Repo (usuario/repo)</label>
+            <input type="text" id="gh-repo" placeholder="miusuario/solemio" oninput="saveConfig()">
+          </div>
+          <div class="field">
+            <label>Workflow file</label>
+            <input type="text" id="gh-workflow" placeholder="catalogo.yml" oninput="saveConfig()">
+          </div>
+        </div>
+        <p class="config-hint">El token se guarda solo en este navegador (localStorage).</p>
+      </div>
+
+      <!-- CAMBIAR CONTRASEÑA -->
+      <div class="config-card" style="margin-top:1rem">
+        <p class="config-title">Cambiar contraseña</p>
+        <div class="field">
+          <label>Contraseña actual</label>
+          <input type="password" id="cp-actual" placeholder="••••••••">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Nueva contraseña</label>
+            <input type="password" id="cp-nueva" placeholder="••••••••">
+          </div>
+          <div class="field">
+            <label>Repetir nueva</label>
+            <input type="password" id="cp-repetir" placeholder="••••••••">
+          </div>
+        </div>
+        <div id="cp-msg" style="font-size:.78rem;min-height:18px;margin-bottom:.5rem"></div>
+        <button class="btn primary" onclick="cambiarPassword()">Actualizar contraseña</button>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+</div><!-- /app -->
+
+<!-- Modales -->
+<div id="modal-view"></div>
+<div id="modal-prod"></div>
+<div id="modal-compra"></div>
+
+<script type="module" src="catalogo.js"></script>
+</body>
+</html>
