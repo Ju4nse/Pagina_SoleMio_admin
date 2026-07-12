@@ -599,7 +599,7 @@ function openPurchaseModal() {
             <span style="font-size:.75rem;color:var(--text-3)">Ninguno seleccionado</span>
           </div>
           <input type="text" id="c-buscar" placeholder="Buscar producto…"
-            oninput="renderProdSel()" style="margin-bottom:.5rem">
+            oninput="renderProdSel()" style="margin-bottom:.5rem" autocomplete="off">
           <div class="prod-selector" id="c-prod-sel"></div>
         </div>
         <div class="field">
