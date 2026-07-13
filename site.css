@@ -1,0 +1,106 @@
+/* ================================================================
+   site.css — Header y footer compartidos del sitio público
+   Usado por landing.html y contacto.html
+   ================================================================ */
+
+body { background: var(--bg); }
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 1rem;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.site-nav a {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+
+.site-nav a:hover { color: var(--text); }
+
+.site-nav a.active { color: var(--text); font-weight: 500; }
+
+.site-header .theme-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--trans);
+}
+.site-header .theme-btn:hover { color: var(--text); background: var(--surface2); }
+.site-header .theme-btn svg {
+  width: 16px; height: 16px; stroke: currentColor; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────────── */
+.site-footer {
+  max-width: 1080px;
+  margin: 4rem auto 0;
+  padding: 2rem 1.5rem 2.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-footer-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.site-footer-links a {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--trans);
+}
+
+.site-footer-links a:hover { color: var(--text); }
+
+.site-footer-links svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-footer-admin {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  text-decoration: none;
+}
+.site-footer-admin:hover { color: var(--text-2); }
+
+.site-footer-copy {
+  width: 100%;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 0.5rem;
+}

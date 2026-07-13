@@ -1,5 +1,5 @@
 /* ================================================================
-   catalogo.js — Backend propio del panel (catálogo, compras, sync)
+   catalogo.js — Backend propio del panel de catálogo
    Requiere sesión válida (admin o invitado); si no existe, redirige
    de vuelta a login.html
    ================================================================ */
@@ -11,7 +11,6 @@ import { ICON, initTheme, toggleTheme } from './theme.js';
    ================================================================ */
 let currentRole        = null;   // 'admin' | 'guest'
 let productos           = [];
-let compras             = [];
 let productosVisibles   = 50;
 let editingProdId       = null;
 
@@ -23,7 +22,6 @@ function isGuest()    { return currentRole === 'guest'; }
    REALTIME
    ================================================================ */
 let _realtimeCanalProductos = null;
-let _realtimeCanalCompras   = null;
 
 function iniciarRealtime() {
   detenerRealtime();
@@ -35,19 +33,10 @@ function iniciarRealtime() {
       () => { console.log('🔄 Productos cambiaron'); cargarProductos(); }
     )
     .subscribe();
-
-  _realtimeCanalCompras = sb
-    .channel('compras-cambios')
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'compras' },
-      () => { console.log('🔄 Compras cambiaron'); cargarCompras(); }
-    )
-    .subscribe();
 }
 
 function detenerRealtime() {
   if (_realtimeCanalProductos) { sb.removeChannel(_realtimeCanalProductos); _realtimeCanalProductos = null; }
-  if (_realtimeCanalCompras)   { sb.removeChannel(_realtimeCanalCompras);   _realtimeCanalCompras   = null; }
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -56,49 +45,8 @@ document.addEventListener('visibilitychange', () => {
   } else if (currentRole) {
     iniciarRealtime();
     cargarProductos();
-    cargarCompras();
   }
 });
-
-
-/* ================================================================
-   CONFIG — GitHub Actions
-   ================================================================ */
-let ghToken = '';
-
-function loadConfig() {
-  const t = sessionStorage.getItem('solemio-gh-token');
-  if (t) ghToken = t;
-}
-
-function saveConfig() {
-  ghToken = document.getElementById('gh-token').value.trim();
-  sessionStorage.setItem('solemio-gh-token', ghToken);
-  localStorage.setItem('gh-repo',     document.getElementById('gh-repo').value);
-  localStorage.setItem('gh-workflow', document.getElementById('gh-workflow').value);
-}
-
-function fillSyncInputs() {
-  const t = sessionStorage.getItem('solemio-gh-token');
-  const r = localStorage.getItem('gh-repo');
-  const w = localStorage.getItem('gh-workflow');
-  if (document.getElementById('gh-token')    && t) document.getElementById('gh-token').value    = t;
-  if (document.getElementById('gh-repo')     && r) document.getElementById('gh-repo').value     = r;
-  if (document.getElementById('gh-workflow') && w) document.getElementById('gh-workflow').value = w;
-}
-
-
-/* ================================================================
-   TABS
-   ================================================================ */
-function showTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-  if (name === 'compras') renderCompras();
-  if (name === 'sync')    fillSyncInputs();
-}
 
 
 /* ================================================================
@@ -110,11 +58,6 @@ function uid() {
 
 function fmtARS(n) {
   return '$\u202F' + Math.round(n).toLocaleString('es-AR');
-}
-
-function fmtFecha(iso) {
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
 }
 
 function resolverImagen(p) {
@@ -169,31 +112,6 @@ async function cargarProductos() {
   console.log(`✓ ${productos.length} productos cargados`);
 }
 
-async function cargarCompras() {
-  const local = localStorage.getItem('solemio-compras');
-  if (local) {
-    try { compras = JSON.parse(local); } catch (_) {}
-  }
-
-  const { data, error } = await sb
-    .from('compras')
-    .select('*')
-    .order('fecha', { ascending: false });
-
-  if (error) {
-    console.warn('Error cargando compras:', error.message);
-    return;
-  }
-
-  compras = data;
-  localStorage.setItem('solemio-compras', JSON.stringify(compras));
-  console.log(`✓ ${compras.length} compras cargadas`);
-
-  if (document.getElementById('tab-compras')?.classList.contains('active')) {
-    renderCompras();
-  }
-}
-
 
 /* ================================================================
    GUARDAR DATOS — Supabase
@@ -240,34 +158,6 @@ async function eliminarProductoDB(id) {
 
   productos = productos.filter(p => p.id !== id);
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
-}
-
-async function persistirCompra(c) {
-  if (!isAdmin()) { console.warn('Acceso denegado'); return; }
-
-  c.notas = String(c.notas || '').slice(0, 500).trim();
-  c.monto = Math.max(0, parseFloat(c.monto) || 0);
-
-  const { error } = await sb.from('compras').insert(c);
-
-  if (error) {
-    console.warn('Error guardando compra:', error.message);
-    alert(`No se pudo guardar la compra.\n(${error.message})`);
-    return;
-  }
-
-  compras.unshift(c);
-  localStorage.setItem('solemio-compras', JSON.stringify(compras));
-}
-
-async function eliminarCompraDB(id) {
-  if (!isAdmin()) { console.warn('Acceso denegado'); return; }
-
-  const { error } = await sb.from('compras').delete().eq('id', id);
-  if (error) { console.warn('Error eliminando compra:', error.message); return; }
-
-  compras = compras.filter(c => c.id !== id);
-  localStorage.setItem('solemio-compras', JSON.stringify(compras));
 }
 
 
@@ -579,297 +469,41 @@ async function confirmarEliminar(id) {
 
 
 /* ================================================================
-   MODAL COMPRA
+   MODAL DE CUENTA — cambiar contraseña (solo admin)
    ================================================================ */
-function openPurchaseModal() {
-  window._sel = [];
-  const today = new Date().toISOString().slice(0, 10);
+function openAccountModal() {
+  if (!isAdmin()) return;
 
-  document.getElementById('modal-compra').innerHTML = `
-    <div class="modal-overlay" id="mco" onclick="if(event.target.id==='mco') closePurchaseModal()">
+  document.getElementById('modal-account').innerHTML = `
+    <div class="modal-overlay" id="mao" onclick="if(event.target.id==='mao') closeAccountModal()">
       <div class="modal">
-        <div class="modal-title">${ICON.cart} Registrar compra</div>
+        <div class="modal-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;stroke:var(--text-2)">
+            <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          Cambiar contraseña
+        </div>
+
         <div class="field">
-          <label>Fecha</label>
-          <input id="c-fecha" type="date" value="${today}">
+          <label>Nueva contraseña</label>
+          <input type="password" id="cp-nueva" placeholder="••••••••" autocomplete="new-password">
         </div>
         <div class="field">
-          <label>Productos</label>
-          <div class="sel-tags" id="c-tags">
-            <span style="font-size:.75rem;color:var(--text-3)">Ninguno seleccionado</span>
-          </div>
-          <input type="text" id="c-buscar" placeholder="Buscar producto…"
-            oninput="renderProdSel()" style="margin-bottom:.5rem" autocomplete="off">
-          <div class="prod-selector" id="c-prod-sel"></div>
+          <label>Repetir nueva</label>
+          <input type="password" id="cp-repetir" placeholder="••••••••" autocomplete="new-password">
         </div>
-        <div class="field">
-          <label>Monto total ($)</label>
-          <input id="c-monto" type="number" placeholder="0" oninput="this.dataset.manual='1'">
-        </div>
-        <div class="field">
-          <label>Notas</label>
-          <textarea id="c-notas" placeholder="Método de pago, cliente, observaciones…"></textarea>
-        </div>
+        <div id="cp-msg" style="font-size:.78rem;min-height:18px"></div>
+
         <div class="modal-footer">
-          <button class="btn ghost" onclick="closePurchaseModal()">Cancelar</button>
-          <button class="btn primary" onclick="savePurchase()">${ICON.check} Guardar</button>
+          <button class="btn ghost" onclick="closeAccountModal()">Cerrar</button>
+          <button class="btn primary" onclick="cambiarPassword()">Actualizar contraseña</button>
         </div>
       </div>
     </div>`;
-
-  function updateTags() {
-    const tags = document.getElementById('c-tags');
-    if (!tags) return;
-    tags.innerHTML = window._sel.length
-      ? window._sel.map(s =>
-          `<span class="sel-tag">${s.nombre}
-             <button onclick="removeSel('${s.id}')" aria-label="Quitar">×</button>
-           </span>`).join('')
-      : '<span style="font-size:.75rem;color:var(--text-3)">Ninguno seleccionado</span>';
-
-    const mEl = document.getElementById('c-monto');
-    if (mEl && !mEl.dataset.manual) {
-      mEl.value = Math.round(window._sel.reduce((a, s) => a + s.precio * 1.5, 0)) || '';
-    }
-  }
-
-  window.renderProdSel = function () {
-    const q      = (document.getElementById('c-buscar')?.value || '').toLowerCase();
-    const filtro = productos.filter(p =>
-      p.nombre.toLowerCase().includes(q) || (p.marca || '').toLowerCase().includes(q)
-    );
-
-    document.getElementById('c-prod-sel').innerHTML = filtro.map(p => `
-      <div class="prod-sel-item"
-           onclick="toggleSel('${p.id}','${p.nombre.replace(/'/g, "\\'")}',${p.precio})">
-        <input type="checkbox"
-               ${window._sel.find(s => s.id === p.id) ? 'checked' : ''}
-               onclick="event.stopPropagation();toggleSel('${p.id}','${p.nombre.replace(/'/g, "\\'")}',${p.precio})">
-        <span style="flex:1">${p.nombre}</span>
-        <span style="color:var(--text-3);font-size:.78rem;display:flex;gap:.4rem;align-items:center">
-          ${p.num_stock != null ? `<span style="font-size:.7rem">(${p.num_stock} disp.)</span>` : ''}
-          ${fmtARS(Math.round(p.precio * 1.5))}
-        </span>
-      </div>`).join('');
-
-    updateTags();
-  };
-
-  window.toggleSel = function (id, nombre, precio) {
-    const idx = window._sel.findIndex(s => s.id === id);
-    if (idx >= 0) window._sel.splice(idx, 1);
-    else          window._sel.push({ id, nombre, precio });
-    window.renderProdSel();
-  };
-
-  window.removeSel = function (id) {
-    const idx = window._sel.findIndex(s => s.id === id);
-    if (idx >= 0) { window._sel.splice(idx, 1); window.renderProdSel(); }
-  };
-
-  window.renderProdSel();
 }
 
-function closePurchaseModal() {
-  document.getElementById('modal-compra').innerHTML = '';
-}
-
-async function savePurchase() {
-  const fecha = document.getElementById('c-fecha').value;
-  const monto = parseFloat(document.getElementById('c-monto').value) || 0;
-  const notas = document.getElementById('c-notas').value.trim();
-  if (!fecha) { alert('La fecha es obligatoria'); return; }
-
-  const sel = [...(window._sel || [])];
-  const c   = { id: uid(), fecha, monto, productos: sel, notas };
-
-  for (const item of sel) {
-    const prod = productos.find(p => p.id === item.id);
-    if (!prod) continue;
-    const nuevo_num_stock = Math.max(0, (prod.num_stock || 0) - (item.cantidad || 1));
-    await persistirProducto({ ...prod, num_stock: nuevo_num_stock, stock: nuevo_num_stock > 0 });
-  }
-
-  await persistirCompra(c);
-  closePurchaseModal();
-  renderCompras();
-  renderCatalogo();
-}
-
-
-/* ================================================================
-   RENDER COMPRAS
-   ================================================================ */
-function renderCompras() {
-  const hoy   = new Date().toISOString().slice(0, 10);
-  const mes   = new Date().toISOString().slice(0, 7);
-  const total = compras.reduce((a, c) => a + c.monto, 0);
-  const hoyM  = compras.filter(c => c.fecha === hoy).reduce((a, c) => a + c.monto, 0);
-  const mesM  = compras.filter(c => (c.fecha || '').startsWith(mes)).reduce((a, c) => a + c.monto, 0);
-
-  document.getElementById('stats-row').innerHTML = [
-    ['Total ventas', compras.length],
-    ['Hoy',          fmtARS(hoyM)],
-    ['Este mes',     fmtARS(mesM)],
-    ['Acumulado',    fmtARS(total)],
-  ].map(([l, v]) => `
-    <div class="stat-card">
-      <div class="stat-label">${l}</div>
-      <div class="stat-val">${v}</div>
-    </div>`).join('');
-
-  const el = document.getElementById('purchase-list');
-
-  if (!compras.length) {
-    el.innerHTML = `<div class="empty">${ICON.cart} No hay compras registradas todavía</div>`;
-    return;
-  }
-
-  el.innerHTML =
-    '<div class="purchase-list">' +
-    compras.map(c => `
-      <div class="purchase-card">
-        <div class="purchase-date">${c.fecha ? fmtFecha(c.fecha) : '—'}</div>
-        <div class="purchase-body">
-          <div class="purchase-prods">
-            ${c.productos?.length ? c.productos.map(p => p.nombre).join(', ') : 'Sin productos'}
-          </div>
-          ${c.notas ? `<div class="purchase-notes">${c.notas}</div>` : ''}
-        </div>
-        <div class="purchase-right">
-          <div class="purchase-amount">${fmtARS(c.monto)}</div>
-          <button class="btn sm danger" onclick="confirmarEliminarCompra('${c.id}')">
-            ${ICON.trash} Eliminar
-          </button>
-        </div>
-      </div>`).join('') +
-    '</div>';
-}
-
-async function confirmarEliminarCompra(id) {
-  if (!confirm('¿Eliminar esta compra?')) return;
-  await eliminarCompraDB(id);
-  renderCompras();
-}
-
-
-/* ================================================================
-   GITHUB ACTIONS
-   ================================================================ */
-async function pollWorkflowResult(token, repo) {
-  const status  = document.getElementById('run-status');
-  const headers = {
-    'Authorization': `token ${token}`,
-    'Accept': 'application/vnd.github.v3+json',
-  };
-
-  const MAX_INTENTOS = 24;
-  let intento = 0;
-
-  while (intento < MAX_INTENTOS) {
-    await new Promise(r => setTimeout(r, 10000));
-    intento++;
-    status.innerHTML = `<span class="spin">↻</span> Ejecutando… (~${intento * 10}s)`;
-
-    try {
-      const res  = await fetch(
-        `https://api.github.com/repos/${repo}/actions/runs?per_page=5`,
-        { headers }
-      );
-      const data = await res.json();
-      const run  = (data.workflow_runs || []).find(r => r.path?.includes('catalogo'));
-
-      if (!run) continue;
-
-      if (run.status === 'completed') {
-        if (run.conclusion === 'success') {
-          status.innerHTML = `<span class="spin">↻</span> Script finalizado, recargando catálogo…`;
-          await cargarProductos();
-          status.innerHTML = `<span style="color:var(--green)">✓ Catálogo actualizado correctamente</span>`;
-        } else {
-          status.innerHTML = `<span style="color:var(--red)">✗ El script falló. <a href="${run.html_url}" target="_blank" style="color:var(--red);text-decoration:underline">Ver detalle en GitHub</a></span>`;
-        }
-        document.getElementById('run-btn').disabled = false;
-        return;
-      }
-    } catch (_) {}
-  }
-
-  status.innerHTML = `<span style="color:var(--text-2)">No se pudo confirmar. Revisá <a href="https://github.com/${repo}/actions" target="_blank" style="color:var(--blue)">GitHub Actions</a>.</span>`;
-  document.getElementById('run-btn').disabled = false;
-}
-
-async function runScript() {
-  const token    = document.getElementById('gh-token').value.trim();
-  const repo     = document.getElementById('gh-repo').value.trim();
-  const workflow = document.getElementById('gh-workflow').value.trim() || 'catalogo.yml';
-  const status   = document.getElementById('run-status');
-  const btn      = document.getElementById('run-btn');
-
-  if (!token || !repo) {
-    status.innerHTML = '<span style="color:var(--red)">Completá el token y el repo primero</span>';
-    return;
-  }
-
-  btn.disabled     = true;
-  status.innerHTML = '<span class="spin">↻</span> Enviando solicitud…';
-
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept':        'application/vnd.github.v3+json',
-          'Content-Type':  'application/json',
-        },
-        body: JSON.stringify({ ref: 'main' }),
-      }
-    );
-
-    if (res.status === 204) {
-      status.innerHTML = '<span class="spin">↻</span> Workflow iniciado, esperando resultado…';
-      pollWorkflowResult(token, repo);
-    } else {
-      const j = await res.json().catch(() => ({}));
-      throw new Error(j.message || `HTTP ${res.status}`);
-    }
-  } catch (e) {
-    status.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
-    btn.disabled = false;
-  }
-}
-
-
-/* ================================================================
-   ROL / ACCESOS
-   ================================================================ */
-function applyRole() {
-  const isG = isGuest();
-
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    const tab = btn.getAttribute('onclick')?.match(/showTab\('(\w+)'/)?.[1];
-    btn.style.display = (isG && (tab === 'compras' || tab === 'sync')) ? 'none' : '';
-  });
-
-  document.getElementById('app').dataset.role = isG ? 'guest' : 'admin';
-
-  const badge = document.getElementById('role-badge');
-  if (badge) {
-    badge.textContent = isG ? 'Invitado' : 'Admin';
-    badge.className   = 'role-badge ' + (isG ? 'guest' : 'admin');
-  }
-
-  if (isG) {
-    const activeTab = document.querySelector('.tab.active');
-    if (activeTab && (activeTab.id === 'tab-compras' || activeTab.id === 'tab-sync')) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.getElementById('tab-catalogo').classList.add('active');
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('.nav-btn').classList.add('active');
-    }
-  }
+function closeAccountModal() {
+  document.getElementById('modal-account').innerHTML = '';
 }
 
 async function cambiarPassword() {
@@ -896,6 +530,22 @@ async function cambiarPassword() {
 
 
 /* ================================================================
+   ROL / ACCESOS
+   ================================================================ */
+function applyRole() {
+  const isG = isGuest();
+
+  document.getElementById('app').dataset.role = isG ? 'guest' : 'admin';
+
+  const badge = document.getElementById('role-badge');
+  if (badge) {
+    badge.textContent = isG ? 'Invitado' : 'Admin';
+    badge.className   = 'role-badge ' + (isG ? 'guest' : 'admin');
+  }
+}
+
+
+/* ================================================================
    LOGOUT
    ================================================================ */
 async function doLogout() {
@@ -909,7 +559,6 @@ async function doLogout() {
   currentRole = null;
   sessionStorage.removeItem('solemio-role');
   localStorage.removeItem('solemio-productos');
-  localStorage.removeItem('solemio-compras');
 
   window.location.href = 'login.html';
 }
@@ -926,8 +575,6 @@ async function startApp() {
 
   await new Promise(r => requestAnimationFrame(r));
 
-  loadConfig();
-
   // filtro de stock por defecto para invitados que vienen de "Ver como invitado"
   if (isGuest() && new URLSearchParams(location.search).get('stock') === 'in') {
     const filtroStock = document.getElementById('filtro-stock');
@@ -935,7 +582,6 @@ async function startApp() {
   }
 
   await cargarProductos();
-  await cargarCompras();
   iniciarRealtime();
 }
 
@@ -969,24 +615,19 @@ async function init() {
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
-window.toggleTheme             = toggleTheme;
-window.showTab                 = showTab;
-window.renderCatalogo          = renderCatalogo;
-window.cargarMas               = cargarMas;
-window.openViewModal           = openViewModal;
-window.closeViewModal          = closeViewModal;
-window.openProdModal           = openProdModal;
-window.closeProdModal          = closeProdModal;
-window.saveProd                = saveProd;
-window.actualizarBadgeStock    = actualizarBadgeStock;
-window.confirmarEliminar       = confirmarEliminar;
-window.openPurchaseModal       = openPurchaseModal;
-window.closePurchaseModal      = closePurchaseModal;
-window.savePurchase            = savePurchase;
-window.confirmarEliminarCompra = confirmarEliminarCompra;
-window.runScript                = runScript;
-window.saveConfig               = saveConfig;
-window.cambiarPassword          = cambiarPassword;
-window.doLogout                 = doLogout;
+window.toggleTheme          = toggleTheme;
+window.renderCatalogo       = renderCatalogo;
+window.cargarMas            = cargarMas;
+window.openViewModal        = openViewModal;
+window.closeViewModal       = closeViewModal;
+window.openProdModal        = openProdModal;
+window.closeProdModal       = closeProdModal;
+window.saveProd             = saveProd;
+window.actualizarBadgeStock = actualizarBadgeStock;
+window.confirmarEliminar    = confirmarEliminar;
+window.openAccountModal     = openAccountModal;
+window.closeAccountModal    = closeAccountModal;
+window.cambiarPassword      = cambiarPassword;
+window.doLogout              = doLogout;
 
 init();

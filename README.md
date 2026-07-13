@@ -7,19 +7,29 @@ cliente que habla con Supabase).
 ## Estructura de archivos
 
 ```
-index.html          → redirige a login.html (punto de entrada del hosting)
+index.html           → redirige a landing.html (punto de entrada del hosting)
+
+landing.html          → recibidor público: hero + novedades del catálogo
+landing.css           → estilos exclusivos de la landing
+landing.js             → carga las novedades desde Supabase, acceso invitado
+
+contacto.html          → página de contacto (Instagram, WhatsApp, dirección/horarios)
+contacto.css           → estilos exclusivos de contacto
+contacto.js             → tema + acceso invitado desde contacto
 
 login.html           → pantalla de login
 login.css            → estilos exclusivos del login
 login.js             → lógica de autenticación (admin + invitado, rate limiting)
 
-catalogo.html         → panel admin (tabs: catálogo / compras / sincronizar)
-catalogo.css           → estilos exclusivos del panel
-catalogo.js             → lógica del panel (productos, compras, sync con
-                          GitHub Actions, cambio de contraseña, logout)
+catalogo.html         → panel de catálogo (sin pestañas: es la única vista)
+catalogo.css           → estilos exclusivos del catálogo
+catalogo.js             → lógica del catálogo (CRUD de productos, modal
+                          de cuenta con cambio de contraseña, logout)
 
 shared.css           → tokens de color, reset, botones y campos de formulario
-                        (usado por login.html y catalogo.html)
+                        (usado por todas las páginas)
+site.css              → header y footer compartidos entre landing.html y
+                        contacto.html
 supabase-client.js    → cliente Supabase singleton + helper esAdmin()
 theme.js              → tema claro/oscuro + set de íconos SVG compartidos
 
@@ -42,6 +52,52 @@ sesión se pasa entre ellas así:
   invitado, redirige automáticamente a `login.html`.
 - Si `login.html` detecta una sesión de admin ya activa, redirige directo a
   `catalogo.html` (para no mostrar el login de nuevo).
+
+## Nuevo: landing (recibidor) y página de contacto
+
+- `landing.html` es ahora la puerta de entrada del sitio (`index.html`
+  redirige ahí). Muestra un hero con el logo, un botón "Ver catálogo"
+  (entra directo como invitado, sin pedir login) y una grilla de
+  "Novedades" con los últimos 8 productos cargados en Supabase
+  (ordenados por `id` descendente, se filtran los marcados como
+  `oculto`).
+- `contacto.html` tiene tarjetas de Instagram, WhatsApp y
+  dirección/horarios.
+- El acceso de administrador (`login.html`) quedó como un link
+  discreto en el pie de página ("Acceso administrador"), y no aparece
+  en la navegación principal.
+
+### ⚠️ Datos de contacto de ejemplo — hay que reemplazarlos
+
+Busqué y dejé placeholders en `landing.html` y `contacto.html` que
+tenés que cambiar por los datos reales:
+
+| Dato | Dónde | Valor actual (placeholder) |
+|---|---|---|
+| WhatsApp | `landing.html` y `contacto.html` | `https://wa.me/5490000000000` |
+| Instagram | `landing.html` y `contacto.html` | `https://instagram.com/solemio.lenceria` |
+| Dirección | `contacto.html` | "Tu dirección acá" |
+| Horarios | `contacto.html` | "Lunes a viernes: 10 a 19 hs..." |
+
+El link de WhatsApp usa el formato `wa.me/<código de país><número sin
+0 ni 15>`, por ejemplo para Argentina: `wa.me/549` + código de área +
+número.
+
+## Cambios recientes: se quitaron Compras y Sincronizar
+
+Se eliminaron por completo las pestañas de "Compras" y "Sincronizar"
+(historial de ventas, registro de compras, stats, y el runner de
+GitHub Actions). Como quedaba una sola sección, también se sacó el
+sistema de pestañas: `catalogo.html` ahora muestra el catálogo
+directamente.
+
+"Cambiar contraseña" se mantuvo, pero se movió a un modal propio
+(ícono de cuenta 👤 en la barra superior, visible solo para admin)
+en vez de estar dentro de la pestaña de Sincronizar.
+
+Si en algún momento necesitás recuperar la lógica de compras o de
+sincronización con GitHub Actions, están en la versión anterior del
+proyecto (podés revisar el historial de commits del repo).
 
 ## Corrección incluida
 

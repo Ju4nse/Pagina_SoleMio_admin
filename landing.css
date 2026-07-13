@@ -1,0 +1,175 @@
+/* ================================================================
+   landing.css — Estilos exclusivos del recibidor (hero + novedades)
+   ================================================================ */
+
+/* ── HERO ────────────────────────────────────────────────────── */
+.hero {
+  padding: 2rem 1.5rem 3.5rem;
+}
+
+.hero-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero-logo-img {
+  max-width: 200px;
+  max-height: 110px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .hero-logo-img {
+  filter: brightness(0) invert(1);
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.hero-sub {
+  font-size: 0.95rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-btn {
+  padding: 0.65rem 1.3rem;
+  font-size: 0.9rem;
+}
+
+.hero-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+}
+
+.hero-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.65rem 1.3rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-md);
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.hero-btn-secondary:hover { background: var(--surface2); color: var(--text); }
+
+/* ── NOVEDADES ───────────────────────────────────────────────── */
+.novedades {
+  padding: 0 1.5rem 3rem;
+}
+
+.novedades-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.novedades-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.novedades-hd h2 {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.novedades-link {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.novedades-link:hover { color: var(--text); }
+
+.novedades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.nov-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.nov-card:hover {
+  border-color: var(--border-md);
+  transform: translateY(-2px);
+}
+
+.nov-thumb {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  background: var(--surface2);
+  display: block;
+}
+
+.nov-thumb-ph {
+  width: 100%;
+  height: 150px;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nov-thumb-ph svg { width: 30px; height: 30px; stroke: var(--text-3); }
+
+.nov-body { padding: 0.75rem 0.9rem 0.9rem; }
+
+.nov-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-bottom: 0.3rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.nov-price {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.novedades-grid .empty {
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
