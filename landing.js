@@ -1,5 +1,5 @@
 /* ================================================================
-   landing.js — Recibidor: novedades del catálogo + acceso invitado
+   landing.js — Recibidor: destacados del catálogo + acceso invitado
    ================================================================ */
 import { sb }         from './supabase-client.js';
 import { ICON, initTheme, toggleTheme } from './theme.js';
@@ -18,39 +18,41 @@ function verCatalogo() {
   window.location.href = 'catalogo.html?stock=in';
 }
 
-async function cargarNovedades() {
-  const grid = document.getElementById('novedades-grid');
+async function cargarDestacados() {
+  const grid = document.getElementById('destacados-grid');
 
   const { data, error } = await sb
     .from('productos')
     .select('*')
+    .eq('destacado', true)
+    .eq('stock', true)
     .not('oculto', 'is', true)
     .order('id', { ascending: false })
     .limit(8);
 
   if (error) {
-    console.warn('Error cargando novedades:', error.message);
-    grid.innerHTML = '<div class="empty">No se pudieron cargar las novedades</div>';
+    console.warn('Error cargando destacados:', error.message);
+    grid.innerHTML = '<div class="empty">No se pudieron cargar los destacados</div>';
     return;
   }
 
   if (!data.length) {
-    grid.innerHTML = '<div class="empty">Todavía no hay productos cargados</div>';
+    grid.innerHTML = '<div class="empty">Todavía no hay productos destacados con stock disponible</div>';
     return;
   }
 
   grid.innerHTML = data.map(p => {
     const img = resolverImagen(p);
     return `
-    <article class="nov-card" onclick="verCatalogo()">
+    <article class="dest-card" onclick="verCatalogo()">
       ${img
-        ? `<img class="nov-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
+        ? `<img class="dest-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : ''}
-      <div class="nov-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
-      <div class="nov-body">
-        <div class="nov-name">${p.nombre}</div>
-        <div class="nov-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
+      <div class="dest-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
+      <div class="dest-body">
+        <div class="dest-name">${p.nombre}</div>
+        <div class="dest-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
       </div>
     </article>`;
   }).join('');
@@ -59,7 +61,7 @@ async function cargarNovedades() {
 function init() {
   initTheme();
   document.getElementById('year').textContent = new Date().getFullYear();
-  cargarNovedades();
+  cargarDestacados();
 }
 
 window.verCatalogo = verCatalogo;

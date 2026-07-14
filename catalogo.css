@@ -26,6 +26,30 @@
   gap: 0.5rem;
 }
 
+.logo-link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: var(--trans);
+}
+.logo-link:hover { opacity: 0.75; }
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-right: 0.5rem;
+}
+
+.topbar-nav a {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.topbar-nav a:hover { color: var(--text); }
+
 .logo-img {
   height: 40px;
   width: auto;

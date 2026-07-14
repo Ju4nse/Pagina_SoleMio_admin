@@ -53,6 +53,31 @@ sesión se pasa entre ellas así:
 - Si `login.html` detecta una sesión de admin ya activa, redirige directo a
   `catalogo.html` (para no mostrar el login de nuevo).
 
+- Desde `catalogo.html` ahora se puede volver: el logo lleva a
+  `landing.html`, y hay links "Inicio" / "Contacto" en la barra
+  superior.
+
+## Cambio: "Novedades" ahora es "Destacados" (curado a mano)
+
+Antes la sección mostraba los últimos 8 productos por `id`
+(aproximación poco confiable de "lo más nuevo"). Ahora es 100%
+manual: en el panel de admin, al editar un producto hay un checkbox
+**"Destacado"**. Solo los productos marcados como destacado **y** que
+además tengan stock (`stock = true`) aparecen en la sección
+"Destacados" de `landing.html`.
+
+### ⚠️ Acción requerida en Supabase
+
+La tabla `productos` necesita una columna nueva `destacado` de tipo
+`boolean` (default `false`). Si no existe, el checkbox del panel no
+va a poder guardar el valor. Para agregarla:
+
+```sql
+alter table productos add column destacado boolean default false;
+```
+
+Corrélo una vez en el SQL Editor de Supabase.
+
 ## Nuevo: landing (recibidor) y página de contacto
 
 - `landing.html` es ahora la puerta de entrada del sitio (`index.html`
@@ -63,25 +88,28 @@ sesión se pasa entre ellas así:
   `oculto`).
 - `contacto.html` tiene tarjetas de Instagram, WhatsApp y
   dirección/horarios.
-- El acceso de administrador (`login.html`) quedó como un link
-  discreto en el pie de página ("Acceso administrador"), y no aparece
-  en la navegación principal.
+- El acceso de administrador (`login.html`) ahora es un ícono de
+  usuario 👤 en el header de `landing.html` y `contacto.html` (al lado
+  del botón de tema), no un link de texto en el footer.
+- `index.html` siempre redirige a `landing.html` sin condiciones (no
+  depende de si hay una sesión activa ni de nada más), así que la
+  landing es siempre el punto de entrada del sitio.
 
-### ⚠️ Datos de contacto de ejemplo — hay que reemplazarlos
+### ✓ Datos de contacto ya cargados
 
-Busqué y dejé placeholders en `landing.html` y `contacto.html` que
-tenés que cambiar por los datos reales:
+Los datos reales ya están puestos en `landing.html` y `contacto.html`:
 
-| Dato | Dónde | Valor actual (placeholder) |
-|---|---|---|
-| WhatsApp | `landing.html` y `contacto.html` | `https://wa.me/5490000000000` |
-| Instagram | `landing.html` y `contacto.html` | `https://instagram.com/solemio.lenceria` |
-| Dirección | `contacto.html` | "Tu dirección acá" |
-| Horarios | `contacto.html` | "Lunes a viernes: 10 a 19 hs..." |
+| Dato | Valor |
+|---|---|
+| WhatsApp | `+54 2494 00-3595` (link: `wa.me/542494003595`) |
+| Instagram | [@solemio.tandil](https://www.instagram.com/solemio.tandil/) |
+| Dirección | Tacuari 33, Tandil, Buenos Aires |
+| Horarios | Lunes a sábados: 10 a 13 hs y 17 a 20:30 hs |
 
-El link de WhatsApp usa el formato `wa.me/<código de país><número sin
-0 ni 15>`, por ejemplo para Argentina: `wa.me/549` + código de área +
-número.
+Si el link de WhatsApp no abre bien un chat en tu celular al probarlo,
+puede ser porque el número necesita el "9" que usa Argentina para
+líneas móviles en el formato `wa.me` (`549` + código de área + número,
+sin el 0 ni el 15). Probalo y avisame si hay que ajustarlo.
 
 ## Cambios recientes: se quitaron Compras y Sincronizar
 

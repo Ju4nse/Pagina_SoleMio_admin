@@ -237,6 +237,7 @@ function renderCatalogo(resetear = false) {
         <div class="prod-badges">
           <span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
+          ${p.destacado && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">★ Destacado</span>` : ''}
           ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
@@ -408,6 +409,14 @@ function openProdModal(id) {
         </div>
 
         <div class="field" style="display:flex;align-items:center;gap:.5rem">
+          <input type="checkbox" id="p-destacado" ${p?.destacado ? 'checked' : ''}
+            style="width:auto;accent-color:var(--text)">
+          <label for="p-destacado" style="margin:0;cursor:pointer">
+            Destacado (aparece en la sección "Destacados" del sitio)
+          </label>
+        </div>
+
+        <div class="field" style="display:flex;align-items:center;gap:.5rem">
           <input type="checkbox" id="p-oculto" ${p?.oculto ? 'checked' : ''}
             style="width:auto;accent-color:var(--text)">
           <label for="p-oculto" style="margin:0;cursor:pointer">
@@ -453,6 +462,7 @@ async function saveProd() {
     stock:          num_stock > 0,
     imagen_custom:  document.getElementById('p-imagen-custom').value.trim(),
     imagen_scraper: document.getElementById('p-imagen-scraper').value.trim(),
+    destacado:      document.getElementById('p-destacado')?.checked || false,
     oculto:         document.getElementById('p-oculto')?.checked || false,
   };
 

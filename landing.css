@@ -1,5 +1,5 @@
 /* ================================================================
-   landing.css — Estilos exclusivos del recibidor (hero + novedades)
+   landing.css — Estilos exclusivos del recibidor (hero + destacados)
    ================================================================ */
 
 /* ── HERO ────────────────────────────────────────────────────── */
@@ -74,23 +74,23 @@
 .hero-btn-secondary:hover { background: var(--surface2); color: var(--text); }
 
 /* ── NOVEDADES ───────────────────────────────────────────────── */
-.novedades {
+.destacados {
   padding: 0 1.5rem 3rem;
 }
 
-.novedades-inner {
+.destacados-inner {
   max-width: 1080px;
   margin: 0 auto;
 }
 
-.novedades-hd {
+.destacados-hd {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 1.25rem;
 }
 
-.novedades-hd h2 {
+.destacados-hd h2 {
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -98,21 +98,21 @@
   font-weight: 500;
 }
 
-.novedades-link {
+.destacados-link {
   font-size: 0.82rem;
   color: var(--text-2);
   text-decoration: none;
   transition: var(--trans);
 }
-.novedades-link:hover { color: var(--text); }
+.destacados-link:hover { color: var(--text); }
 
-.novedades-grid {
+.destacados-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
 }
 
-.nov-card {
+.dest-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -121,12 +121,12 @@
   transition: var(--trans);
 }
 
-.nov-card:hover {
+.dest-card:hover {
   border-color: var(--border-md);
   transform: translateY(-2px);
 }
 
-.nov-thumb {
+.dest-thumb {
   width: 100%;
   height: 150px;
   object-fit: cover;
@@ -134,7 +134,7 @@
   display: block;
 }
 
-.nov-thumb-ph {
+.dest-thumb-ph {
   width: 100%;
   height: 150px;
   background: var(--surface2);
@@ -142,11 +142,11 @@
   align-items: center;
   justify-content: center;
 }
-.nov-thumb-ph svg { width: 30px; height: 30px; stroke: var(--text-3); }
+.dest-thumb-ph svg { width: 30px; height: 30px; stroke: var(--text-3); }
 
-.nov-body { padding: 0.75rem 0.9rem 0.9rem; }
+.dest-body { padding: 0.75rem 0.9rem 0.9rem; }
 
-.nov-name {
+.dest-name {
   font-size: 0.85rem;
   font-weight: 500;
   line-height: 1.3;
@@ -159,14 +159,14 @@
   -webkit-box-orient: vertical;
 }
 
-.nov-price {
+.dest-price {
   font-family: 'DM Serif Display', serif;
   font-size: 1rem;
   color: var(--text);
   letter-spacing: -0.01em;
 }
 
-.novedades-grid .empty {
+.destacados-grid .empty {
   grid-column: 1/-1;
   text-align: center;
   padding: 2.5rem 1rem;
