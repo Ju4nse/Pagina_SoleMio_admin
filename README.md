@@ -54,8 +54,17 @@ sesión se pasa entre ellas así:
   `catalogo.html` (para no mostrar el login de nuevo).
 
 - Desde `catalogo.html` ahora se puede volver: el logo lleva a
-  `landing.html`, y hay links "Inicio" / "Contacto" en la barra
-  superior.
+  `landing.html`, y hay links "Inicio" / "Catálogo" / "Contacto" en la
+  barra superior.
+- Esa misma barra "Inicio / Catálogo / Contacto" se ve siempre en
+  `landing.html`, `contacto.html` y `catalogo.html`. En `login.html`
+  no aparece, solo queda el link chico "← Volver al sitio".
+- **Corregido:** si ya iniciaste sesión como admin y tocás "Catálogo"
+  desde `landing.html` o `contacto.html`, ahora te lleva al catálogo
+  como admin (con todas las funciones de edición), en vez de pisar tu
+  sesión con el modo invitado. Lo resuelve `irAlCatalogo()` en
+  `supabase-client.js`, que chequea si hay una sesión de admin válida
+  antes de decidir a dónde mandarte.
 
 ## Cambio: "Novedades" ahora es "Destacados" (curado a mano)
 

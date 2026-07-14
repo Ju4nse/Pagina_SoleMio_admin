@@ -49,6 +49,7 @@
   transition: var(--trans);
 }
 .topbar-nav a:hover { color: var(--text); }
+.topbar-nav a.active { color: var(--text); font-weight: 500; }
 
 .logo-img {
   height: 40px;

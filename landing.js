@@ -1,7 +1,7 @@
 /* ================================================================
    landing.js — Recibidor: destacados del catálogo + acceso invitado
    ================================================================ */
-import { sb }         from './supabase-client.js';
+import { sb, irAlCatalogo } from './supabase-client.js';
 import { ICON, initTheme, toggleTheme } from './theme.js';
 
 function fmtARS(n) {
@@ -10,12 +10,6 @@ function fmtARS(n) {
 
 function resolverImagen(p) {
   return p.imagen_custom || p.imagen_scraper || p.imagen || '';
-}
-
-/* Entra al catálogo como invitado (sin pedir login) */
-function verCatalogo() {
-  sessionStorage.setItem('solemio-role', 'guest');
-  window.location.href = 'catalogo.html?stock=in';
 }
 
 async function cargarDestacados() {
@@ -64,7 +58,7 @@ function init() {
   cargarDestacados();
 }
 
-window.verCatalogo = verCatalogo;
+window.verCatalogo = irAlCatalogo;
 window.toggleTheme = toggleTheme;
 
 init();

@@ -30,3 +30,35 @@ export async function esAdmin(email) {
     .maybeSingle();
   return !error && !!data;
 }
+
+/* Navega al catálogo: si ya hay una sesión de admin válida, entra como
+   admin (sin tocar el rol invitado ni forzar el filtro de stock).
+   Si no, entra como invitado. Usado desde los links "Catálogo" del
+   sitio público (landing, contacto). */
+export async function irAlCatalogo() {
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session?.user && await esAdmin(session.user.email)) {
+    window.location.href = 'catalogo.html';
+    return;
+  }
+
+  sessionStorage.setItem('solemio-role', 'guest');
+  window.location.href = 'catalogo.html?stock=in';
+}
+
+/* Va al catálogo respetando la sesión activa: si ya sos admin, entra
+   directo al catálogo de admin; si no, entra como invitado. Se usa
+   desde el botón/link "Catálogo" en landing, contacto y login. */
+export async function irACatalogo() {
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session?.user && await esAdmin(session.user.email)) {
+    sessionStorage.removeItem('solemio-role');
+    window.location.href = 'catalogo.html';
+    return;
+  }
+
+  sessionStorage.setItem('solemio-role', 'guest');
+  window.location.href = 'catalogo.html?stock=in';
+}
