@@ -35,16 +35,6 @@
 }
 .logo-link:hover { opacity: 0.75; }
 
-.topbar-logo-img {
-  height: 32px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-[data-theme="dark"] .topbar-logo-img {
-  filter: brightness(0) invert(1);
-}
-
 .topbar-nav {
   display: flex;
   align-items: center;

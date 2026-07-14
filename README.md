@@ -66,9 +66,10 @@ sesión se pasa entre ellas así:
   `supabase-client.js`, que chequea si hay una sesión de admin válida
   antes de decidir a dónde mandarte.
 
-- El logo de la izquierda en `catalogo.html` ahora es la imagen
-  `logo.png` (la misma que se ve en la pestaña del navegador), en vez
-  del texto "SoleMio Panel"/"SoleMio Catálogo".
+- El logo de la izquierda volvió a ser texto ("SoleMio", sin
+  imagen), igual que en `landing.html` y `contacto.html`. En las 3
+  páginas el texto ahora es un link que lleva a `landing.html`
+  (home).
 - Los botones circulares de la derecha (tema, cuenta, cerrar sesión)
   quedaron en el mismo orden y estilo visual que el ícono de login de
   `landing.html`/`contacto.html`, para que la posición sea consistente
