@@ -66,6 +66,14 @@ sesión se pasa entre ellas así:
   `supabase-client.js`, que chequea si hay una sesión de admin válida
   antes de decidir a dónde mandarte.
 
+- El logo de la izquierda en `catalogo.html` ahora es la imagen
+  `logo.png` (la misma que se ve en la pestaña del navegador), en vez
+  del texto "SoleMio Panel"/"SoleMio Catálogo".
+- Los botones circulares de la derecha (tema, cuenta, cerrar sesión)
+  quedaron en el mismo orden y estilo visual que el ícono de login de
+  `landing.html`/`contacto.html`, para que la posición sea consistente
+  en todo el sitio.
+
 ## Cambio: "Novedades" ahora es "Destacados" (curado a mano)
 
 Antes la sección mostraba los últimos 8 productos por `id`

@@ -20,8 +20,9 @@
     <header class="topbar">
       <div class="logo">
         <a href="landing.html" class="logo-link">
-          <span class="logo-word">SoleMio</span>
-          <span class="logo-tag">Catálogo</span>
+          <img src="logo.png" alt="SoleMio" class="topbar-logo-img"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span class="logo-word" style="display:none">SoleMio</span>
         </a>
       </div>
       <div class="topbar-right">
@@ -31,15 +32,15 @@
           <a href="contacto.html">Contacto</a>
         </nav>
         <span class="role-badge" id="role-badge"></span>
-        <button class="btn sm ghost" id="account-btn" onclick="openAccountModal()" title="Mi cuenta">
+        <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
+        <button class="icon-btn" id="account-btn" onclick="openAccountModal()" title="Mi cuenta">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
             <circle cx="12" cy="8" r="4"/>
             <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
           </svg>
         </button>
-        <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
-        <button class="btn sm ghost logout-btn" onclick="doLogout()" title="Cerrar sesión">
+        <button class="icon-btn logout-btn" onclick="doLogout()" title="Cerrar sesión">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

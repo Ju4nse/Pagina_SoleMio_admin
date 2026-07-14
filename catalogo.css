@@ -35,6 +35,16 @@
 }
 .logo-link:hover { opacity: 0.75; }
 
+.topbar-logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+[data-theme="dark"] .topbar-logo-img {
+  filter: brightness(0) invert(1);
+}
+
 .topbar-nav {
   display: flex;
   align-items: center;
@@ -51,6 +61,39 @@
 .topbar-nav a:hover { color: var(--text); }
 .topbar-nav a.active { color: var(--text); font-weight: 500; }
 
+/* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
+   estilo que el ícono de login en landing/contacto ────────────── */
+.theme-btn,
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--trans);
+}
+
+.theme-btn:hover,
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.theme-btn svg,
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .logo-img {
   height: 40px;
   width: auto;
@@ -64,34 +107,6 @@
   gap: 0.5rem;
 }
 
-/* ── THEME TOGGLE ────────────────────────────────────────────── */
-.theme-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid var(--border-md);
-  background: var(--surface);
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--trans);
-}
-
-.theme-btn:hover {
-  color: var(--text);
-  background: var(--surface2);
-}
-
-.theme-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
 
 /* ── TOOLBAR ─────────────────────────────────────────────────── */
 .toolbar {
