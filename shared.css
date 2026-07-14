@@ -21,6 +21,8 @@
   --red-bg:    #FDECEA;
   --blue:      #1B4F8C;
   --blue-bg:   #DDEEFF;
+  --pink:      #B5476B;
+  --pink-bg:   #FBE4EC;
   --radius:    10px;
   --radius-lg: 14px;
   --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -44,6 +46,8 @@
   --red-bg:    #3A1A1A;
   --blue:      #80B4EE;
   --blue-bg:   #1A2E44;
+  --pink:      #E893B0;
+  --pink-bg:   #3A1F28;
 }
 
 /* ── RESET ───────────────────────────────────────────────────── */

@@ -75,6 +75,34 @@ sesión se pasa entre ellas así:
   `landing.html`/`contacto.html`, para que la posición sea consistente
   en todo el sitio.
 
+## Nuevo: íconos coloreados y mapa embebido en Contacto
+
+- Los íconos de WhatsApp e Instagram en `contacto.html` ahora tienen
+  color: WhatsApp usa el verde de la paleta (`--green`/`--green-bg`,
+  ya existía), e Instagram usa un rosa nuevo (`--pink`/`--pink-bg`)
+  que agregué a `shared.css` para que quede dentro de la misma
+  paleta del sitio (con su variante para modo oscuro también).
+- Se agregó un mini mapa de Google Maps embebido (`<iframe>`, sin
+  necesidad de API key) con la ubicación de Tacuari 33, Tandil, y un
+  link "Ver en Google Maps" debajo que abre la ubicación completa en
+  una pestaña nueva.
+
+## Arreglado: flash de tema claro al cambiar de página
+
+Al navegar entre páginas se veía un "flashazo" blanco antes de que se
+aplicara el tema oscuro guardado. Pasaba porque `data-theme` se
+fijaba recién cuando corría el JavaScript (`initTheme()`), que carga
+después de que el navegador ya pintó la página con el tema claro por
+defecto.
+
+Se agregó un script chiquito e inline al principio del `<head>` de
+las 4 páginas (`login.html`, `catalogo.html`, `landing.html`,
+`contacto.html`) que lee el tema guardado en `localStorage` y lo
+aplica **antes** de que se pinte nada, así no hay salto de color al
+navegar. El `initTheme()` de cada módulo JS sigue corriendo igual
+(actualiza el ícono del botón de tema), solo que ya no es el que
+define el color inicial.
+
 ## Cambio: "Novedades" ahora es "Destacados" (curado a mano)
 
 Antes la sección mostraba los últimos 8 productos por `id`

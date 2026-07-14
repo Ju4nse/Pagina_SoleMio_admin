@@ -2,6 +2,15 @@
 <html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
+<script>
+  // Evita el "flash" de tema claro antes de aplicar el tema guardado
+  (function () {
+    try {
+      var t = localStorage.getItem('solemio-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SoleMio — Ingresar</title>
 <link rel="icon" type="image/png" href="logo.png">

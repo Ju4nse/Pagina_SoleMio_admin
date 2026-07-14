@@ -67,6 +67,16 @@ a.contact-card:hover {
   stroke: var(--text-2);
 }
 
+.contact-icon.wa {
+  background: var(--green-bg);
+}
+.contact-icon.wa svg { stroke: var(--green); }
+
+.contact-icon.ig {
+  background: var(--pink-bg);
+}
+.contact-icon.ig svg { stroke: var(--pink); }
+
 .contact-card-body h3 {
   font-size: 0.9rem;
   font-weight: 500;
@@ -85,4 +95,42 @@ a.contact-card:hover {
   margin-top: 0.5rem;
   font-size: 0.78rem;
   color: var(--text-3);
+}
+
+/* ── MAPA ────────────────────────────────────────────────────── */
+.contact-map-section {
+  max-width: 780px;
+  margin: 1rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.contact-map {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+.contact-map iframe {
+  width: 100%;
+  height: 280px;
+  border: none;
+  display: block;
+}
+
+.contact-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.contact-map-link:hover { color: var(--text); }
+.contact-map-link svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
 }
