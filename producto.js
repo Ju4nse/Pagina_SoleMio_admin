@@ -17,7 +17,8 @@ const CONTACTO = {
 /* ================================================================
    STATE
    ================================================================ */
-let currentRole = null;   // 'admin' | 'guest'
+let currentRole    = null;   // 'admin' | 'guest'
+let productoActual = null;   // producto que se está mostrando/editando
 
 function isAdmin() { return currentRole === 'admin'; }
 function isGuest() { return currentRole === 'guest'; }
@@ -161,7 +162,7 @@ function renderProducto(p, prev, next, similares) {
 
         <div class="product-actions">
           <a class="btn ghost" href="catalogo.html">← Volver al catálogo</a>
-          ${isAdmin() ? `<a class="btn primary" href="catalogo.html?edit=${encodeURIComponent(p.id)}">${ICON.edit} Editar</a>` : ''}
+          ${isAdmin() ? `<button class="btn primary" onclick="openProdModal()">${ICON.edit} Editar</button>` : ''}
         </div>
 
         ${renderPrevNextStrip(prev, next)}
@@ -271,7 +272,8 @@ async function cargarProducto() {
       if (pCache && !(pCache.oculto && isGuest())) {
         const { prev, next } = calcularVecinos(cache, id);
         const similares       = productosDeMarca(cache, pCache.marca, id);
-        renderProducto({ ...pCache, imagen: resolverImagen(pCache) }, prev, next, similares);
+        productoActual = { ...pCache, imagen: resolverImagen(pCache) };
+        renderProducto(productoActual, prev, next, similares);
       }
     } catch (_) {}
   }
@@ -297,7 +299,8 @@ async function cargarProducto() {
   const { prev, next }  = calcularVecinos(listaNav, id);
   const similares        = productosDeMarca(listaNav, data.marca, id);
 
-  renderProducto({ ...data, imagen: resolverImagen(data) }, prev, next, similares);
+  productoActual = { ...data, imagen: resolverImagen(data) };
+  renderProducto(productoActual, prev, next, similares);
 }
 
 async function obtenerListaNav() {
@@ -324,6 +327,187 @@ function productosDeMarca(lista, marca, excludeId) {
   return lista
     .filter(x => x.marca === marca && x.id !== excludeId && !(x.oculto && isGuest()))
     .slice(0, 8);
+}
+
+
+/* ================================================================
+   MODAL DE EDICIÓN (se abre en esta misma página, sobre el producto
+   que se está viendo — no navega a catalogo.html)
+   ================================================================ */
+function openProdModal() {
+  const p = productoActual;
+  if (!p || !isAdmin()) return;
+
+  document.getElementById('modal-prod').innerHTML = `
+    <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
+      <div class="modal">
+        <div class="modal-title">${ICON.edit} Editar producto</div>
+
+        <div class="field">
+          <label>Nombre</label>
+          <input id="p-nombre" type="text" value="${p?.nombre || ''}">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Marca</label>
+            <input id="p-marca" type="text" value="${p?.marca || ''}">
+          </div>
+          <div class="field">
+            <label>Precio ($)</label>
+            <input id="p-precio" type="number" value="${p?.precio || ''}">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Color</label>
+            <input id="p-color" type="text" value="${p?.color || ''}">
+          </div>
+          <div class="field">
+            <label>Talles</label>
+            <input id="p-talles" type="text" value="${p?.talles || ''}">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Cantidad en stock</label>
+            <input id="p-num-stock" type="number" min="0" placeholder="0"
+              value="${p?.num_stock ?? ''}"
+              oninput="actualizarBadgeStock(this.value)">
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <div id="p-stock-badge" style="padding:.5rem .75rem;border:1px solid var(--border-md);border-radius:var(--radius);background:var(--bg);font-size:.85rem;display:flex;align-items:center;gap:.4rem">
+              ${(p?.num_stock ?? 0) > 0
+                ? `<span style="color:var(--green)">● En stock (${p?.num_stock})</span>`
+                : `<span style="color:var(--red)">● Sin stock</span>`}
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Foto custom
+            <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
+              — reemplaza la foto del scraper en el catálogo
+            </span>
+          </label>
+          <input id="p-imagen-custom" type="url" placeholder="https://…" value="${p?.imagen_custom || ''}">
+          ${p?.imagen_custom
+            ? `<img src="${p.imagen_custom}" style="margin-top:.4rem;max-height:80px;border-radius:6px;object-fit:cover" alt="preview custom">`
+            : ''}
+        </div>
+        <div class="field">
+          <label>Foto del scraper
+            <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
+              — la trae el script automáticamente
+            </span>
+          </label>
+          <input id="p-imagen-scraper" type="url" placeholder="https://…" value="${p?.imagen_scraper || p?.imagen || ''}">
+        </div>
+
+        <div class="field" style="display:flex;align-items:center;gap:.5rem">
+          <input type="checkbox" id="p-destacado" ${p?.destacado ? 'checked' : ''}
+            style="width:auto;accent-color:var(--text)">
+          <label for="p-destacado" style="margin:0;cursor:pointer">
+            Destacado (aparece en la sección "Destacados" del sitio)
+          </label>
+        </div>
+
+        <div class="field" style="display:flex;align-items:center;gap:.5rem">
+          <input type="checkbox" id="p-oculto" ${p?.oculto ? 'checked' : ''}
+            style="width:auto;accent-color:var(--text)">
+          <label for="p-oculto" style="margin:0;cursor:pointer">
+            Ocultar producto (solo visible para admin)
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn ghost" onclick="closeProdModal()">Cancelar</button>
+          <button class="btn primary" onclick="saveProd()">${ICON.check} Guardar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function closeProdModal() {
+  document.getElementById('modal-prod').innerHTML = '';
+}
+
+function actualizarBadgeStock(val) {
+  const n     = parseInt(val) || 0;
+  const badge = document.getElementById('p-stock-badge');
+  if (!badge) return;
+  badge.innerHTML = n > 0
+    ? `<span style="color:var(--green)">● En stock (${n})</span>`
+    : `<span style="color:var(--red)">● Sin stock</span>`;
+}
+
+async function persistirProducto(p) {
+  if (!isAdmin()) { console.warn('Acceso denegado'); return false; }
+
+  p.nombre         = String(p.nombre         || '').slice(0, 200).trim();
+  p.marca          = String(p.marca          || '').slice(0, 100).trim();
+  p.color          = String(p.color          || '').slice(0, 100).trim();
+  p.talles         = String(p.talles         || '').slice(0, 100).trim();
+  p.precio         = Math.max(0, parseFloat(p.precio)  || 0);
+  p.num_stock      = Math.max(0, parseInt(p.num_stock) || 0);
+  p.imagen_custom  = (p.imagen_custom  || '').trim();
+  p.imagen_scraper = (p.imagen_scraper || '').trim();
+  if (p.imagen_custom  && !/^https?:\/\//.test(p.imagen_custom))  p.imagen_custom  = '';
+  if (p.imagen_scraper && !/^https?:\/\//.test(p.imagen_scraper)) p.imagen_scraper = '';
+
+  const { imagen: _img, ...fila } = p;
+
+  const { error } = await sb
+    .from('productos')
+    .upsert(fila, { onConflict: 'id' });
+
+  if (error) {
+    console.warn('Error guardando producto:', error.message);
+    alert(`No se pudo guardar el producto.\n(${error.message})`);
+    return false;
+  }
+
+  // Mantener sincronizada la caché local que también usa catalogo.js
+  try {
+    const local = localStorage.getItem('solemio-productos');
+    if (local) {
+      const cache = JSON.parse(local);
+      const idx   = cache.findIndex(x => x.id === fila.id);
+      const conImagen = { ...fila, imagen: resolverImagen(fila) };
+      if (idx >= 0) cache[idx] = conImagen; else cache.unshift(conImagen);
+      localStorage.setItem('solemio-productos', JSON.stringify(cache));
+    }
+  } catch (_) {}
+
+  return true;
+}
+
+async function saveProd() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio'); return; }
+
+  const num_stock = parseInt(document.getElementById('p-num-stock').value) || 0;
+
+  const p = {
+    id:             productoActual.id,
+    nombre,
+    marca:          document.getElementById('p-marca').value.trim(),
+    precio:         parseFloat(document.getElementById('p-precio').value) || 0,
+    color:          document.getElementById('p-color').value.trim(),
+    talles:         document.getElementById('p-talles').value.trim(),
+    num_stock,
+    stock:          num_stock > 0,
+    imagen_custom:  document.getElementById('p-imagen-custom').value.trim(),
+    imagen_scraper: document.getElementById('p-imagen-scraper').value.trim(),
+    destacado:      document.getElementById('p-destacado')?.checked || false,
+    oculto:         document.getElementById('p-oculto')?.checked || false,
+  };
+
+  const ok = await persistirProducto(p);
+  if (!ok) return;
+
+  closeProdModal();
+  await cargarProducto();   // refresca la página con los datos ya guardados
 }
 
 
@@ -386,7 +570,11 @@ async function init() {
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
-window.toggleTheme = toggleTheme;
-window.doLogout    = doLogout;
+window.toggleTheme          = toggleTheme;
+window.doLogout             = doLogout;
+window.openProdModal        = openProdModal;
+window.closeProdModal       = closeProdModal;
+window.saveProd             = saveProd;
+window.actualizarBadgeStock = actualizarBadgeStock;
 
 init();
