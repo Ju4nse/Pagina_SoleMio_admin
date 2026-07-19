@@ -576,18 +576,24 @@ async function init() {
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
-window.toggleTheme          = toggleTheme;
-window.renderCatalogo       = renderCatalogo;
-window.cargarMas            = cargarMas;
-window.verProducto          = verProducto;
-window.openProdModal        = openProdModal;
-window.closeProdModal       = closeProdModal;
-window.saveProd             = saveProd;
-window.actualizarBadgeStock = actualizarBadgeStock;
-window.confirmarEliminar    = confirmarEliminar;
-window.openAccountModal     = openAccountModal;
-window.closeAccountModal    = closeAccountModal;
-window.cambiarPassword      = cambiarPassword;
-window.doLogout              = doLogout;
+window.toggleTheme             = toggleTheme;
+window.showTab                 = showTab;
+window.renderCatalogo          = renderCatalogo;
+window.cargarMas               = cargarMas;
+window.openViewModal           = openViewModal;
+window.closeViewModal          = closeViewModal;
+window.openProdModal           = openProdModal;
+window.closeProdModal          = closeProdModal;
+window.saveProd                = saveProd;
+window.actualizarBadgeStock    = actualizarBadgeStock;
+window.confirmarEliminar       = confirmarEliminar;
+window.openPurchaseModal       = openPurchaseModal;
+window.closePurchaseModal      = closePurchaseModal;
+window.savePurchase            = savePurchase;
+window.confirmarEliminarCompra = confirmarEliminarCompra;
+window.runScript                = runScript;
+window.saveConfig               = saveConfig;
+window.cambiarPassword          = cambiarPassword;
+window.doLogout                 = doLogout;
 
 init();

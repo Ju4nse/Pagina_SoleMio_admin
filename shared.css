@@ -33,12 +33,9 @@
   --red-bg:    #FDECEA;
   --blue:      #1B4F8C;
   --blue-bg:   #DDEEFF;
-  --pink:      #B5476B;
-  --pink-bg:   #FBE4EC;
-  --radius:    2px;
-  --radius-lg: 3px;
-  --radius-pill: 999px;
-  --trans:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius:    10px;
+  --radius-lg: 14px;
+  --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── TOKENS: MODO OSCURO ─────────────────────────────────────── */
