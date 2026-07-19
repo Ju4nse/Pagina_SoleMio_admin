@@ -1,0 +1,233 @@
+/* ================================================================
+   producto.css — Página de detalle de un producto individual
+   Foto grande a un costado + info a la derecha, redes bajo la foto,
+   y productos de la misma marca al pie
+   ================================================================ */
+
+.product-wrap { width: 100%; }
+
+/* ── BREADCRUMB ──────────────────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-3);
+  margin-bottom: 1.75rem;
+}
+
+.breadcrumb a {
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.breadcrumb a:hover { color: var(--primary); }
+
+.breadcrumb-current { color: var(--text-3); }
+
+/* ── PRODUCTO (foto + info) ─────────────────────────────────── */
+.product-box {
+  display: grid;
+  grid-template-columns: minmax(340px, 480px) 1fr;
+  gap: 3rem;
+  align-items: start;
+  animation: fadein 0.2s ease;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── FOTO ────────────────────────────────────────────────────── */
+.product-photo {
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  padding: 10px;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.product-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--surface2);
+}
+
+.view-img-ph {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-md);
+}
+
+.view-img-ph svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--text-3);
+}
+
+/* ── REDES (debajo de la foto) ──────────────────────────────── */
+.social-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* ── INFO ────────────────────────────────────────────────────── */
+.product-info { min-width: 0; padding-top: 0.25rem; }
+
+.product-info .eyebrow { margin-bottom: 0.5rem; }
+
+.view-name {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.product-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.meta-code {
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+.view-price {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── TAGS DE ATRIBUTOS ───────────────────────────────────────── */
+.attr-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.attr-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-right: 0.15rem;
+  flex-basis: 100%;
+}
+
+.attr-tag {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.22rem 0.7rem;
+  border-radius: 99px;
+}
+
+/* circulito de color */
+.color-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.7rem 0.2rem 0.35rem;
+  border-radius: 99px;
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  flex-shrink: 0;
+}
+
+.color-dot-generic {
+  background: repeating-linear-gradient(45deg, var(--surface2), var(--surface2) 3px, var(--border-md) 3px, var(--border-md) 4px);
+}
+
+/* ── ACCIONES ────────────────────────────────────────────────── */
+.product-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+/* ── ANTERIOR / SIGUIENTE ────────────────────────────────────── */
+.prod-nav-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.prod-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 45%;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.prod-nav-link:hover { color: var(--primary); }
+
+.prod-nav-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prod-nav-link svg { width: 13px; height: 13px; stroke: currentColor; flex-shrink: 0; }
+.prod-nav-next { margin-left: auto; text-align: right; }
+
+/* ── PRODUCTOS DE LA MISMA MARCA ─────────────────────────────── */
+.similares-section {
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.similares-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .product-box {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .product-photo { aspect-ratio: 1 / 1; }
+  .view-name  { font-size: 1.5rem; }
+  .view-price { font-size: 1.5rem; }
+}
