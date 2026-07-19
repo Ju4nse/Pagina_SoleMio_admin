@@ -1,6 +1,6 @@
 /* ================================================================
-   catalogo.css — Estilos exclusivos del panel (catálogo, compras,
-   sincronización, topbar, modales)
+   catalogo.css — Estilos exclusivos del panel de catálogo
+   (topbar, grilla de productos, modales)
    ================================================================ */
 
 /* ── LAYOUT ──────────────────────────────────────────────────── */
@@ -26,6 +26,65 @@
   gap: 0.5rem;
 }
 
+.logo-link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: var(--trans);
+}
+.logo-link:hover { opacity: 0.75; }
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-right: 0.5rem;
+}
+
+.topbar-nav a {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: var(--trans);
+}
+.topbar-nav a:hover { color: var(--text); }
+.topbar-nav a.active { color: var(--primary); font-weight: 500; }
+
+/* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
+   estilo que el ícono de login en landing/contacto ────────────── */
+.theme-btn,
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--trans);
+}
+
+.theme-btn:hover,
+.icon-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--surface2);
+}
+
+.theme-btn svg,
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .logo-img {
   height: 40px;
   width: auto;
@@ -39,73 +98,6 @@
   gap: 0.5rem;
 }
 
-/* ── NAV ─────────────────────────────────────────────────────── */
-.nav {
-  display: flex;
-  gap: 2px;
-  background: var(--surface2);
-  border-radius: 99px;
-  padding: 3px;
-}
-
-.nav-btn {
-  padding: 0.35rem 0.9rem;
-  border-radius: 99px;
-  border: none;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 0.8rem;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  transition: var(--trans);
-}
-
-.nav-btn.active {
-  background: var(--surface);
-  color: var(--text);
-  font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.nav-btn:hover:not(.active) { color: var(--text); }
-
-/* ── THEME TOGGLE ────────────────────────────────────────────── */
-.theme-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid var(--border-md);
-  background: var(--surface);
-  color: var(--text-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--trans);
-}
-
-.theme-btn:hover {
-  color: var(--text);
-  background: var(--surface2);
-}
-
-.theme-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* ── TABS ────────────────────────────────────────────────────── */
-.tab         { display: none; }
-.tab.active  { display: block; animation: fadeUp 0.22s ease; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0);   }
-}
 
 /* ── TOOLBAR ─────────────────────────────────────────────────── */
 .toolbar {
@@ -145,7 +137,7 @@
 
 .search-wrap input:focus {
   outline: none;
-  border-color: var(--text-3);
+  border-color: var(--primary);
 }
 
 select {
@@ -159,7 +151,7 @@ select {
   transition: var(--trans);
 }
 
-select:focus { outline: none; border-color: var(--text-3); }
+select:focus { outline: none; border-color: var(--primary); }
 
 /* ── PRODUCT GRID ────────────────────────────────────────────── */
 .prod-grid {
@@ -177,7 +169,7 @@ select:focus { outline: none; border-color: var(--text-3); }
 }
 
 .prod-card:hover {
-  border-color: var(--border-md);
+  border-color: var(--primary);
   transform: translateY(-2px);
 }
 
@@ -222,9 +214,9 @@ select:focus { outline: none; border-color: var(--text-3); }
 }
 
 .prod-price {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font-serif);
   font-size: 1.15rem;
-  color: var(--text);
+  color: var(--primary);
   margin-bottom: 0.6rem;
   letter-spacing: -0.01em;
 }
@@ -250,109 +242,6 @@ select:focus { outline: none; border-color: var(--text-3); }
 .badge.stock   { background: var(--green-bg); color: var(--green); }
 .badge.nostock { background: var(--red-bg);   color: var(--red);   }
 .badge.marca   { background: var(--surface2); color: var(--text-2); }
-
-/* ── STATS ───────────────────────────────────────────────────── */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.1rem;
-  transition: var(--trans);
-}
-
-.stat-label {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-bottom: 0.4rem;
-}
-
-.stat-val {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.5rem;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-/* ── SECTION HEADER ──────────────────────────────────────────── */
-.section-hd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.section-hd h2 {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  font-weight: 500;
-}
-
-/* ── PURCHASE LIST ───────────────────────────────────────────── */
-.purchase-list { display: flex; flex-direction: column; gap: 0.6rem; }
-
-.purchase-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 0.875rem 1.1rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  transition: var(--trans);
-}
-
-.purchase-card:hover { border-color: var(--border-md); }
-
-.purchase-date {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  min-width: 70px;
-  padding-top: 2px;
-  line-height: 1.6;
-}
-
-.purchase-body { flex: 1; min-width: 0; }
-
-.purchase-prods {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.2rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.purchase-notes {
-  font-size: 0.78rem;
-  color: var(--text-2);
-  line-height: 1.4;
-}
-
-.purchase-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.purchase-amount {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.1rem;
-  letter-spacing: -0.01em;
-}
 
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-overlay {
@@ -413,211 +302,6 @@ select:focus { outline: none; border-color: var(--text-3); }
   border-top: 1px solid var(--border);
 }
 
-/* ── MODAL DE DETALLE (foto grande) ─────────────────────────── */
-.modal-view-box {
-  max-width: 560px;
-  padding: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.modal-close-x {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 2;
-  transition: var(--trans);
-}
-
-.modal-close-x:hover { background: rgba(0, 0, 0, 0.65); }
-
-.modal-close-x svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-}
-
-.view-img {
-  width: 100%;
-  max-height: 60vh;
-  object-fit: contain;
-  background: var(--surface2);
-  display: block;
-}
-
-.view-img-ph {
-  width: 100%;
-  height: 260px;
-  background: var(--surface2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.view-img-ph svg {
-  width: 48px;
-  height: 48px;
-  stroke: var(--text-3);
-}
-
-.view-body { padding: 1.25rem 1.5rem 0.25rem; }
-
-.view-name {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.35rem;
-  line-height: 1.25;
-  margin-bottom: 0.3rem;
-}
-
-.view-price {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.view-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 1rem;
-  padding-bottom: 1.25rem;
-}
-
-.view-grid label {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--text-3);
-  margin-bottom: 0.15rem;
-  letter-spacing: 0.02em;
-}
-
-.view-grid span {
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.modal-view-box .modal-footer {
-  margin: 0 1.5rem 1.25rem;
-  padding-top: 1rem;
-}
-
-/* ── PRODUCT SELECTOR (dentro del modal de compra) ───────────── */
-.prod-selector {
-  border: 1px solid var(--border-md);
-  border-radius: var(--radius);
-  overflow: hidden;
-  max-height: 180px;
-  overflow-y: auto;
-  margin-bottom: 0.5rem;
-}
-
-.prod-sel-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.75rem;
-  cursor: pointer;
-  font-size: 0.83rem;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
-}
-
-.prod-sel-item:last-child { border-bottom: none; }
-.prod-sel-item:hover      { background: var(--surface2); }
-
-.prod-sel-item input[type="checkbox"] {
-  cursor: pointer;
-  accent-color: var(--text);
-}
-
-/* ── TAGS DE SELECCIÓN ───────────────────────────────────────── */
-.sel-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  min-height: 26px;
-  margin-bottom: 0.5rem;
-}
-
-.sel-tag {
-  background: var(--blue-bg);
-  color: var(--blue);
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 99px;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.sel-tag button {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-}
-
-/* ── SYNC / RUNNER ───────────────────────────────────────────── */
-.runner-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  transition: var(--trans);
-}
-
-.runner-card:hover { border-color: var(--border-md); }
-
-.runner-info { flex: 1; }
-.runner-info p    { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.2rem; }
-.runner-info span { font-size: 0.75rem;  color: var(--text-3); }
-
-.run-status {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  margin-top: 0.4rem;
-  min-height: 18px;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-/* ── CONFIG CARD ─────────────────────────────────────────────── */
-.config-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-}
-
-.config-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 0.875rem;
-}
-
-.config-hint {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  margin-top: 0.25rem;
-}
-
 /* ── EMPTY STATE ─────────────────────────────────────────────── */
 .empty {
   text-align: center;
@@ -634,10 +318,6 @@ select:focus { outline: none; border-color: var(--text-3); }
   display: block;
 }
 
-/* ── ANIMACIÓN SPIN (botón ejecutar) ─────────────────────────── */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; display: inline-block; }
-
 /* ── BADGE DE ROL (topbar) ────────────────────────────────────── */
 .role-badge {
   font-size: .7rem;
@@ -649,8 +329,8 @@ select:focus { outline: none; border-color: var(--text-3); }
 }
 
 .role-badge.admin {
-  background: var(--surface2);
-  color: var(--text-3);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
 }
 
 .role-badge.guest {
@@ -658,7 +338,7 @@ select:focus { outline: none; border-color: var(--text-3); }
   color: var(--blue);
 }
 
-/* ── BOTÓN DE LOGOUT EN TOPBAR ────────────────────────────────── */
+/* ── BOTONES DE ACCIÓN EN TOPBAR (cuenta / logout) ──────────────── */
 .logout-btn {
   color: var(--text-3) !important;
 }
@@ -669,6 +349,7 @@ select:focus { outline: none; border-color: var(--text-3); }
 
 /* ── MODO INVITADO — ocultar acciones de edición vía CSS también ── */
 [data-role="guest"] .prod-actions,
-[data-role="guest"] .toolbar .btn.primary {
+[data-role="guest"] .toolbar .btn.primary,
+[data-role="guest"] #account-btn {
   display: none !important;
 }
