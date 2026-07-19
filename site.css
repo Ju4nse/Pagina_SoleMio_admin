@@ -131,3 +131,37 @@ body { background: var(--bg); }
   margin-top: 0.75rem;
   text-transform: uppercase;
 }
+
+/* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* frena el scroll horizontal si algo se pasa por poco */
+  html, body { overflow-x: hidden; }
+
+  .site-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .site-nav {
+    order: 3;              /* Inicio/Catálogo/Contacto bajan a su propia fila */
+    width: 100%;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+
+  .site-header-right {
+    gap: 0.4rem;            /* botones de tema/cuenta más pegados */
+  }
+
+  .site-header .theme-btn,
+  .site-header .account-link {
+    width: 32px;
+    height: 32px;
+  }
+
+  .site-footer {
+    justify-content: center;
+    text-align: center;
+  }
+}

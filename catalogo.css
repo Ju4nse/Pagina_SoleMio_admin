@@ -353,3 +353,38 @@ select:focus { outline: none; border-color: var(--primary); }
 [data-role="guest"] #account-btn {
   display: none !important;
 }
+
+/* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+
+  .shell { padding: 0 1rem; }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    padding: 1rem 0;
+  }
+
+  .topbar-nav {
+    order: 3;              /* Inicio/Catálogo/Contacto bajan a su propia fila */
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+    margin-right: 0;
+  }
+
+  .topbar-right {
+    gap: 0.4rem;            /* rol / tema / cuenta / logout más pegados */
+  }
+
+  .theme-btn,
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .role-badge {
+    display: none;          /* no crítico en mobile, libera espacio */
+  }
+}
