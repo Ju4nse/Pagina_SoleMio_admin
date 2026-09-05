@@ -14,16 +14,47 @@
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 0;
+  gap: 1.5rem;
+  padding: 1.6rem 0;
   border-bottom: 1px solid var(--border);
   margin-bottom: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  /* La caja de .topbar en sí NO se desplaza — coincide exactamente
+     con el ancho del .shell, igual que la grilla de productos. Lo
+     que sobresale hacia afuera de ese margen es el LOGO (margin-left
+     negativo, ver .logo) y el grupo de ÍCONOS (margin-right negativo
+     al final, ver .topbar-icons) — ambos siguen en el flujo normal
+     del flex (nada de position:absolute) para que nunca se superpongan
+     con Marcas/buscador/nav. */
+}
+
+/* Fondo a todo el ancho aunque el topbar viva en un contenedor con
+   max-width, para que se note separado del fondo de la página al
+   quedar fijo arriba durante el scroll. El box-shadow + clip-path va
+   en un ::before propio (no directo en .topbar) para que el recorte
+   sea solo de ESE pseudo-elemento: así no corta cosas que sobresalen
+   de la caja del topbar, como el panel desplegable de "Marcas". */
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  box-shadow: 0 0 0 100vmax var(--surface);
+  clip-path: inset(0 -100vmax);
 }
 
 .logo {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+  /* sobresale bien notorio hacia la izquierda, afuera del margen del
+     catálogo — sigue siendo el primer ítem normal del flex (no
+     absolute), así el siguiente elemento (Marcas) se acomoda solo
+     después de su ancho real sin números mágicos. */
+  margin-left: -6rem;
 }
 
 .logo-link {
@@ -35,11 +66,153 @@
 }
 .logo-link:hover { opacity: 0.75; }
 
+/* ── MENÚ "MARCAS" (solo catálogo) — desplegable al pasar el cursor,
+   pegado al logo. El panel usa columnas (CSS columns) para que
+   entren muchas marcas sin quedar interminable verticalmente, con
+   scroll como red de seguridad si aun así no entran. ───────────── */
+.marcas-menu {
+  /* sin position:relative a propósito: así el panel (position:
+     absolute) toma como referencia .topbar (position:sticky), no
+     este contenedor — y "top:100%" cae justo en el borde inferior
+     de TODA la barra, no a mitad de fila. */
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin-left: 1.5rem;
+  /* puente invisible: iguala el padding inferior de .topbar para que
+     la caja "hoverable" del menú llegue hasta ese borde sin cortes
+     (el margin-bottom negativo cancela el alto extra que sumaría) */
+  padding-bottom: 1.6rem;
+  margin-bottom: -1.6rem;
+}
+
+.marcas-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.marcas-trigger svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.marcas-menu:hover .marcas-trigger,
+.marcas-menu:focus-within .marcas-trigger {
+  color: var(--primary);
+}
+
+.marcas-menu:hover .marcas-trigger svg,
+.marcas-menu:focus-within .marcas-trigger svg {
+  transform: rotate(180deg);
+}
+
+.marcas-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  /* sin borde propio: solo el de arriba, para que se lea como una
+     continuación de la barra y no como una tarjeta flotando aparte */
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  /* grid (no CSS columns) para que más columnas = menos filas de forma
+     predecible, y el max-height + scroll de abajo funcione siempre —
+     con "columns" el recorte por altura es inconsistente entre
+     navegadores. */
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0 1.75rem;
+  width: min(880px, 90vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: var(--trans);
+  z-index: 20;
+}
+
+.marcas-menu:hover .marcas-panel,
+.marcas-menu:focus-within .marcas-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* clic en una marca: fuerza el cierre aunque el mouse siga encima,
+   hasta que se vaya de .marcas-menu (ver catalogo.js) — si no, al
+   elegir una marca el panel se quedaría tapando los productos. */
+.marcas-menu.force-closed .marcas-panel {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.marcas-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  transition: var(--trans);
+  overflow-wrap: break-word;
+}
+.marcas-item:hover { color: var(--primary); }
+.marcas-item.active { color: var(--primary); font-weight: 500; }
+
+.marcas-empty {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-3);
+}
+
+/* ── BÚSQUEDA EN EL TOPBAR (solo catálogo) ──────────────────────
+   Vive dentro de .topbar, pegada al logo/marcas. Crece para ocupar
+   el hueco libre entre Marcas y el nav (que sigue empujado al borde
+   derecho con margin-left:auto) — con un tope para que en pantallas
+   muy anchas no quede gigante. */
+.topbar-search {
+  display: flex;
+  flex: 1;
+  max-width: 520px;
+  min-width: 160px;
+}
+
+.topbar-search .search-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
 .topbar-nav {
   display: flex;
   align-items: center;
   gap: 2rem;
-  margin-right: 0.5rem;
+  /* empuja [nav + íconos] como bloque hacia el borde derecho de la
+     fila — el nav ya no queda pegado exacto al margen de la grilla
+     (eso causaba que los íconos, al sobresalir por su cuenta, se
+     superpusieran encima), pero a cambio nunca hay superposición. */
+  margin-left: auto;
 }
 
 /* Mismo look que .site-nav (landing/contacto): mayúsculas, tracking
@@ -100,10 +273,16 @@
   display: block;
 }
 
-.topbar-right {
+/* Rol/carrito/tema/cuenta/salir: quedan en el flujo normal (último
+   ítem de la fila) para que SIEMPRE reserven su propio espacio real
+   y nunca se superpongan con el nav — lo único que sobresale es un
+   margin-right negativo al final, que empuja solo a este grupo más
+   allá del borde derecho, sin robarle lugar a nadie más. */
+.topbar-icons {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-right: -6rem;
 }
 
 
@@ -1010,16 +1189,22 @@ select:focus { outline: none; border-color: var(--primary); }
     padding: 1rem 0;
   }
 
+  .logo {
+    margin-left: -1rem; /* igual al padding de .shell en mobile */
+  }
+
   .topbar-nav {
     order: 3;              /* Inicio/Catálogo/Contacto bajan a su propia fila */
     width: 100%;
     justify-content: center;
     gap: 1rem;
-    margin-right: 0;
+    margin-left: 0;
   }
 
-  .topbar-right {
-    gap: 0.4rem;            /* rol / tema / cuenta / logout más pegados */
+  .topbar-icons {
+    margin-left: auto;
+    margin-right: -1rem; /* igual al padding de .shell en mobile */
+    gap: 0.4rem;
   }
 
   .theme-btn,

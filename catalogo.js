@@ -15,6 +15,7 @@ let currentRole        = null;   // 'admin' | 'guest'
 let productos           = [];
 let productosVisibles   = 50;
 let editingProdId       = null;
+let marcaFiltro         = '';    // marca elegida en el menú "Marcas" del topbar
 
 function isAdmin()    { return currentRole === 'admin'; }
 function isGuest()    { return currentRole === 'guest'; }
@@ -170,20 +171,14 @@ function renderCatalogo(resetear = false) {
   if (resetear) productosVisibles = 30;
 
   const q     = (document.getElementById('buscar')?.value      || '').toLowerCase();
-  const marca = document.getElementById('filtro-marca')?.value || '';
+  const marca = marcaFiltro;
   const stock = document.getElementById('filtro-stock')?.value || '';
 
   const newBtn = document.querySelector('.toolbar .btn.primary');
   if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
 
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
-  const mSel   = document.getElementById('filtro-marca');
-  const mCur   = mSel?.value || '';
-  if (mSel) {
-    mSel.innerHTML =
-      '<option value="">Todas las marcas</option>' +
-      marcas.map(m => `<option value="${m}"${m === mCur ? ' selected' : ''}>${m}</option>`).join('');
-  }
+  renderMarcasMenu(marcas, marcaFiltro);
 
   const lista = productos.filter(p => {
     if (p.oculto && isGuest()) return false;
@@ -274,6 +269,42 @@ function cargarMas() {
   productosVisibles += 50;
   renderCatalogo();
 }
+
+/* ── MENÚ "MARCAS" DEL TOPBAR — panel que se despliega al hacer
+   hover sobre el trigger (ver .marcas-panel en catalogo.css). Se
+   reconstruye cada vez que renderCatalogo() recalcula la lista de
+   marcas, así siempre refleja el catálogo actual. En varias columnas
+   (CSS columns) para que entren aunque haya muchas. ────────────── */
+function renderMarcasMenu(marcas, marcaActual) {
+  const panel = document.getElementById('marcas-panel');
+  if (!panel) return;
+
+  if (!marcas.length) {
+    panel.innerHTML = '<span class="marcas-empty">Todavía no hay marcas cargadas</span>';
+    return;
+  }
+
+  panel.innerHTML =
+    `<button type="button" class="marcas-item${marcaActual ? '' : ' active'}" data-marca="">Todas las marcas</button>` +
+    marcas.map(m =>
+      `<button type="button" class="marcas-item${m === marcaActual ? ' active' : ''}" data-marca="${m}">${m}</button>`
+    ).join('');
+}
+
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('.marcas-item');
+  if (!item) return;
+  marcaFiltro = item.dataset.marca || '';
+  renderCatalogo(true);
+
+  // Cierra el desplegable al elegir: como se abre con :hover, sin esto
+  // seguiría abierto tapando los productos hasta que el mouse se fuera.
+  const menu = item.closest('.marcas-menu');
+  if (menu) {
+    menu.classList.add('force-closed');
+    menu.addEventListener('mouseleave', () => menu.classList.remove('force-closed'), { once: true });
+  }
+});
 
 
 /* ================================================================
@@ -1074,7 +1105,7 @@ async function doLogout() {
 async function startApp() {
   document.getElementById('app').style.display = 'block';
 
-  renderTopbar('catalogo');
+  renderTopbar('catalogo', { search: true, marcas: true });
   initTheme();
   applyRole();
   initCarritoUI();

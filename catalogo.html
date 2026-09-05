@@ -30,21 +30,12 @@
 
     <!-- CATÁLOGO -->
     <div class="toolbar">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()" autocomplete="off">
-      </div>
-      <select id="filtro-marca" onchange="renderCatalogo()">
-        <option value="">Todas las marcas</option>
-      </select>
       <select id="filtro-stock" onchange="renderCatalogo()">
         <option value="">Todo el stock</option>
         <option value="in stock">En stock</option>
         <option value="out of stock">Sin stock</option>
       </select>
-      <button class="btn primary" onclick="openProdModal()">
+      <button class="btn primary" style="margin-left:auto" onclick="openProdModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12h14"/>
         </svg>

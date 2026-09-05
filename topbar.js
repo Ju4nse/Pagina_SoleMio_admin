@@ -9,6 +9,20 @@
    y llamar a renderTopbar('<key>') antes de tocar #role-badge,
    #theme-btn, #cart-btn, etc.
 
+   renderTopbar(activeKey, { search: true }) agrega además la barra de
+   búsqueda entre el logo y el nav — hoy solo la usa catalogo.js (el
+   input dispara renderCatalogo(), que vive en esa página).
+
+   renderTopbar(activeKey, { marcas: true }) agrega el menú "Marcas"
+   (desplegable al pasar el cursor) junto al logo. El panel arranca
+   vacío — catalogo.js lo llena vía renderMarcasMenu() cada vez que
+   cambia la lista de productos, y también resuelve los clicks.
+
+   Estructura: .logo (sobresale a la izquierda) — .marcas-menu —
+   .topbar-search — .topbar-nav (Inicio…Contacto, alineado con el
+   margen de la grilla de productos) — .topbar-icons (rol/carrito/
+   tema/cuenta/salir, sobresale a la derecha). Ver catalogo.css.
+
    Los botones de cuenta ("Mi cuenta") y logout dependen de que la
    página defina window.doLogout() (todas las páginas de la app lo
    hacen) — la cuenta en sí (cambiar contraseña) solo vive en
@@ -24,9 +38,30 @@ const NAV_ITEMS = [
   { href: 'contacto.html',      label: 'Contacto',    key: 'contacto' },
 ];
 
-export function renderTopbar(activeKey) {
+export function renderTopbar(activeKey, opts = {}) {
   const slot = document.getElementById('topbar-slot');
   if (!slot) return;
+
+  const marcasHtml = opts.marcas ? `
+    <div class="marcas-menu">
+      <button type="button" class="marcas-trigger">
+        Marcas
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="marcas-panel" id="marcas-panel"></div>
+    </div>` : '';
+
+  const searchHtml = opts.search ? `
+    <div class="topbar-search">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="buscar" placeholder="Buscar producto, marca…" oninput="renderCatalogo()" autocomplete="off">
+      </div>
+    </div>` : '';
 
   slot.innerHTML = `
     <div class="logo">
@@ -34,16 +69,18 @@ export function renderTopbar(activeKey) {
         <span class="logo-word">SoleMio</span>
       </a>
     </div>
-    <div class="topbar-right">
-      <nav class="topbar-nav">
-        ${NAV_ITEMS.map(item => {
-          const classes = [
-            item.key === activeKey ? 'active' : '',
-            item.adminOnly ? 'admin-only-link' : '',
-          ].filter(Boolean).join(' ');
-          return `<a href="${item.href}"${classes ? ` class="${classes}"` : ''}>${item.label}</a>`;
-        }).join('')}
-      </nav>
+    ${marcasHtml}
+    ${searchHtml}
+    <nav class="topbar-nav">
+      ${NAV_ITEMS.map(item => {
+        const classes = [
+          item.key === activeKey ? 'active' : '',
+          item.adminOnly ? 'admin-only-link' : '',
+        ].filter(Boolean).join(' ');
+        return `<a href="${item.href}"${classes ? ` class="${classes}"` : ''}>${item.label}</a>`;
+      }).join('')}
+    </nav>
+    <div class="topbar-icons">
       <span class="role-badge" id="role-badge"></span>
       <a class="icon-btn" id="cart-btn" href="carrito.html" title="Tu pedido">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
