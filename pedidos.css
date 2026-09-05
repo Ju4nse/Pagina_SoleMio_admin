@@ -39,6 +39,10 @@
   margin-top: 0.2rem;
 }
 
+.pedido-row-codigo {
+  font-family: monospace;
+}
+
 .pedido-row-right {
   display: flex;
   align-items: center;
@@ -55,10 +59,14 @@
 }
 
 /* ── ESTADOS ─────────────────────────────────────────────────── */
-.badge-estado-pendiente          { background: var(--primary-soft); color: var(--primary-dark); }
-.badge-estado-confirmado_parcial { background: var(--surface2);     color: var(--text-2); }
-.badge-estado-confirmado_total   { background: var(--green-bg);     color: var(--green); }
-.badge-estado-cancelado          { background: var(--red-bg);       color: var(--red); }
+.badge-estado-espera      { background: var(--primary-soft); color: var(--primary-dark); }
+.badge-estado-revisado    { background: var(--surface2);     color: var(--text-2); }
+.badge-estado-confirmado  { background: var(--green-bg);     color: var(--green); }
+.badge-estado-cancelado   { background: var(--red-bg);       color: var(--red); }
+
+/* ── PAGO (solo admin) ───────────────────────────────────────── */
+.badge-pago-si { background: var(--green-bg); color: var(--green); }
+.badge-pago-no { background: var(--surface2); color: var(--text-3); }
 
 /* ── MODAL DE DETALLE ────────────────────────────────────────── */
 .pedido-modal-grande {
@@ -79,6 +87,24 @@
   font-size: 0.8rem;
   font-style: italic;
   color: var(--text-2);
+}
+
+.pedido-pago-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.pedido-codigo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
 }
 
 .pedido-items-edit {

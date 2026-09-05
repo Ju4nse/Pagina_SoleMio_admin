@@ -39,10 +39,16 @@
       </div>
       <select id="filtro-estado" onchange="renderPedidos()">
         <option value="">Todos los estados</option>
-        <option value="pendiente">Pendiente</option>
-        <option value="confirmado_parcial">Confirmado parcial</option>
-        <option value="confirmado_total">Confirmado total</option>
+        <option value="espera">En espera</option>
+        <option value="revisado">Revisado</option>
+        <option value="confirmado">Confirmado</option>
         <option value="cancelado">Cancelado</option>
+      </select>
+      <select id="orden-pedido" onchange="renderPedidos()">
+        <option value="fecha_desc">Más recientes primero</option>
+        <option value="fecha_asc">Más antiguos primero</option>
+        <option value="telefono_asc">Teléfono (A-Z)</option>
+        <option value="telefono_desc">Teléfono (Z-A)</option>
       </select>
       <button class="btn primary" onclick="abrirNuevoPedidoUI()">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

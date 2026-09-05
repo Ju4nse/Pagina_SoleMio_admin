@@ -12,17 +12,17 @@ import { renderTopbar } from './topbar.js';
 let rolActual = 'guest';
 
 const ESTADO_LABEL = {
-  pendiente:           'Pendiente de revisión',
-  confirmado_parcial:  'Confirmado parcial',
-  confirmado_total:    'Confirmado',
-  cancelado:           'Sin stock',
+  espera:      'Pendiente de revisión',
+  revisado:    'Revisado',
+  confirmado:  'Confirmado',
+  cancelado:   'Sin stock',
 };
 
 const ESTADO_DESC = {
-  pendiente:          `Todavía estamos revisando la disponibilidad real de cada producto (puede demorar hasta ${TIEMPO_REVISION_HORAS} horas hábiles). Te contactaremos por WhatsApp apenas lo confirmemos.`,
-  confirmado_parcial: 'Confirmamos parte de tu pedido — revisá el detalle de cada producto más abajo.',
-  confirmado_total:    'Confirmamos todos los productos de tu pedido.',
-  cancelado:           'Lamentablemente no pudimos confirmar disponibilidad de ningún producto de este pedido.',
+  espera:     `Todavía estamos revisando la disponibilidad real de cada producto (puede demorar hasta ${TIEMPO_REVISION_HORAS} horas hábiles). Te contactaremos por WhatsApp apenas lo confirmemos.`,
+  revisado:   'Revisamos tu pedido: puede que hayamos ajustado el talle, color o cantidad de algún producto, o que alguno no tenga stock — revisá el detalle de cada uno más abajo.',
+  confirmado: 'Confirmamos todos los productos de tu pedido tal como los pediste.',
+  cancelado:  'Lamentablemente no pudimos confirmar disponibilidad de ningún producto de este pedido.',
 };
 
 function fmtARS(n) {
@@ -99,7 +99,7 @@ async function renderMisPedidos() {
             </div>
             <div class="pedido-row-right">
               ${p.estado ? `<span class="badge badge-estado-${p.estado}">${ESTADO_LABEL[p.estado] || p.estado}</span>` : ''}
-              <span class="pedido-row-monto">${fmtARS(p.estado && p.estado !== 'pendiente' ? p.monto_final : p.monto_estimado)}</span>
+              <span class="pedido-row-monto">${fmtARS(p.estado && p.estado !== 'espera' ? p.monto_final : p.monto_estimado)}</span>
             </div>
           </article>
         `).join('')}
@@ -152,8 +152,8 @@ function renderPedido(p, items) {
       </div>
 
       <div class="carrito-total" style="margin-top:1.25rem">
-        <span>${p.estado === 'pendiente' ? 'Total estimado' : 'Total a pagar'}</span>
-        <strong>${fmtARS(p.estado === 'pendiente' ? p.monto_estimado : p.monto_final)}</strong>
+        <span>${p.estado === 'espera' ? 'Total estimado' : 'Total a pagar'}</span>
+        <strong>${fmtARS(p.estado === 'espera' ? p.monto_estimado : p.monto_final)}</strong>
       </div>
 
       ${p.nota ? `<div class="pedido-nota" style="margin-top:.75rem">Tu nota: "${p.nota}"</div>` : ''}
@@ -172,10 +172,10 @@ function renderItemEstado(it) {
   const huboCambios = talleCambio || colorCambio || cantCambio;
 
   const estadoTag = it.disponible === true
-    ? `<span class="badge badge-estado-confirmado_total">Disponible</span>`
+    ? `<span class="badge badge-estado-confirmado">Disponible</span>`
     : it.disponible === false
       ? `<span class="badge badge-estado-cancelado">Sin stock</span>`
-      : `<span class="badge badge-estado-pendiente">Sin revisar</span>`;
+      : `<span class="badge badge-estado-espera">Sin revisar</span>`;
 
   return `
     <div class="pedido-item-edit" style="align-items:center">

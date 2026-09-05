@@ -17,10 +17,10 @@ let itemsEdicion         = {};   // item.id -> {disponible, talle, color, cantid
 let variantesPorProducto = {};   // producto_id -> [{talle, color, stock}] (para elegir una combinación real)
 
 const ESTADO_LABEL = {
-  pendiente:           'Pendiente',
-  confirmado_parcial:  'Confirmado parcial',
-  confirmado_total:    'Confirmado total',
-  cancelado:           'Cancelado',
+  espera:      'En espera',
+  revisado:    'Revisado',
+  confirmado:  'Confirmado',
+  cancelado:   'Cancelado',
 };
 
 /* ================================================================
@@ -85,6 +85,7 @@ function mensajeWhatsapp(p) {
   const noDisponibles = p.items.filter(it => it.disponible === false);
 
   let msg = `Hola ${p.cliente_nombre}! Te contamos cómo quedó tu pedido en SoleMio:\n\n`;
+  msg += `Código de tu pedido: ${p.id}\n\n`;
 
   if (disponibles.length) {
     msg += 'Disponible:\n';
@@ -137,6 +138,18 @@ async function copiarMensajeWhatsapp() {
   }
 }
 
+async function copiarCodigoPedido() {
+  const p = pedidoAbierto();
+  if (!p) return;
+  try {
+    await navigator.clipboard.writeText(p.id);
+    alert('Código copiado al portapapeles.');
+  } catch (err) {
+    console.warn('No se pudo copiar al portapapeles:', err);
+    prompt('No se pudo copiar automáticamente. Copialo de acá:', p.id);
+  }
+}
+
 /* ================================================================
    CARGA DE DATOS
    ================================================================ */
@@ -172,6 +185,7 @@ async function cargarPedidos() {
 function renderPedidos() {
   const q             = (document.getElementById('buscar-pedido')?.value || '').toLowerCase();
   const filtroEstado  = document.getElementById('filtro-estado')?.value  || '';
+  const orden         = document.getElementById('orden-pedido')?.value  || 'fecha_desc';
 
   const lista = pedidos.filter(p => {
     const qOk = !q
@@ -180,6 +194,14 @@ function renderPedidos() {
     const estadoOk = !filtroEstado || p.estado === filtroEstado;
     return qOk && estadoOk;
   });
+
+  const comparadores = {
+    fecha_asc:     (a, b) => new Date(a.created_at) - new Date(b.created_at),
+    fecha_desc:    (a, b) => new Date(b.created_at) - new Date(a.created_at),
+    telefono_asc:  (a, b) => a.cliente_telefono.localeCompare(b.cliente_telefono, 'es', { numeric: true }),
+    telefono_desc: (a, b) => b.cliente_telefono.localeCompare(a.cliente_telefono, 'es', { numeric: true }),
+  };
+  lista.sort(comparadores[orden] || comparadores.fecha_desc);
 
   const cont = document.getElementById('pedidos-lista');
   if (!cont) return;
@@ -200,11 +222,12 @@ function renderPedidos() {
       <div class="pedido-row-main">
         <div class="pedido-row-cliente">${p.cliente_nombre}</div>
         <div class="pedido-row-meta">
-          ${p.cliente_telefono} · ${fmtFecha(p.created_at)} · ${p.items.length} ítem${p.items.length !== 1 ? 's' : ''}
+          ${p.cliente_telefono} · ${fmtFecha(p.created_at)} · ${p.items.length} ítem${p.items.length !== 1 ? 's' : ''} · <span class="pedido-row-codigo">#${p.id.slice(0, 8)}</span>
         </div>
       </div>
       <div class="pedido-row-right">
         <span class="badge badge-estado-${p.estado}">${ESTADO_LABEL[p.estado] || p.estado}</span>
+        <span class="badge ${p.pagado ? 'badge-pago-si' : 'badge-pago-no'}">${p.pagado ? 'Pagado' : 'Sin pagar'}</span>
         <span class="pedido-row-monto">${fmtARS(p.monto_final ?? p.monto_estimado)}</span>
       </div>
     </article>
@@ -321,7 +344,16 @@ function renderModalPedido() {
         <div class="pedido-detalle-cliente">
           <div><strong>${p.cliente_nombre}</strong> · ${p.cliente_telefono}</div>
           <div style="font-size:.78rem;color:var(--text-3);margin-top:.15rem">${fmtFecha(p.created_at)}</div>
+          <div class="pedido-codigo-row">
+            <span>Código: <span class="pedido-row-codigo">${p.id}</span></span>
+            <button type="button" class="btn ghost sm" onclick="copiarCodigoPedidoUI()">Copiar</button>
+          </div>
           ${p.nota ? `<div class="pedido-nota">"${p.nota}"</div>` : ''}
+          <div class="pedido-pago-toggle">
+            <span>Pago (uso interno, no lo ve el cliente):</span>
+            <button type="button" class="toggle-disp toggle-si ${p.pagado ? 'activo' : ''}" onclick="marcarPagadoUI(true)">Pagado</button>
+            <button type="button" class="toggle-disp toggle-no ${!p.pagado ? 'activo' : ''}" onclick="marcarPagadoUI(false)">No pagado</button>
+          </div>
         </div>
 
         <div class="pedido-items-edit">
@@ -336,7 +368,7 @@ function renderModalPedido() {
         <div class="modal-footer" style="flex-wrap:wrap;gap:.5rem">
           <button class="btn ghost" onclick="cerrarPedidoUI()">Cerrar</button>
           <button class="btn primary" onclick="guardarPedidoUI()">${ICON.check} Guardar cambios</button>
-          ${p.estado !== 'pendiente' ? `
+          ${p.estado !== 'espera' ? `
             <button class="btn ghost" onclick="copiarMensajeWhatsappUI()">Copiar mensaje</button>
             <a class="btn" target="_blank" rel="noopener" href="${linkWhatsapp(p)}">Reenviar por WhatsApp</a>
           ` : ''}
@@ -444,6 +476,27 @@ function marcarItem(itemId, valor) {
   renderModalPedido();
 }
 
+/* Marca de pago: uso exclusivo del admin, no forma parte del circuito
+   espera → revisado → confirmado y no se expone al cliente. */
+async function marcarPagado(valor) {
+  const p = pedidoAbierto();
+  if (!p || p.pagado === valor) return;
+
+  const anterior = p.pagado;
+  p.pagado = valor;
+  renderModalPedido();
+  renderPedidos();
+
+  const { error } = await sb.from('pedidos').update({ pagado: valor }).eq('id', p.id);
+  if (error) {
+    console.warn('Error marcando pago:', error.message);
+    p.pagado = anterior;
+    renderModalPedido();
+    renderPedidos();
+    alert('No se pudo actualizar el estado de pago.');
+  }
+}
+
 async function guardarPedido() {
   const p = pedidos.find(x => x.id === pedidoAbiertoId);
   if (!p) return;
@@ -452,6 +505,8 @@ async function guardarPedido() {
   if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
 
   try {
+    let huboModificacion = false;
+
     for (const it of p.items) {
       const e = itemsEdicion[it.id];
       if (!e) continue;
@@ -462,6 +517,10 @@ async function guardarPedido() {
       const talleFinalNuevo    = e.talle !== (it.talle || '') ? e.talle : null;
       const colorFinalNuevo    = e.color !== (it.color || '') ? e.color : null;
       const cantidadFinalNuevo = cantidad !== it.cantidad     ? cantidad : null;
+
+      if (talleFinalNuevo !== null || colorFinalNuevo !== null || cantidadFinalNuevo !== null) {
+        huboModificacion = true;
+      }
 
       const cambios = {};
       if (e.disponible      !== it.disponible)            cambios.disponible      = e.disponible ?? null;
@@ -480,11 +539,15 @@ async function guardarPedido() {
     const hayDisponibles   = decisiones.some(d => d === true);
     const hayNoDisponibles = decisiones.some(d => d === false);
 
-    let nuevoEstado = 'pendiente';
+    // "revisado" engloba tanto los pedidos donde se cambió talle/color/
+    // cantidad de algún ítem como los que antes eran "confirmado parcial"
+    // (mezcla de disponible/sin stock). "confirmado" queda para cuando
+    // todo se confirma tal cual se pidió, sin cambios.
+    let nuevoEstado = 'espera';
     if (todosRevisados) {
-      if (hayDisponibles && hayNoDisponibles)   nuevoEstado = 'confirmado_parcial';
-      else if (hayDisponibles)                  nuevoEstado = 'confirmado_total';
-      else                                       nuevoEstado = 'cancelado';
+      if (!hayDisponibles)                        nuevoEstado = 'cancelado';
+      else if (hayNoDisponibles || huboModificacion) nuevoEstado = 'revisado';
+      else                                         nuevoEstado = 'confirmado';
     }
 
     const montoFinal = p.items.reduce((acc, it) => {
@@ -495,7 +558,7 @@ async function guardarPedido() {
     }, 0);
 
     const patch = { estado: nuevoEstado, monto_final: montoFinal };
-    if (nuevoEstado !== 'pendiente') patch.confirmado_at = new Date().toISOString();
+    if (nuevoEstado !== 'espera') patch.confirmado_at = new Date().toISOString();
 
     const { error: errPedido } = await sb.from('pedidos').update(patch).eq('id', p.id);
     if (errPedido) throw errPedido;
@@ -523,9 +586,9 @@ async function guardarPedido() {
 /* ================================================================
    NUEVO PEDIDO (carga manual: venta presencial o armado por el admin)
 
-   Se crea directo como confirmado_total con disponible=true en todos
+   Se crea directo como confirmado con disponible=true en todos
    los ítems: el admin ya está viendo el stock real al armarlo, no
-   hace falta el circuito de revisión pendiente → confirmar.
+   hace falta el circuito de revisión espera → revisado → confirmar.
    ================================================================ */
 let nuevoPedidoItems       = [];  // [{productoId, nombre, precioUnitario, talle, color, cantidad}]
 let npBusquedaResultados   = [];
@@ -677,7 +740,7 @@ async function crearPedidoManual() {
       cliente_telefono: telefono || '—',
       monto_estimado:   monto,
       monto_final:      monto,
-      estado:           'confirmado_total',
+      estado:           'confirmado',
       confirmado_at:    new Date().toISOString(),
       nota:             'Pedido cargado por el admin (venta presencial).',
     });
@@ -854,11 +917,13 @@ window.renderPedidos  = renderPedidos;
 window.abrirPedidoUI  = abrirPedido;
 window.cerrarPedidoUI = cerrarPedido;
 window.marcarItemUI   = marcarItem;
+window.marcarPagadoUI = marcarPagado;
 window.guardarPedidoUI = guardarPedido;
 window.cambiarTalleItemUI    = cambiarTalleItem;
 window.cambiarColorItemUI    = cambiarColorItem;
 window.cambiarCantidadItemUI = cambiarCantidadItem;
 window.copiarMensajeWhatsappUI = copiarMensajeWhatsapp;
+window.copiarCodigoPedidoUI    = copiarCodigoPedido;
 window.abrirNuevoPedidoUI            = abrirNuevoPedido;
 window.cerrarNuevoPedidoUI           = cerrarNuevoPedido;
 window.buscarProductoNuevoPedidoUI   = buscarProductoNuevoPedido;

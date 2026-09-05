@@ -15,7 +15,7 @@ const MIS_PEDIDOS_KEY  = 'solemio-mis-pedidos';
 
 /* Cuánto se le avisa al cliente que puede tardar la revisión manual
    del pedido. Un solo lugar para cambiarlo — lo usan carrito-page.js
-   (explicación + confirmación) y pedido-estado.js (estado "pendiente"). */
+   (explicación + confirmación) y pedido-estado.js (estado "espera"). */
 export const TIEMPO_REVISION_HORAS = 24;
 
 export function fmtARS(n) {
