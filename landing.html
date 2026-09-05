@@ -20,30 +20,13 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="catalogo.css">
 <link rel="stylesheet" href="landing.css">
 </head>
 <body>
 
-<header class="site-header">
-  <div class="logo">
-    <a href="landing.html" class="logo-link">
-      <span class="logo-word">SoleMio</span>
-    </a>
-  </div>
-  <nav class="site-nav">
-    <a href="landing.html" class="active">Inicio</a>
-    <a href="#" onclick="verCatalogo();return false;">Catálogo</a>
-    <a href="contacto.html">Contacto</a>
-  </nav>
-  <div class="site-header-right">
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
-    <a class="account-link" href="login.html" aria-label="Ingresar" title="Ingresar">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
-      </svg>
-    </a>
-  </div>
-</header>
+<!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
+<header class="topbar site-header-topbar" id="topbar-slot"></header>
 
 <!-- HERO -->
 <section class="hero">

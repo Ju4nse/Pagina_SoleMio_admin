@@ -45,3 +45,32 @@ export function toggleTheme() {
   if (btn) btn.innerHTML = isDark ? ICON.moon : ICON.sun;
   localStorage.setItem('solemio-theme', html.dataset.theme);
 }
+
+/* ================================================================
+   COLORES COMPARTIDOS
+   ================================================================ */
+export const COLOR_MAP = {
+  'negro': '#1a1a1a', 'blanco': '#ffffff', 'crudo': '#f2ead9',
+  'gris': '#9c9c9c', 'gris claro': '#cfcfcf', 'gris oscuro': '#555555',
+  'rojo': '#c0392b', 'rosa': '#e8a0bf', 'rosa viejo': '#c98ba0',
+  'fucsia': '#d6336c', 'bordo': '#7b1e3a', 'vino': '#722f37',
+  'azul': '#2b4c8c', 'azul marino': '#1b2a4a', 'celeste': '#8ec9e0',
+  'turquesa': '#1abc9c', 'verde': '#2e8b57', 'verde militar': '#556b2f',
+  'amarillo': '#f1c40f', 'mostaza': '#c9a227', 'naranja': '#e07b39',
+  'marron': '#6b4226', 'beige': '#d8c3a5', 'nude': '#e3c2a5',
+  'camel': '#c19a6b', 'violeta': '#8e44ad', 'lila': '#c8a2c8',
+  'morado': '#6c3483', 'dorado': '#caa94a', 'plateado': '#c0c0c0',
+  'animal print': '#a67b5b', 'leopardo': '#a67b5b', 'coral': '#ff7f50',
+  'salmon': '#fa8072',
+};
+
+export function normalizarColor(nombre) {
+  return String(nombre || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+export function hexDeColor(nombre) {
+  return COLOR_MAP[normalizarColor(nombre)] || null;
+}

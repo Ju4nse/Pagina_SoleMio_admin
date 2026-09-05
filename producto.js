@@ -4,7 +4,9 @@
    de vuelta a login.html
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
-import { ICON, initTheme, toggleTheme } from './theme.js';
+import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
+import { initCarritoUI, agregarAlCarrito } from './carrito.js';
+import { renderTopbar }       from './topbar.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -39,35 +41,13 @@ function getProductoId() {
   return new URLSearchParams(location.search).get('id');
 }
 
-/* Mapa de nombres de color (es) → hex, para el circulito.
-   Si un color no está en el mapa, se muestra un circulito neutro
-   con el nombre igual visible como texto. */
-const COLOR_MAP = {
-  'negro': '#1a1a1a', 'blanco': '#ffffff', 'crudo': '#f2ead9',
-  'gris': '#9c9c9c', 'gris claro': '#cfcfcf', 'gris oscuro': '#555555',
-  'rojo': '#c0392b', 'rosa': '#e8a0bf', 'rosa viejo': '#c98ba0',
-  'fucsia': '#d6336c', 'bordo': '#7b1e3a', 'vino': '#722f37',
-  'azul': '#2b4c8c', 'azul marino': '#1b2a4a', 'celeste': '#8ec9e0',
-  'turquesa': '#1abc9c', 'verde': '#2e8b57', 'verde militar': '#556b2f',
-  'amarillo': '#f1c40f', 'mostaza': '#c9a227', 'naranja': '#e07b39',
-  'marron': '#6b4226', 'beige': '#d8c3a5', 'nude': '#e3c2a5',
-  'camel': '#c19a6b', 'violeta': '#8e44ad', 'lila': '#c8a2c8',
-  'morado': '#6c3483', 'dorado': '#caa94a', 'plateado': '#c0c0c0',
-  'animal print': '#a67b5b', 'leopardo': '#a67b5b', 'coral': '#ff7f50',
-  'salmon': '#fa8072',
-};
-
-function normalizarColor(nombre) {
-  return nombre
-    .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .trim();
+/* Un invitado no puede ver productos ocultos ni sin stock (mismo
+   criterio que el listado del catálogo en catalogo.js). */
+function noVisibleParaGuest(p) {
+  return isGuest() && (p.oculto || !p.stock);
 }
 
-function hexDeColor(nombre) {
-  return COLOR_MAP[normalizarColor(nombre)] || null;
-}
-
+/* hexDeColor(nombre) viene de theme.js — mapa de color compartido con catalogo.js */
 
 /* ================================================================
    ROL (topbar)
@@ -106,9 +86,9 @@ function renderProducto(p, prev, next, similares) {
   const enStock  = p.stock === true || p.stock === 'in stock';
   const cantidad = p.num_stock ?? null;
 
-  const badgeStock = enStock
-    ? (isAdmin() && cantidad != null ? `En stock (${cantidad})` : 'En stock')
-    : 'Sin stock';
+  const badgeStock = isAdmin()
+    ? (enStock ? (cantidad != null ? `En stock (${cantidad})` : 'En stock') : 'Sin stock')
+    : null; // el stock es un dato interno: no se muestra a invitados
 
   document.getElementById('producto-content').innerHTML = `
     <nav class="breadcrumb">
@@ -150,15 +130,14 @@ function renderProducto(p, prev, next, similares) {
 
         <div class="product-meta-row">
           <span class="meta-code">ID: ${p.id}</span>
-          <span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>
+          ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
           ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
 
         <div class="view-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
 
-        ${renderColorGroup(p.color)}
-        ${renderAttrGroup('Talle', p.talles)}
+        <div id="selector-compra-container">${renderSelectorCompra()}</div>
 
         <div class="product-actions">
           <a class="btn ghost" href="catalogo.html">← Volver al catálogo</a>
@@ -174,35 +153,147 @@ function renderProducto(p, prev, next, similares) {
   `;
 }
 
-function renderColorGroup(value) {
-  if (!value) return '';
-  const colores = value.split(',').map(v => v.trim()).filter(Boolean);
-  if (!colores.length) return '';
+/* ================================================================
+   SELECTOR DE COMPRA (talle / color / cantidad → agregar al carrito)
+
+   variantesProducto: [{talle, color}] combinaciones reales del
+   producto. Si producto_talles tiene filas, esa es la fuente de
+   verdad (aunque el stock en sí no se muestra ni se valida acá —
+   ver nota en cargarVariantesProducto). Si no hay filas todavía,
+   se arma un fallback no validado desde el texto p.talles/p.color.
+   ================================================================ */
+let variantesProducto = [];
+let selTalle    = null;
+let selColor    = null;
+let cantidadSel = 1;
+
+async function cargarVariantesProducto(productoId) {
+  try {
+    const { data, error } = await sb
+      .from('producto_talles')
+      .select('talle, color')
+      .eq('producto_id', productoId)
+      .eq('activo', true)
+      .order('id', { ascending: true });
+    if (!error && data && data.length) {
+      return data.map(d => ({ talle: d.talle, color: d.color || '' }));
+    }
+  } catch (_) {}
+  return null;
+}
+
+function variantesFallbackDesdeTexto(p) {
+  const talles  = (p.talles || '').split(',').map(t => t.trim()).filter(Boolean);
+  const colores = (p.color  || '').split(',').map(c => c.trim()).filter(Boolean);
+  if (talles.length) {
+    return colores.length
+      ? talles.flatMap(t => colores.map(c => ({ talle: t, color: c })))
+      : talles.map(t => ({ talle: t, color: '' }));
+  }
+  return colores.map(c => ({ talle: '', color: c }));
+}
+
+function tallesDeVariantes() {
+  return [...new Set(variantesProducto.map(v => v.talle).filter(Boolean))];
+}
+
+function coloresParaTalle(talle) {
+  return [...new Set(
+    variantesProducto.filter(v => !talle || v.talle === talle).map(v => v.color).filter(Boolean)
+  )];
+}
+
+function renderSelectorCompra() {
+  if (!variantesProducto.length) {
+    return `<p style="font-size:0.85rem;color:var(--text-3);margin:1rem 0;">Cargando opciones…</p>`;
+  }
+
+  const talles  = tallesDeVariantes();
+  const colores = coloresParaTalle(selTalle);
+
   return `
-    <div class="attr-group">
-      <span class="attr-label">Color</span>
-      ${colores.map(c => {
-        const hex = hexDeColor(c);
-        return hex
-          ? `<span class="color-tag" title="${c}">
-               <span class="color-dot" style="background:${hex}"></span>${c}
-             </span>`
-          : `<span class="color-tag" title="${c}">
-               <span class="color-dot color-dot-generic"></span>${c}
-             </span>`;
-      }).join('')}
+    <div class="selector-compra">
+      ${talles.length ? `
+        <div class="attr-group">
+          <span class="attr-label">Talle</span>
+          ${talles.map(t => `
+            <button type="button" class="attr-tag selector-chip ${selTalle === t ? 'selected' : ''}"
+              onclick="seleccionarTalleUI(&quot;${t.replace(/"/g, '&quot;')}&quot;)">${t}</button>
+          `).join('')}
+        </div>` : ''}
+      ${colores.length ? `
+        <div class="attr-group">
+          <span class="attr-label">Color</span>
+          ${colores.map(c => {
+            const hex = hexDeColor(c);
+            return `
+              <button type="button" class="color-tag selector-chip ${selColor === c ? 'selected' : ''}"
+                onclick="seleccionarColorUI(&quot;${c.replace(/"/g, '&quot;')}&quot;)">
+                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${c}
+              </button>`;
+          }).join('')}
+        </div>` : ''}
+      <div class="selector-compra-actions">
+        <div class="qty-stepper">
+          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(-1)">−</button>
+          <span id="selector-cantidad">${cantidadSel}</span>
+          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(1)">+</button>
+        </div>
+        <button type="button" class="btn primary" onclick="agregarAlCarritoDesdeProductoUI()">Agregar al carrito</button>
+      </div>
+      <div id="selector-error" class="carrito-error" style="display:none"></div>
     </div>`;
 }
 
-function renderAttrGroup(label, value) {
-  if (!value) return '';
-  const tags = value.split(',').map(v => v.trim()).filter(Boolean);
-  if (!tags.length) return '';
-  return `
-    <div class="attr-group">
-      <span class="attr-label">${label}</span>
-      ${tags.map(t => `<span class="attr-tag">${t}</span>`).join('')}
-    </div>`;
+function actualizarSelectorCompra() {
+  const container = document.getElementById('selector-compra-container');
+  if (container && productoActual) container.innerHTML = renderSelectorCompra();
+}
+
+function seleccionarTalle(talle) {
+  selTalle = talle;
+  const disponibles = coloresParaTalle(talle);
+  if (selColor && !disponibles.includes(selColor)) selColor = null;
+  actualizarSelectorCompra();
+}
+
+function seleccionarColor(color) {
+  selColor = color;
+  actualizarSelectorCompra();
+}
+
+function cambiarCantidadSelector(delta) {
+  cantidadSel = Math.max(1, cantidadSel + delta);
+  const el = document.getElementById('selector-cantidad');
+  if (el) el.textContent = cantidadSel;
+}
+
+function mostrarErrorSelector(msg) {
+  const errorEl = document.getElementById('selector-error');
+  if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+}
+
+function agregarAlCarritoDesdeProducto() {
+  const p = productoActual;
+  if (!p) return;
+
+  const necesitaTalle = tallesDeVariantes().length > 0;
+  const necesitaColor = coloresParaTalle(selTalle).length > 0;
+
+  if (necesitaTalle && !selTalle) { mostrarErrorSelector('Elegí un talle'); return; }
+  if (necesitaColor && !selColor) { mostrarErrorSelector('Elegí un color'); return; }
+
+  agregarAlCarrito({
+    productoId:     p.id,
+    nombre:         p.nombre,
+    precioUnitario: Math.round(p.precio * 1.5),
+    imagen:         resolverImagen(p),
+    talle:          selTalle || '',
+    color:          selColor || '',
+    cantidad:       cantidadSel,
+  });
+
+  cantidadSel = 1;
 }
 
 function renderPrevNextStrip(prev, next) {
@@ -245,7 +336,7 @@ function renderSimilares(marca, lista) {
               <div class="prod-name">${p.nombre}</div>
               <div class="prod-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
               <div class="prod-badges">
-                <span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>
+                ${isAdmin() ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>` : ''}
               </div>
             </div>
           </article>`;
@@ -269,7 +360,7 @@ async function cargarProducto() {
     try {
       cache = JSON.parse(local);
       const pCache = cache.find(x => x.id === id);
-      if (pCache && !(pCache.oculto && isGuest())) {
+      if (pCache && !noVisibleParaGuest(pCache)) {
         const { prev, next } = calcularVecinos(cache, id);
         const similares       = productosDeMarca(cache, pCache.marca, id);
         productoActual = { ...pCache, imagen: resolverImagen(pCache) };
@@ -290,17 +381,41 @@ async function cargarProducto() {
     return;
   }
 
-  if (!data || (data.oculto && isGuest())) {
+  if (!data || noVisibleParaGuest(data)) {
     renderNoEncontrado();
     return;
   }
 
-  const listaNav        = cache || await obtenerListaNav();
-  const { prev, next }  = calcularVecinos(listaNav, id);
-  const similares        = productosDeMarca(listaNav, data.marca, id);
-
   productoActual = { ...data, imagen: resolverImagen(data) };
+  variantesProducto = [];
+  selTalle    = null;
+  selColor    = null;
+  cantidadSel = 1;
+
+  // Render inmediato con los datos que ya tenemos: ni la navegación
+  // prev/next (que a veces implica traer TODO el catálogo) ni las
+  // variantes de talle/color frenan lo que ya se puede mostrar.
+  renderProducto(productoActual, null, null, []);
+
+  cargarNavYSimilares(id, cache, data);
+  cargarVariantesYActualizar(id, data);
+}
+
+async function cargarNavYSimilares(id, cache, data) {
+  const listaNav       = cache || await obtenerListaNav();
+  if (productoActual?.id !== id) return; // el usuario ya navegó a otro producto
+
+  const { prev, next } = calcularVecinos(listaNav, id);
+  const similares       = productosDeMarca(listaNav, data.marca, id);
   renderProducto(productoActual, prev, next, similares);
+}
+
+async function cargarVariantesYActualizar(id, data) {
+  const variantesDB = await cargarVariantesProducto(id);
+  if (productoActual?.id !== id) return; // el usuario ya navegó a otro producto
+
+  variantesProducto = variantesDB || variantesFallbackDesdeTexto(data);
+  actualizarSelectorCompra();
 }
 
 async function obtenerListaNav() {
@@ -313,7 +428,7 @@ async function obtenerListaNav() {
 }
 
 function calcularVecinos(lista, id) {
-  const filtrada = lista.filter(x => !(x.oculto && isGuest()));
+  const filtrada = lista.filter(x => !noVisibleParaGuest(x));
   const idx       = filtrada.findIndex(x => x.id === id);
   if (idx === -1) return { prev: null, next: null };
   return {
@@ -325,18 +440,300 @@ function calcularVecinos(lista, id) {
 function productosDeMarca(lista, marca, excludeId) {
   if (!marca) return [];
   return lista
-    .filter(x => x.marca === marca && x.id !== excludeId && !(x.oculto && isGuest()))
+    .filter(x => x.marca === marca && x.id !== excludeId && !noVisibleParaGuest(x))
     .slice(0, 8);
 }
 
 
 /* ================================================================
-   MODAL DE EDICIÓN (se abre en esta misma página, sobre el producto
-   que se está viendo — no navega a catalogo.html)
+   MODAL DE EDICIÓN / GESTOR DE TALLES + COLORES + STOCK POR COMBINACIÓN
+
+   El stock real vive por combinación talle×color (variantesStockState),
+   sincronizado 1:1 con producto_talles(producto_id, talle, color, stock).
+   Si el producto no tiene colores cargados, cada talle usa color=''.
    ================================================================ */
-function openProdModal() {
+let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
+let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
+let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
+
+function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
+
+function parsearTallesTexto(str) {
+  if (!str) return [];
+  return str.split(',')
+    .map(t => t.trim())
+    .filter(Boolean)
+    .map(t => {
+      const match = t.match(/^([^(]+)(?:\((\d+)\))?$/);
+      if (match) {
+        return {
+          talle: match[1].trim(),
+          stock: match[2] ? parseInt(match[2], 10) : 1
+        };
+      }
+      return { talle: t, stock: 1 };
+    });
+}
+
+function parsearColoresTexto(str) {
+  if (!str) return [];
+  return str.split(',').map(c => c.trim()).filter(Boolean);
+}
+
+/* Recalcula las claves de variantesStockState para que reflejen
+   exactamente el producto cartesiano talles×colores actual,
+   conservando el stock ya cargado en las combinaciones que sobreviven. */
+function regenerarVariantesGrid() {
+  const columnas = coloresModalState.length ? coloresModalState : [''];
+  const nuevo = {};
+  tallesModalState.forEach(talle => {
+    columnas.forEach(color => {
+      const k = claveVariante(talle, color);
+      nuevo[k] = variantesStockState[k] ?? 0;
+    });
+  });
+  variantesStockState = nuevo;
+}
+
+function renderListaTallesModal() {
+  const container = document.getElementById('lista-talles-container');
+  if (!container) return;
+
+  if (!tallesModalState.length) {
+    container.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-3); padding:0.5rem; text-align:center; font-style:italic;">
+        Sin talles cargados aún. Usá el campo de abajo para agregar talles.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = tallesModalState.map((t, idx) => `
+    <div class="talle-item-row">
+      <span class="talle-tag-badge">${t}</span>
+      <button type="button" class="btn-quitar-talle" onclick="quitarTalleItem(${idx})" title="Quitar talle ${t}">
+        ✕
+      </button>
+    </div>
+  `).join('');
+}
+
+function agregarTalleItem() {
+  const nombreInput = document.getElementById('nuevo-talle-nombre');
+  if (!nombreInput) return;
+
+  const nombre = nombreInput.value.trim();
+  if (!nombre) { nombreInput.focus(); return; }
+
+  if (!tallesModalState.some(t => t.toLowerCase() === nombre.toLowerCase())) {
+    tallesModalState.push(nombre);
+  }
+
+  nombreInput.value = '';
+  nombreInput.focus();
+
+  renderListaTallesModal();
+  renderVariantesGrid();
+}
+
+function quitarTalleItem(idx) {
+  if (idx >= 0 && idx < tallesModalState.length) {
+    tallesModalState.splice(idx, 1);
+    renderListaTallesModal();
+    renderVariantesGrid();
+  }
+}
+
+function agregarTalleRapido(nombre) {
+  if (!tallesModalState.some(t => t.toLowerCase() === nombre.toLowerCase())) {
+    tallesModalState.push(nombre);
+  }
+  renderListaTallesModal();
+  renderVariantesGrid();
+}
+
+function renderListaColoresModal() {
+  const container = document.getElementById('lista-colores-container');
+  if (!container) return;
+
+  if (!coloresModalState.length) {
+    container.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-3); padding:0.4rem; text-align:center; font-style:italic; width:100%;">
+        Sin colores cargados aún. Usá el campo o sugerencias de abajo para agregar.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = coloresModalState.map((c, idx) => {
+    const hex = hexDeColor(c);
+    const dotHtml = hex
+      ? `<span class="color-dot" style="background:${hex}"></span>`
+      : `<span class="color-dot color-dot-generic"></span>`;
+    return `
+      <div class="color-item-chip">
+        ${dotHtml}
+        <span class="color-item-name">${c}</span>
+        <button type="button" class="btn-quitar-color" onclick="quitarColorItem(${idx})" title="Quitar color ${c}">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function agregarColorItem() {
+  const input = document.getElementById('nuevo-color-nombre');
+  if (!input) return;
+  const nombre = input.value.trim();
+  if (!nombre) { input.focus(); return; }
+
+  if (!coloresModalState.some(c => c.toLowerCase() === nombre.toLowerCase())) {
+    coloresModalState.push(nombre);
+    renderListaColoresModal();
+    renderVariantesGrid();
+  }
+  input.value = '';
+  input.focus();
+}
+
+function quitarColorItem(idx) {
+  if (idx >= 0 && idx < coloresModalState.length) {
+    coloresModalState.splice(idx, 1);
+    renderListaColoresModal();
+    renderVariantesGrid();
+  }
+}
+
+function agregarColorRapido(nombre) {
+  if (!coloresModalState.some(c => c.toLowerCase() === nombre.toLowerCase())) {
+    coloresModalState.push(nombre);
+    renderListaColoresModal();
+    renderVariantesGrid();
+  }
+}
+
+/* Grilla de stock: filas = talles, columnas = colores (o una sola
+   columna "Stock" si el producto no usa colores). */
+function renderVariantesGrid() {
+  const container = document.getElementById('variantes-grid-container');
+  if (!container) return;
+
+  regenerarVariantesGrid();
+
+  if (!tallesModalState.length) {
+    container.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-3); padding:0.5rem; text-align:center; font-style:italic;">
+        Agregá al menos un talle para poder cargar el stock.
+      </div>`;
+    actualizarResumenVariantes();
+    return;
+  }
+
+  const columnas = coloresModalState.length ? coloresModalState : [''];
+
+  container.innerHTML = `
+    <table class="variantes-grid-table">
+      <thead>
+        <tr>
+          <th></th>
+          ${columnas.map(c => `<th>${c || 'Stock'}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${tallesModalState.map(talle => `
+          <tr>
+            <th class="variantes-grid-rowhead">${talle}</th>
+            ${columnas.map(color => {
+              const k = claveVariante(talle, color);
+              const talleAttr = talle.replace(/"/g, '&quot;');
+              const colorAttr = color.replace(/"/g, '&quot;');
+              return `<td><input type="number" min="0" class="variante-stock-input"
+                value="${variantesStockState[k] ?? 0}"
+                oninput="actualizarVarianteStock(this, &quot;${talleAttr}&quot;, &quot;${colorAttr}&quot;)"></td>`;
+            }).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+
+  actualizarResumenVariantes();
+}
+
+function actualizarVarianteStock(input, talle, color) {
+  variantesStockState[claveVariante(talle, color)] = Math.max(0, parseInt(input.value, 10) || 0);
+  actualizarResumenVariantes();
+}
+
+function actualizarResumenVariantes() {
+  const total = Object.values(variantesStockState).reduce((acc, v) => acc + (parseInt(v, 10) || 0), 0);
+
+  const resumenEl = document.getElementById('talles-resumen-stock');
+  if (resumenEl) {
+    resumenEl.textContent = tallesModalState.length
+      ? `${tallesModalState.length} talle${tallesModalState.length !== 1 ? 's' : ''}`
+        + (coloresModalState.length ? ` × ${coloresModalState.length} color${coloresModalState.length !== 1 ? 'es' : ''}` : '')
+        + ` · Total: ${total} u.`
+      : 'Sin talles';
+  }
+
+  const numStockInput = document.getElementById('p-num-stock');
+  if (numStockInput && tallesModalState.length > 0) {
+    numStockInput.value = total;
+    actualizarBadgeStock(total);
+  }
+}
+
+/* Sincroniza producto_talles con el estado actual del modal
+   (tallesModalState × coloresModalState × variantesStockState). */
+async function sincronizarTallesDB(productoId) {
+  if (!productoId) return;
+  try {
+    const columnas = coloresModalState.length ? coloresModalState : [''];
+    const filas = [];
+    tallesModalState.forEach(talle => {
+      columnas.forEach(color => {
+        filas.push({
+          producto_id: productoId,
+          talle,
+          color,
+          stock: variantesStockState[claveVariante(talle, color)] ?? 0,
+          activo: true
+        });
+      });
+    });
+
+    const { data: existentes, error: errSelect } = await sb
+      .from('producto_talles')
+      .select('id, talle, color')
+      .eq('producto_id', productoId);
+
+    if (errSelect) return;
+
+    const clavesNuevas = new Set(filas.map(f => claveVariante(f.talle, f.color)));
+    const idsAEliminar = (existentes || [])
+      .filter(ex => !clavesNuevas.has(claveVariante(ex.talle, ex.color || '')))
+      .map(ex => ex.id);
+
+    if (idsAEliminar.length) {
+      await sb.from('producto_talles').delete().in('id', idsAEliminar);
+    }
+
+    if (filas.length) {
+      await sb.from('producto_talles').upsert(filas, { onConflict: 'producto_id,talle,color' });
+    }
+  } catch (err) {
+    console.warn('Sincronización producto_talles opcional:', err);
+  }
+}
+
+/* ================================================================
+   MODAL DE EDICIÓN
+   ================================================================ */
+async function openProdModal() {
   const p = productoActual;
   if (!p || !isAdmin()) return;
+
+  const seedTalles   = parsearTallesTexto(p?.talles || '');
+  tallesModalState   = seedTalles.map(t => t.talle);
+  coloresModalState  = parsearColoresTexto(p?.color || '');
+  variantesStockState = {};
+  seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
@@ -357,19 +754,97 @@ function openProdModal() {
             <input id="p-precio" type="number" value="${p?.precio || ''}">
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Color</label>
-            <input id="p-color" type="text" value="${p?.color || ''}">
+        <div class="field">
+          <label>Categoría</label>
+          <select id="p-categoria">
+            <option value="">(Detectar automáticamente)</option>
+            <option value="conjuntos" ${p?.categoria === 'conjuntos' ? 'selected' : ''}>Conjuntos</option>
+            <option value="corpiños" ${p?.categoria === 'corpiños' ? 'selected' : ''}>Corpiños</option>
+            <option value="bombachas" ${p?.categoria === 'bombachas' ? 'selected' : ''}>Bombachas</option>
+            <option value="pijamas" ${p?.categoria === 'pijamas' ? 'selected' : ''}>Pijamas & Homewear</option>
+            <option value="maternal" ${p?.categoria === 'maternal' ? 'selected' : ''}>Maternal & Lactancia</option>
+            <option value="modeladora" ${p?.categoria === 'modeladora' ? 'selected' : ''}>Línea Modeladora & Fajas</option>
+          </select>
+        </div>
+
+        <!-- SECCIÓN GESTIÓN DE COLORES -->
+        <div class="field colores-manager-section">
+          <label style="margin:0 0 0.35rem; font-weight:600; font-size:0.85rem;">Colores disponibles</label>
+          <p style="font-size:0.74rem; color:var(--text-2); margin-top:0; margin-bottom:0.6rem; line-height:1.4;">
+            Agregá o quitá colores disponibles para este producto:
+          </p>
+
+          <div id="lista-colores-container" class="colores-chips-list"></div>
+
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
+            <input type="text" id="nuevo-color-nombre" placeholder="Ej: Negro, Blanco, Rosa…" style="flex:1; min-width:120px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarColorItem();}">
+            <button type="button" class="btn sm primary" onclick="agregarColorItem()" style="flex-shrink:0;">
+              + Agregar
+            </button>
           </div>
-          <div class="field">
-            <label>Talles</label>
-            <input id="p-talles" type="text" value="${p?.talles || ''}">
+
+          <div style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
+            <span style="font-size:0.7rem; color:var(--text-3);">Sugerencias:</span>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Negro')"><span class="color-dot-sm" style="background:#1a1a1a"></span>Negro</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Blanco')"><span class="color-dot-sm" style="background:#ffffff"></span>Blanco</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Rojo')"><span class="color-dot-sm" style="background:#c0392b"></span>Rojo</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Rosa')"><span class="color-dot-sm" style="background:#e8a0bf"></span>Rosa</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Nude')"><span class="color-dot-sm" style="background:#e3c2a5"></span>Nude</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Beige')"><span class="color-dot-sm" style="background:#d8c3a5"></span>Beige</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Bordo')"><span class="color-dot-sm" style="background:#7b1e3a"></span>Bordó</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Azul')"><span class="color-dot-sm" style="background:#2b4c8c"></span>Azul</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Gris')"><span class="color-dot-sm" style="background:#9c9c9c"></span>Gris</button>
+            <button type="button" class="btn-chip color-chip-btn" onclick="agregarColorRapido('Animal print')"><span class="color-dot-sm" style="background:#a67b5b"></span>Animal print</button>
           </div>
         </div>
+
+        <!-- SECCIÓN GESTIÓN DE TALLES -->
+        <div class="field talles-manager-section">
+          <label style="margin:0 0 0.35rem; font-weight:600; font-size:0.85rem;">Talles disponibles</label>
+          <p style="font-size:0.74rem; color:var(--text-2); margin-top:0; margin-bottom:0.6rem; line-height:1.4;">
+            Agregá o quitá los talles que tiene este producto:
+          </p>
+
+          <div id="lista-talles-container" class="talles-grid-list"></div>
+
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
+            <input type="text" id="nuevo-talle-nombre" placeholder="Ej: 90, M, S…" style="flex:1; min-width:80px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTalleItem();}">
+            <button type="button" class="btn sm primary" onclick="agregarTalleItem()" style="flex-shrink:0;">
+              + Agregar
+            </button>
+          </div>
+
+          <div style="display:flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.5rem; align-items:center;">
+            <span style="font-size:0.7rem; color:var(--text-3);">Sugerencias:</span>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('85')">85</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('90')">90</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('95')">95</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('100')">100</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('105')">105</button>
+            <span style="font-size:0.7rem; color:var(--text-3);">|</span>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('S')">S</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('M')">M</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('L')">L</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('XL')">XL</button>
+            <button type="button" class="btn-chip" onclick="agregarTalleRapido('Único')">Único</button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN STOCK POR COMBINACIÓN -->
+        <div class="field talles-manager-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+            <label style="margin:0; font-weight:600; font-size:0.85rem;">Stock por combinación</label>
+            <span style="font-size:0.75rem; color:var(--text-3);" id="talles-resumen-stock">Cargando…</span>
+          </div>
+          <p style="font-size:0.74rem; color:var(--text-2); margin-top:0; margin-bottom:0.6rem; line-height:1.4;">
+            Cargá la cantidad real disponible de cada talle (y color, si aplica):
+          </p>
+          <div id="variantes-grid-container" class="variantes-grid-wrap"></div>
+        </div>
+
         <div class="field-row">
           <div class="field">
-            <label>Cantidad en stock</label>
+            <label>Cantidad total en stock</label>
             <input id="p-num-stock" type="number" min="0" placeholder="0"
               value="${p?.num_stock ?? ''}"
               oninput="actualizarBadgeStock(this.value)">
@@ -426,6 +901,40 @@ function openProdModal() {
         </div>
       </div>
     </div>`;
+
+  renderListaColoresModal();
+  renderListaTallesModal();
+  renderVariantesGrid();
+
+  // Si hay filas cargadas en producto_talles, son la fuente de verdad
+  // (reemplazan lo parseado del texto legado de p.talles/p.color)
+  if (p?.id) {
+    try {
+      const { data, error } = await sb
+        .from('producto_talles')
+        .select('talle, color, stock')
+        .eq('producto_id', p.id)
+        .eq('activo', true)
+        .order('id', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        const talles  = [];
+        const colores = [];
+        variantesStockState = {};
+        data.forEach(d => {
+          if (!talles.includes(d.talle)) talles.push(d.talle);
+          const color = d.color || '';
+          if (color && !colores.includes(color)) colores.push(color);
+          variantesStockState[claveVariante(d.talle, color)] = d.stock ?? 0;
+        });
+        tallesModalState = talles;
+        if (colores.length) coloresModalState = colores;
+        renderListaColoresModal();
+        renderListaTallesModal();
+        renderVariantesGrid();
+      }
+    } catch (_) {}
+  }
 }
 
 function closeProdModal() {
@@ -486,15 +995,20 @@ async function saveProd() {
   const nombre = document.getElementById('p-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio'); return; }
 
-  const num_stock = parseInt(document.getElementById('p-num-stock').value) || 0;
+  const strTalles = tallesModalState.join(', ');
+  const strColor  = coloresModalState.join(', ');
+  const num_stock = tallesModalState.length > 0
+    ? Object.values(variantesStockState).reduce((acc, v) => acc + (parseInt(v, 10) || 0), 0)
+    : (parseInt(document.getElementById('p-num-stock').value, 10) || 0);
 
   const p = {
     id:             productoActual.id,
     nombre,
     marca:          document.getElementById('p-marca').value.trim(),
     precio:         parseFloat(document.getElementById('p-precio').value) || 0,
-    color:          document.getElementById('p-color').value.trim(),
-    talles:         document.getElementById('p-talles').value.trim(),
+    categoria:      document.getElementById('p-categoria')?.value.trim() || null,
+    color:          strColor,
+    talles:         strTalles,
     num_stock,
     stock:          num_stock > 0,
     imagen_custom:  document.getElementById('p-imagen-custom').value.trim(),
@@ -506,9 +1020,25 @@ async function saveProd() {
   const ok = await persistirProducto(p);
   if (!ok) return;
 
+  // Sincronizar en tabla producto_talles si está disponible
+  await sincronizarTallesDB(p.id);
+
   closeProdModal();
   await cargarProducto();   // refresca la página con los datos ya guardados
 }
+
+// Exponer funciones para los onclick del modal
+window.agregarTalleItem        = agregarTalleItem;
+window.quitarTalleItem         = quitarTalleItem;
+window.agregarTalleRapido      = agregarTalleRapido;
+window.agregarColorItem        = agregarColorItem;
+window.quitarColorItem         = quitarColorItem;
+window.agregarColorRapido      = agregarColorRapido;
+window.actualizarVarianteStock = actualizarVarianteStock;
+window.seleccionarTalleUI              = seleccionarTalle;
+window.seleccionarColorUI              = seleccionarColor;
+window.cambiarCantidadSelectorUI       = cambiarCantidadSelector;
+window.agregarAlCarritoDesdeProductoUI = agregarAlCarritoDesdeProducto;
 
 
 /* ================================================================
@@ -534,26 +1064,24 @@ async function doLogout() {
 async function startApp() {
   document.getElementById('app').style.display = 'block';
 
+  renderTopbar('catalogo');
   initTheme();
   applyRole();
+  initCarritoUI();
 
   await cargarProducto();
 }
 
 async function init() {
-  const rolGuardado = sessionStorage.getItem('solemio-role');
-
-  if (rolGuardado === 'guest') {
-    currentRole = 'guest';
-    await startApp();
-    return;
-  }
-
-  // Sesión de admin vía Supabase
+  // Se chequea primero la sesión real de Supabase (no el flag de invitado
+  // guardado en sessionStorage): si no, un admin que alguna vez entró como
+  // invitado en la misma pestaña quedaría pegado en modo invitado aunque
+  // después haga login.
   const { data: { session } } = await sb.auth.getSession();
 
   if (session?.user && await esAdmin(session.user.email)) {
     currentRole = 'admin';
+    sessionStorage.removeItem('solemio-role');
     await startApp();
 
     sb.auth.onAuthStateChange((event) => {
@@ -565,8 +1093,17 @@ async function init() {
     return;
   }
 
-  // Sin sesión válida → volver al login
-  window.location.href = 'login.html';
+  const rolGuardado = sessionStorage.getItem('solemio-role');
+  if (rolGuardado === 'guest') {
+    currentRole = 'guest';
+    await startApp();
+    return;
+  }
+
+  // Sin sesión de admin → entrar como invitado (acceso público)
+  currentRole = 'guest';
+  sessionStorage.setItem('solemio-role', 'guest');
+  await startApp();
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────

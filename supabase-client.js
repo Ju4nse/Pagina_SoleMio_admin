@@ -44,7 +44,7 @@ export async function irAlCatalogo() {
   }
 
   sessionStorage.setItem('solemio-role', 'guest');
-  window.location.href = 'catalogo.html?stock=in';
+  window.location.href = 'catalogo.html';
 }
 
 /* Va al catálogo respetando la sesión activa: si ya sos admin, entra
@@ -60,5 +60,5 @@ export async function irACatalogo() {
   }
 
   sessionStorage.setItem('solemio-role', 'guest');
-  window.location.href = 'catalogo.html?stock=in';
+  window.location.href = 'catalogo.html';
 }

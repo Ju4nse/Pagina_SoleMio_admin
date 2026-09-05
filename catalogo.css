@@ -38,18 +38,26 @@
 .topbar-nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
   margin-right: 0.5rem;
 }
 
+/* Mismo look que .site-nav (landing/contacto): mayúsculas, tracking
+   amplio y subrayado en el activo — para que Inicio/Catálogo/Contacto
+   se vean idénticos en todas las páginas del sitio. */
 .topbar-nav a {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--text-2);
   text-decoration: none;
+  padding-bottom: 4px;
+  border-bottom: 1px solid transparent;
   transition: var(--trans);
 }
 .topbar-nav a:hover { color: var(--text); }
-.topbar-nav a.active { color: var(--primary); font-weight: 500; }
+.topbar-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 /* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
    estilo que el ícono de login en landing/contacto ────────────── */
@@ -267,15 +275,560 @@ select:focus { outline: none; border-color: var(--primary); }
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   width: 100%;
-  max-width: 460px;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   animation: modalslideup 0.18s ease;
 }
 
+/* ── GESTOR DE TALLES EN MODAL ───────────────────────────────── */
+.talles-manager-section {
+  background: var(--surface2);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.talles-grid-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.talle-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.6rem;
+  animation: fadein 0.15s ease;
+}
+
+.talle-tag-badge {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--primary);
+  background: var(--primary-soft);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  min-width: 42px;
+  text-align: center;
+}
+
+.talle-stock-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.talle-stock-input-wrap label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.talle-stock-input-wrap input {
+  width: 65px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.82rem;
+  text-align: center;
+  border-radius: var(--radius-sm);
+}
+
+.btn-quitar-talle {
+  background: transparent;
+  border: none;
+  color: var(--red);
+  font-size: 0.95rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--trans);
+  flex-shrink: 0;
+}
+
+.btn-quitar-talle:hover {
+  background: var(--red-bg);
+  transform: scale(1.1);
+}
+
+.btn-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  padding: 0.18rem 0.55rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.btn-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* ── GESTOR DE COLORES EN MODAL ──────────────────────────────── */
+.colores-manager-section {
+  background: var(--surface2);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.colores-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 38px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+
+.color-item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface2);
+  border: 1px solid var(--border-md);
+  border-radius: 99px;
+  padding: 0.2rem 0.55rem 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  animation: fadein 0.15s ease;
+}
+
+.color-item-name {
+  font-weight: 500;
+}
+
+.btn-quitar-color {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--trans);
+  line-height: 1;
+}
+
+.btn-quitar-color:hover {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+.color-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.color-dot-sm {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.18);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.color-dot-generic {
+  background: repeating-linear-gradient(45deg, var(--surface2), var(--surface2) 3px, var(--border-md) 3px, var(--border-md) 4px);
+}
+
 @keyframes modalslideup {
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── STOCK POR COMBINACIÓN (grilla talle×color) ─────────────────── */
+.variantes-grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.variantes-grid-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.variantes-grid-table th,
+.variantes-grid-table td {
+  padding: 0.4rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.variantes-grid-table thead th {
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: 0.75rem;
+  background: var(--surface2);
+}
+
+.variantes-grid-rowhead {
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--surface2);
+}
+
+.variantes-grid-table tbody tr:last-child td,
+.variantes-grid-table tbody tr:last-child th {
+  border-bottom: none;
+}
+
+.variante-stock-input {
+  width: 56px;
+  padding: 0.25rem 0.3rem;
+  font-size: 0.8rem;
+  text-align: center;
+  border-radius: var(--radius-sm);
+}
+
+/* ── CARRITO — ícono + badge ─────────────────────────────────── */
+#cart-btn { position: relative; }
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 99px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── CARRITO — toast "agregado al carrito" (esquina de la página) ── */
+.carrito-toast {
+  position: fixed;
+  top: 5.5rem;
+  right: 1.25rem;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  padding: 0.75rem 0.85rem;
+  transform: translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.carrito-toast.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.carrito-toast-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--green-bg);
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.carrito-toast-body { flex: 1; min-width: 0; }
+
+.carrito-toast-titulo {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.carrito-toast-nombre {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carrito-toast-cerrar {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.2rem;
+}
+.carrito-toast-cerrar:hover { color: var(--text); }
+
+@media (max-width: 480px) {
+  .carrito-toast { left: 1rem; right: 1rem; max-width: none; }
+}
+
+.carrito-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.carrito-vacio {
+  margin: auto;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.carrito-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.carrito-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.carrito-item-img {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+.carrito-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.carrito-item-img-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carrito-item-img-ph svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--text-3);
+}
+
+.carrito-item-info { flex: 1; min-width: 0; }
+
+.carrito-item-nombre {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.carrito-item-attrs {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: 0.15rem;
+}
+
+.carrito-item-precio {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  margin-top: 0.2rem;
+}
+
+.carrito-item-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.btn-qty {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: var(--trans);
+}
+.btn-qty:hover { border-color: var(--primary); color: var(--primary); }
+
+.btn-quitar-item {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  padding: 0.3rem;
+}
+.btn-quitar-item:hover { color: var(--red); }
+
+.carrito-footer { margin-top: auto; padding-top: 1rem; }
+
+.carrito-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.carrito-total strong {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.carrito-nota {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.45;
+  margin: 0 0 0.85rem;
+}
+
+.carrito-btn-full { width: 100%; justify-content: center; }
+
+.carrito-checkout-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.carrito-error {
+  font-size: 0.78rem;
+  color: var(--red);
+  background: var(--red-bg);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+}
+
+.carrito-listo {
+  max-width: 420px;
+  margin: 3rem auto;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+}
+
+.carrito-listo-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--green-bg);
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin: 0 auto 1.25rem;
+}
+
+.carrito-listo p {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+}
+
+/* ── SELECTOR DE COMPRA (página de producto) ─────────────────── */
+.selector-compra { margin: 1rem 0; }
+
+.selector-chip {
+  cursor: pointer;
+  background: var(--surface);
+  transition: var(--trans);
+}
+
+.selector-chip.selected {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.selector-compra-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  min-width: 60px;
+  justify-content: center;
 }
 
 .modal-title {
@@ -350,7 +903,9 @@ select:focus { outline: none; border-color: var(--primary); }
 /* ── MODO INVITADO — ocultar acciones de edición vía CSS también ── */
 [data-role="guest"] .prod-actions,
 [data-role="guest"] .toolbar .btn.primary,
-[data-role="guest"] #account-btn {
+[data-role="guest"] #account-btn,
+[data-role="guest"] #filtro-stock,
+[data-role="guest"] .admin-only-link {
   display: none !important;
 }
 

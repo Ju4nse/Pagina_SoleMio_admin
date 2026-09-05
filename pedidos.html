@@ -12,14 +12,14 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SoleMio — Producto</title>
+<title>SoleMio — Pedidos</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <link rel="stylesheet" href="catalogo.css">
-<link rel="stylesheet" href="producto.css">
+<link rel="stylesheet" href="pedidos.css">
 </head>
 <body>
 
@@ -29,24 +29,44 @@
     <!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
     <header class="topbar" id="topbar-slot"></header>
 
-    <!-- DETALLE DE PRODUCTO -->
-    <div id="producto-content" class="product-wrap">
+    <!-- PEDIDOS -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="buscar-pedido" placeholder="Buscar por nombre o teléfono…" oninput="renderPedidos()" autocomplete="off">
+      </div>
+      <select id="filtro-estado" onchange="renderPedidos()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="confirmado_parcial">Confirmado parcial</option>
+        <option value="confirmado_total">Confirmado total</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <button class="btn primary" onclick="abrirNuevoPedidoUI()">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Nuevo pedido
+      </button>
+    </div>
+
+    <div id="pedidos-lista" class="pedidos-lista">
       <div class="empty">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        Cargando producto…
+        Cargando pedidos…
       </div>
     </div>
 
   </div><!-- /shell -->
-
-  <!-- MODAL DE EDICIÓN (se abre acá mismo, sin ir a catalogo.html) -->
-  <div id="modal-prod"></div>
-  <div id="modal-carrito"></div>
-
 </div><!-- /app -->
 
-<script type="module" src="producto.js"></script>
+<div id="modal-pedido"></div>
+<div id="modal-nuevo-pedido"></div>
+
+<script type="module" src="pedidos.js"></script>
 </body>
 </html>

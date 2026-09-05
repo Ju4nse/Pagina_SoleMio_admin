@@ -25,38 +25,8 @@
 <div id="app" style="display:none">
   <div class="shell">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <div class="logo">
-        <a href="landing.html" class="logo-link">
-          <span class="logo-word">SoleMio</span>
-        </a>
-      </div>
-      <div class="topbar-right">
-        <nav class="topbar-nav">
-          <a href="landing.html">Inicio</a>
-          <a href="catalogo.html" class="active">Catálogo</a>
-          <a href="contacto.html">Contacto</a>
-        </nav>
-        <span class="role-badge" id="role-badge"></span>
-        <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
-        <button class="icon-btn" id="account-btn" onclick="openAccountModal()" title="Mi cuenta">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-        </button>
-        <button class="icon-btn logout-btn" onclick="doLogout()" title="Cerrar sesión">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-        </button>
-      </div>
-    </header>
+    <!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
+    <header class="topbar" id="topbar-slot"></header>
 
     <!-- CATÁLOGO -->
     <div class="toolbar">
@@ -97,6 +67,7 @@
 <!-- Modales -->
 <div id="modal-prod"></div>
 <div id="modal-account"></div>
+<div id="modal-carrito"></div>
 
 <script type="module" src="catalogo.js"></script>
 </body>
