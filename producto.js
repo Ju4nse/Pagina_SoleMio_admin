@@ -4,7 +4,7 @@
    de vuelta a login.html
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
-import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
+import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, guardarColorPersonalizado } from './theme.js';
 import { initCarritoUI, agregarAlCarrito } from './carrito.js';
 import { renderTopbar }       from './topbar.js';
 
@@ -21,6 +21,11 @@ const CONTACTO = {
    ================================================================ */
 let currentRole    = null;   // 'admin' | 'guest'
 let productoActual = null;   // producto que se está mostrando/editando
+
+let fotosProducto    = [];    // urls de la galería (o [imagen única] de fallback)
+let indiceFotoActual = 0;
+let zoomAbierto       = false;
+let touchStartX       = null;
 
 function isAdmin() { return currentRole === 'admin'; }
 function isGuest() { return currentRole === 'guest'; }
@@ -82,7 +87,6 @@ function renderNoEncontrado() {
 }
 
 function renderProducto(p, prev, next, similares) {
-  const img      = p.imagen;
   const enStock  = p.stock === true || p.stock === 'in stock';
   const cantidad = p.num_stock ?? null;
 
@@ -100,13 +104,7 @@ function renderProducto(p, prev, next, similares) {
     <div class="product-box">
 
       <div class="product-media">
-        ${img
-          ? `<div class="product-photo">
-               <img src="${img}" alt="${p.nombre}"
-                    onerror="this.parentElement.style.display='none';this.closest('.product-media').querySelector('.view-img-ph').style.display='flex'">
-             </div>
-             <div class="view-img-ph" style="display:none">${ICON.shoe}</div>`
-          : `<div class="view-img-ph">${ICON.shoe}</div>`}
+        <div id="galeria-container">${renderGaleria()}</div>
 
         <div class="social-row">
           <a class="icon-btn" href="${CONTACTO.whatsapp}" target="_blank" rel="noopener" title="Consultar por WhatsApp" aria-label="WhatsApp">
@@ -152,6 +150,116 @@ function renderProducto(p, prev, next, similares) {
     ${renderSimilares(p.marca, similares)}
   `;
 }
+
+/* ================================================================
+   GALERÍA DE FOTOS (carrusel) + ZOOM
+
+   fotosProducto viene de producto_fotos si el admin cargó una
+   galería; si no, es un array de un solo elemento con la foto única
+   de siempre (imagen_custom/imagen_scraper/imagen), para no perder
+   nada en productos que todavía no tienen galería cargada.
+   ================================================================ */
+function renderGaleria() {
+  if (!fotosProducto.length) {
+    return `<div class="view-img-ph">${ICON.shoe}</div>`;
+  }
+
+  const url      = fotosProducto[indiceFotoActual];
+  const multiple = fotosProducto.length > 1;
+
+  return `
+    <div class="product-photo-wrap">
+      <div class="product-photo" onclick="abrirZoomUI()" title="Ver más grande"
+           ontouchstart="onGaleriaTouchStartUI(event)" ontouchend="onGaleriaTouchEndUI(event)">
+        <img src="${url}" alt=""
+             onerror="this.closest('.product-photo-wrap').style.display='none'; document.getElementById('galeria-fallback').style.display='flex'">
+      </div>
+      ${multiple ? `
+        <button type="button" class="galeria-flecha galeria-flecha-izq" onclick="event.stopPropagation();moverGaleriaUI(-1)" aria-label="Foto anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="galeria-flecha galeria-flecha-der" onclick="event.stopPropagation();moverGaleriaUI(1)" aria-label="Foto siguiente">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>` : ''}
+    </div>
+    <div class="view-img-ph" id="galeria-fallback" style="display:none">${ICON.shoe}</div>
+    ${multiple ? `
+      <div class="galeria-dots">
+        ${fotosProducto.map((_, i) => `<span class="galeria-dot ${i === indiceFotoActual ? 'activo' : ''}" onclick="irAFotoUI(${i})"></span>`).join('')}
+      </div>` : ''}
+  `;
+}
+
+function actualizarGaleria() {
+  const container = document.getElementById('galeria-container');
+  if (container) container.innerHTML = renderGaleria();
+  if (zoomAbierto) renderZoomModal();
+}
+
+function moverGaleria(delta) {
+  if (fotosProducto.length < 2) return;
+  indiceFotoActual = (indiceFotoActual + delta + fotosProducto.length) % fotosProducto.length;
+  actualizarGaleria();
+}
+
+function irAFoto(idx) {
+  indiceFotoActual = idx;
+  actualizarGaleria();
+}
+
+function onGaleriaTouchStart(event) {
+  touchStartX = event.changedTouches[0].clientX;
+}
+
+function onGaleriaTouchEnd(event) {
+  if (touchStartX === null) return;
+  const delta = event.changedTouches[0].clientX - touchStartX;
+  touchStartX = null;
+  if (Math.abs(delta) > 40) moverGaleria(delta > 0 ? -1 : 1);
+}
+
+function abrirZoom() {
+  if (!fotosProducto.length) return;
+  zoomAbierto = true;
+  renderZoomModal();
+}
+
+function cerrarZoom() {
+  zoomAbierto = false;
+  const container = document.getElementById('modal-zoom');
+  if (container) container.innerHTML = '';
+}
+
+function renderZoomModal() {
+  const container = document.getElementById('modal-zoom');
+  if (!container) return;
+
+  const url      = fotosProducto[indiceFotoActual];
+  const multiple = fotosProducto.length > 1;
+
+  container.innerHTML = `
+    <div class="zoom-overlay" id="zoo" onclick="if(event.target.id==='zoo') cerrarZoomUI()">
+      <button type="button" class="zoom-cerrar" onclick="cerrarZoomUI()" aria-label="Cerrar">✕</button>
+      ${multiple ? `
+        <button type="button" class="zoom-flecha zoom-flecha-izq" onclick="moverGaleriaUI(-1)" aria-label="Foto anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>` : ''}
+      <img src="${url}" class="zoom-img" alt=""
+           ontouchstart="onGaleriaTouchStartUI(event)" ontouchend="onGaleriaTouchEndUI(event)">
+      ${multiple ? `
+        <button type="button" class="zoom-flecha zoom-flecha-der" onclick="moverGaleriaUI(1)" aria-label="Foto siguiente">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="zoom-contador">${indiceFotoActual + 1} / ${fotosProducto.length}</div>` : ''}
+    </div>`;
+}
+
+document.addEventListener('keydown', (event) => {
+  if (!zoomAbierto) return;
+  if (event.key === 'Escape')     cerrarZoom();
+  if (event.key === 'ArrowLeft')  moverGaleria(-1);
+  if (event.key === 'ArrowRight') moverGaleria(1);
+});
 
 /* ================================================================
    SELECTOR DE COMPRA (talle / color / cantidad → agregar al carrito)
@@ -326,7 +434,7 @@ function renderSimilares(marca, lista) {
           const img      = resolverImagen(p);
           const enStock  = p.stock === true || p.stock === 'in stock';
           return `
-          <article class="prod-card" style="cursor:pointer" onclick="location.href='producto.html?id=${encodeURIComponent(p.id)}'">
+          <a class="prod-card" href="producto.html?id=${encodeURIComponent(p.id)}">
             ${img
               ? `<img class="prod-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -339,7 +447,7 @@ function renderSimilares(marca, lista) {
                 ${isAdmin() ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>` : ''}
               </div>
             </div>
-          </article>`;
+          </a>`;
         }).join('')}
       </div>
     </section>`;
@@ -364,17 +472,20 @@ async function cargarProducto() {
         const { prev, next } = calcularVecinos(cache, id);
         const similares       = productosDeMarca(cache, pCache.marca, id);
         productoActual = { ...pCache, imagen: resolverImagen(pCache) };
+        fotosProducto  = productoActual.imagen ? [productoActual.imagen] : [];
+        indiceFotoActual = 0;
         renderProducto(productoActual, prev, next, similares);
       }
     } catch (_) {}
   }
 
-  // Traer versión actualizada desde la base
-  const { data, error } = await sb
-    .from('productos')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  // Traer versión actualizada desde la base (en paralelo con los
+  // colores personalizados, para que el selector no tenga que esperar
+  // dos consultas seguidas para pintar los puntitos bien).
+  const [{ data, error }] = await Promise.all([
+    sb.from('productos').select('*').eq('id', id).maybeSingle(),
+    cargarColoresPersonalizados(),
+  ]);
 
   if (error) {
     console.warn('Error cargando producto:', error.message);
@@ -387,6 +498,8 @@ async function cargarProducto() {
   }
 
   productoActual = { ...data, imagen: resolverImagen(data) };
+  fotosProducto  = productoActual.imagen ? [productoActual.imagen] : [];
+  indiceFotoActual = 0;
   variantesProducto = [];
   selTalle    = null;
   selColor    = null;
@@ -394,11 +507,30 @@ async function cargarProducto() {
 
   // Render inmediato con los datos que ya tenemos: ni la navegación
   // prev/next (que a veces implica traer TODO el catálogo) ni las
-  // variantes de talle/color frenan lo que ya se puede mostrar.
+  // variantes de talle/color ni la galería frenan lo que ya se puede
+  // mostrar (la foto única de fallback ya está lista, sin red).
   renderProducto(productoActual, null, null, []);
 
   cargarNavYSimilares(id, cache, data);
   cargarVariantesYActualizar(id, data);
+  cargarFotosYActualizar(id);
+}
+
+async function cargarFotosYActualizar(id) {
+  try {
+    const { data: rows, error } = await sb
+      .from('producto_fotos')
+      .select('url')
+      .eq('producto_id', id)
+      .order('orden', { ascending: true });
+
+    if (productoActual?.id !== id) return; // el usuario ya navegó a otro producto
+    if (!error && rows && rows.length) {
+      fotosProducto    = rows.map(r => r.url);
+      indiceFotoActual = 0;
+      actualizarGaleria();
+    }
+  } catch (_) {}
 }
 
 async function cargarNavYSimilares(id, cache, data) {
@@ -414,8 +546,25 @@ async function cargarVariantesYActualizar(id, data) {
   const variantesDB = await cargarVariantesProducto(id);
   if (productoActual?.id !== id) return; // el usuario ya navegó a otro producto
 
-  variantesProducto = variantesDB || variantesFallbackDesdeTexto(data);
+  variantesProducto = combinarVariantesConTexto(variantesDB, data);
   actualizarSelectorCompra();
+}
+
+/* producto_talles puede tener filas que solo cubren el talle (color='')
+   si se cargaron antes de que existiera la gestión de colores, o si el
+   admin todavía no volvió a guardar el producto con la grilla nueva.
+   En ese caso se cruzan los talles reales con los colores del campo
+   de texto legado, en vez de perder el color por completo. */
+function combinarVariantesConTexto(variantesDB, data) {
+  if (!variantesDB) return variantesFallbackDesdeTexto(data);
+
+  const tieneColorEstructurado = variantesDB.some(v => v.color);
+  if (tieneColorEstructurado) return variantesDB;
+
+  const coloresTexto = (data.color || '').split(',').map(c => c.trim()).filter(Boolean);
+  if (!coloresTexto.length) return variantesDB;
+
+  return variantesDB.flatMap(v => coloresTexto.map(c => ({ talle: v.talle, color: c })));
 }
 
 async function obtenerListaNav() {
@@ -455,6 +604,7 @@ function productosDeMarca(lista, marca, excludeId) {
 let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
 let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
 let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
+let fotosModalState      = [];  // urls de producto_fotos, en orden
 
 function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
 
@@ -564,17 +714,24 @@ function renderListaColoresModal() {
   }
 
   container.innerHTML = coloresModalState.map((c, idx) => {
-    const hex = hexDeColor(c);
-    const dotHtml = hex
-      ? `<span class="color-dot" style="background:${hex}"></span>`
-      : `<span class="color-dot color-dot-generic"></span>`;
+    const hex = hexDeColor(c) || '#999999';
+    const nombreAttr = c.replace(/"/g, '&quot;');
     return `
       <div class="color-item-chip">
-        ${dotHtml}
+        <span class="color-item-swatch-wrap" title="Elegir el color exacto de &quot;${nombreAttr}&quot;">
+          <span class="color-item-swatch-dot" style="background:${hex}"></span>
+          <input type="color" class="color-item-swatch-input" value="${hex}"
+            onchange="cambiarHexColorUI(&quot;${nombreAttr}&quot;, this.value)">
+        </span>
         <span class="color-item-name">${c}</span>
         <button type="button" class="btn-quitar-color" onclick="quitarColorItem(${idx})" title="Quitar color ${c}">✕</button>
       </div>`;
   }).join('');
+}
+
+async function cambiarHexColor(nombre, hex) {
+  await guardarColorPersonalizado(nombre, hex);
+  renderListaColoresModal();
 }
 
 function agregarColorItem() {
@@ -723,21 +880,112 @@ async function sincronizarTallesDB(productoId) {
 }
 
 /* ================================================================
+   GESTOR DE GALERÍA DE FOTOS (MODAL)
+
+   Si el producto tiene fotos acá, la página de detalle muestra un
+   carrusel con zoom en vez de la foto única (imagen_custom /
+   imagen_scraper), que sigue funcionando como antes para productos
+   sin galería todavía.
+   ================================================================ */
+function renderListaFotosModal() {
+  const container = document.getElementById('lista-fotos-container');
+  if (!container) return;
+
+  if (!fotosModalState.length) {
+    container.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-3); padding:0.5rem; text-align:center; font-style:italic;">
+        Sin fotos en la galería todavía — se usa la foto única de más abajo.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = fotosModalState.map((url, idx) => `
+    <div class="foto-item-row">
+      <img src="${url}" class="foto-item-thumb" alt="Foto ${idx + 1}" onerror="this.style.opacity='0.25'">
+      <span class="foto-item-url" title="${url}">${url}</span>
+      <button type="button" class="btn-chip" onclick="moverFotoItem(${idx},-1)" ${idx === 0 ? 'disabled' : ''} title="Subir">↑</button>
+      <button type="button" class="btn-chip" onclick="moverFotoItem(${idx},1)" ${idx === fotosModalState.length - 1 ? 'disabled' : ''} title="Bajar">↓</button>
+      <button type="button" class="btn-quitar-talle" onclick="quitarFotoItem(${idx})" title="Quitar">✕</button>
+    </div>
+  `).join('');
+}
+
+function agregarFotoItem() {
+  const input = document.getElementById('nueva-foto-url');
+  if (!input) return;
+  const url = input.value.trim();
+  if (!url) { input.focus(); return; }
+  if (!/^https?:\/\//.test(url)) { alert('La URL de la foto tiene que empezar con http:// o https://'); return; }
+
+  fotosModalState.push(url);
+  input.value = '';
+  input.focus();
+  renderListaFotosModal();
+}
+
+function quitarFotoItem(idx) {
+  if (idx >= 0 && idx < fotosModalState.length) {
+    fotosModalState.splice(idx, 1);
+    renderListaFotosModal();
+  }
+}
+
+function moverFotoItem(idx, delta) {
+  const nuevoIdx = idx + delta;
+  if (nuevoIdx < 0 || nuevoIdx >= fotosModalState.length) return;
+  [fotosModalState[idx], fotosModalState[nuevoIdx]] = [fotosModalState[nuevoIdx], fotosModalState[idx]];
+  renderListaFotosModal();
+}
+
+async function cargarFotosModal(productoId) {
+  if (!productoId) return;
+  try {
+    const { data, error } = await sb
+      .from('producto_fotos')
+      .select('url')
+      .eq('producto_id', productoId)
+      .order('orden', { ascending: true });
+    if (!error && data) {
+      fotosModalState = data.map(d => d.url);
+      renderListaFotosModal();
+    }
+  } catch (_) {}
+}
+
+/* Reemplaza toda la galería del producto por el estado actual del
+   modal (más simple que un upsert con orden: es una lista corta). */
+async function sincronizarFotosDB(productoId) {
+  if (!productoId) return;
+  try {
+    await sb.from('producto_fotos').delete().eq('producto_id', productoId);
+    if (fotosModalState.length) {
+      const filas = fotosModalState.map((url, idx) => ({ producto_id: productoId, url, orden: idx }));
+      await sb.from('producto_fotos').insert(filas);
+    }
+  } catch (err) {
+    console.warn('Sincronización producto_fotos opcional:', err);
+  }
+}
+
+/* ================================================================
    MODAL DE EDICIÓN
    ================================================================ */
 async function openProdModal() {
   const p = productoActual;
   if (!p || !isAdmin()) return;
 
+  await cargarColoresPersonalizados();
+
   const seedTalles   = parsearTallesTexto(p?.talles || '');
   tallesModalState   = seedTalles.map(t => t.talle);
   coloresModalState  = parsearColoresTexto(p?.color || '');
   variantesStockState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
+  fotosModalState = [];
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
-      <div class="modal">
+      <div class="modal prod-modal-grande">
         <div class="modal-title">${ICON.edit} Editar producto</div>
 
         <div class="field">
@@ -859,6 +1107,25 @@ async function openProdModal() {
           </div>
         </div>
 
+        <!-- SECCIÓN GALERÍA DE FOTOS -->
+        <div class="field talles-manager-section">
+          <label style="margin:0 0 0.35rem; font-weight:600; font-size:0.85rem;">Galería de fotos</label>
+          <p style="font-size:0.74rem; color:var(--text-2); margin-top:0; margin-bottom:0.6rem; line-height:1.4;">
+            Si cargás fotos acá, en la página de detalle se muestran en un carrusel con zoom
+            (en vez de la foto única de abajo). El orden de la lista es el orden del carrusel.
+          </p>
+
+          <div id="lista-fotos-container" class="fotos-grid-list"></div>
+
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
+            <input type="url" id="nueva-foto-url" placeholder="https://…" style="flex:1;"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();agregarFotoItem();}">
+            <button type="button" class="btn sm primary" onclick="agregarFotoItem()" style="flex-shrink:0;">
+              + Agregar
+            </button>
+          </div>
+        </div>
+
         <div class="field">
           <label>Foto custom
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
@@ -905,6 +1172,8 @@ async function openProdModal() {
   renderListaColoresModal();
   renderListaTallesModal();
   renderVariantesGrid();
+  renderListaFotosModal();
+  cargarFotosModal(p?.id);
 
   // Si hay filas cargadas en producto_talles, son la fuente de verdad
   // (reemplazan lo parseado del texto legado de p.talles/p.color)
@@ -920,15 +1189,33 @@ async function openProdModal() {
       if (!error && data && data.length > 0) {
         const talles  = [];
         const colores = [];
+        const stockPorTalle = {};
         variantesStockState = {};
         data.forEach(d => {
           if (!talles.includes(d.talle)) talles.push(d.talle);
           const color = d.color || '';
           if (color && !colores.includes(color)) colores.push(color);
+          stockPorTalle[d.talle] = d.stock ?? 0;
           variantesStockState[claveVariante(d.talle, color)] = d.stock ?? 0;
         });
         tallesModalState = talles;
-        if (colores.length) coloresModalState = colores;
+
+        if (colores.length) {
+          coloresModalState = colores;
+        } else if (coloresModalState.length) {
+          // Las filas de producto_talles todavía no tienen color
+          // cargado (vienen de antes de esa función), pero el texto
+          // legado sí tiene colores: se cruzan para no perder el
+          // stock real ya cargado (se copia a cada color, el admin
+          // lo ajusta después si corresponde uno distinto por color).
+          variantesStockState = {};
+          talles.forEach(t => {
+            coloresModalState.forEach(c => {
+              variantesStockState[claveVariante(t, c)] = stockPorTalle[t] ?? 0;
+            });
+          });
+        }
+
         renderListaColoresModal();
         renderListaTallesModal();
         renderVariantesGrid();
@@ -1017,11 +1304,18 @@ async function saveProd() {
     oculto:         document.getElementById('p-oculto')?.checked || false,
   };
 
+  // Si hay galería pero no foto única, la miniatura del catálogo usa
+  // la primera foto de la galería (no todo el sitio sabe leer la galería).
+  if (!p.imagen_custom && !p.imagen_scraper && fotosModalState.length) {
+    p.imagen_scraper = fotosModalState[0];
+  }
+
   const ok = await persistirProducto(p);
   if (!ok) return;
 
   // Sincronizar en tabla producto_talles si está disponible
   await sincronizarTallesDB(p.id);
+  await sincronizarFotosDB(p.id);
 
   closeProdModal();
   await cargarProducto();   // refresca la página con los datos ya guardados
@@ -1035,10 +1329,20 @@ window.agregarColorItem        = agregarColorItem;
 window.quitarColorItem         = quitarColorItem;
 window.agregarColorRapido      = agregarColorRapido;
 window.actualizarVarianteStock = actualizarVarianteStock;
+window.agregarFotoItem         = agregarFotoItem;
+window.quitarFotoItem          = quitarFotoItem;
+window.moverFotoItem           = moverFotoItem;
+window.cambiarHexColorUI       = cambiarHexColor;
 window.seleccionarTalleUI              = seleccionarTalle;
 window.seleccionarColorUI              = seleccionarColor;
 window.cambiarCantidadSelectorUI       = cambiarCantidadSelector;
 window.agregarAlCarritoDesdeProductoUI = agregarAlCarritoDesdeProducto;
+window.moverGaleriaUI            = moverGaleria;
+window.irAFotoUI                 = irAFoto;
+window.abrirZoomUI               = abrirZoom;
+window.cerrarZoomUI              = cerrarZoom;
+window.onGaleriaTouchStartUI     = onGaleriaTouchStart;
+window.onGaleriaTouchEndUI       = onGaleriaTouchEnd;
 
 
 /* ================================================================

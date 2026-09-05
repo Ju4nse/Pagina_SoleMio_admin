@@ -4,7 +4,7 @@
    de vuelta a login.html
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
-import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
+import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, guardarColorPersonalizado } from './theme.js';
 import { initCarritoUI }      from './carrito.js';
 import { renderTopbar }       from './topbar.js';
 
@@ -229,7 +229,7 @@ function renderCatalogo(resetear = false) {
       : null; // el stock es un dato interno: no se muestra a invitados
 
     return `
-    <article class="prod-card" style="animation-delay:${i * 30}ms;cursor:pointer" onclick="verProducto('${p.id}')">
+    <a class="prod-card" style="animation-delay:${i * 30}ms" href="producto.html?id=${encodeURIComponent(p.id)}">
       ${img
         ? `<img class="prod-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -249,15 +249,15 @@ function renderCatalogo(resetear = false) {
         </div>
         ${isAdmin() ? `
         <div class="prod-actions">
-          <button class="btn sm ghost" onclick="event.stopPropagation();openProdModal('${p.id}')">
+          <button class="btn sm ghost" onclick="event.preventDefault();event.stopPropagation();openProdModal('${p.id}')">
             ${ICON.edit} Editar
           </button>
-          <button class="btn sm danger" onclick="event.stopPropagation();confirmarEliminar('${p.id}')">
+          <button class="btn sm danger" onclick="event.preventDefault();event.stopPropagation();confirmarEliminar('${p.id}')">
             ${ICON.trash}
           </button>
         </div>` : ''}
       </div>
-    </article>`;
+    </a>`;
   }).join('');
 
   if (hayMas) {
@@ -277,14 +277,6 @@ function cargarMas() {
 
 
 /* ================================================================
-   IR AL DETALLE DE PRODUCTO (página aparte)
-   ================================================================ */
-function verProducto(id) {
-  location.href = 'producto.html?id=' + encodeURIComponent(id);
-}
-
-
-/* ================================================================
    GESTOR DE TALLES + COLORES + STOCK POR COMBINACIÓN (MODAL)
 
    El stock real vive por combinación talle×color (variantesStockState),
@@ -294,6 +286,7 @@ function verProducto(id) {
 let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
 let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
 let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
+let fotosModalState      = [];  // urls de producto_fotos, en orden
 
 function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
 
@@ -403,17 +396,24 @@ function renderListaColoresModal() {
   }
 
   container.innerHTML = coloresModalState.map((c, idx) => {
-    const hex = hexDeColor(c);
-    const dotHtml = hex
-      ? `<span class="color-dot" style="background:${hex}"></span>`
-      : `<span class="color-dot color-dot-generic"></span>`;
+    const hex = hexDeColor(c) || '#999999';
+    const nombreAttr = c.replace(/"/g, '&quot;');
     return `
       <div class="color-item-chip">
-        ${dotHtml}
+        <span class="color-item-swatch-wrap" title="Elegir el color exacto de &quot;${nombreAttr}&quot;">
+          <span class="color-item-swatch-dot" style="background:${hex}"></span>
+          <input type="color" class="color-item-swatch-input" value="${hex}"
+            onchange="cambiarHexColorUI(&quot;${nombreAttr}&quot;, this.value)">
+        </span>
         <span class="color-item-name">${c}</span>
         <button type="button" class="btn-quitar-color" onclick="quitarColorItem(${idx})" title="Quitar color ${c}">✕</button>
       </div>`;
   }).join('');
+}
+
+async function cambiarHexColor(nombre, hex) {
+  await guardarColorPersonalizado(nombre, hex);
+  renderListaColoresModal();
 }
 
 function agregarColorItem() {
@@ -562,6 +562,94 @@ async function sincronizarTallesDB(productoId) {
 }
 
 /* ================================================================
+   GESTOR DE GALERÍA DE FOTOS (MODAL)
+
+   Si el producto tiene fotos acá, la página de detalle muestra un
+   carrusel con zoom en vez de la foto única (imagen_custom /
+   imagen_scraper), que sigue funcionando como antes para productos
+   sin galería todavía.
+   ================================================================ */
+function renderListaFotosModal() {
+  const container = document.getElementById('lista-fotos-container');
+  if (!container) return;
+
+  if (!fotosModalState.length) {
+    container.innerHTML = `
+      <div style="font-size:0.78rem; color:var(--text-3); padding:0.5rem; text-align:center; font-style:italic;">
+        Sin fotos en la galería todavía — se usa la foto única de más abajo.
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = fotosModalState.map((url, idx) => `
+    <div class="foto-item-row">
+      <img src="${url}" class="foto-item-thumb" alt="Foto ${idx + 1}" onerror="this.style.opacity='0.25'">
+      <span class="foto-item-url" title="${url}">${url}</span>
+      <button type="button" class="btn-chip" onclick="moverFotoItem(${idx},-1)" ${idx === 0 ? 'disabled' : ''} title="Subir">↑</button>
+      <button type="button" class="btn-chip" onclick="moverFotoItem(${idx},1)" ${idx === fotosModalState.length - 1 ? 'disabled' : ''} title="Bajar">↓</button>
+      <button type="button" class="btn-quitar-talle" onclick="quitarFotoItem(${idx})" title="Quitar">✕</button>
+    </div>
+  `).join('');
+}
+
+function agregarFotoItem() {
+  const input = document.getElementById('nueva-foto-url');
+  if (!input) return;
+  const url = input.value.trim();
+  if (!url) { input.focus(); return; }
+  if (!/^https?:\/\//.test(url)) { alert('La URL de la foto tiene que empezar con http:// o https://'); return; }
+
+  fotosModalState.push(url);
+  input.value = '';
+  input.focus();
+  renderListaFotosModal();
+}
+
+function quitarFotoItem(idx) {
+  if (idx >= 0 && idx < fotosModalState.length) {
+    fotosModalState.splice(idx, 1);
+    renderListaFotosModal();
+  }
+}
+
+function moverFotoItem(idx, delta) {
+  const nuevoIdx = idx + delta;
+  if (nuevoIdx < 0 || nuevoIdx >= fotosModalState.length) return;
+  [fotosModalState[idx], fotosModalState[nuevoIdx]] = [fotosModalState[nuevoIdx], fotosModalState[idx]];
+  renderListaFotosModal();
+}
+
+async function cargarFotosModal(productoId) {
+  if (!productoId) return;
+  try {
+    const { data, error } = await sb
+      .from('producto_fotos')
+      .select('url')
+      .eq('producto_id', productoId)
+      .order('orden', { ascending: true });
+    if (!error && data) {
+      fotosModalState = data.map(d => d.url);
+      renderListaFotosModal();
+    }
+  } catch (_) {}
+}
+
+/* Reemplaza toda la galería del producto por el estado actual del
+   modal (más simple que un upsert con orden: es una lista corta). */
+async function sincronizarFotosDB(productoId) {
+  if (!productoId) return;
+  try {
+    await sb.from('producto_fotos').delete().eq('producto_id', productoId);
+    if (fotosModalState.length) {
+      const filas = fotosModalState.map((url, idx) => ({ producto_id: productoId, url, orden: idx }));
+      await sb.from('producto_fotos').insert(filas);
+    }
+  } catch (err) {
+    console.warn('Sincronización producto_fotos opcional:', err);
+  }
+}
+
+/* ================================================================
    MODAL PRODUCTO
    ================================================================ */
 async function openProdModal(id) {
@@ -569,15 +657,18 @@ async function openProdModal(id) {
   const p     = id ? productos.find(x => x.id === id) : null;
   const title = p ? 'Editar producto' : 'Nuevo producto';
 
+  await cargarColoresPersonalizados();
+
   const seedTalles   = parsearTallesTexto(p?.talles || '');
   tallesModalState   = seedTalles.map(t => t.talle);
   coloresModalState  = parsearColoresTexto(p?.color || '');
   variantesStockState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
+  fotosModalState = [];
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
-      <div class="modal">
+      <div class="modal prod-modal-grande">
         <div class="modal-title">${ICON.edit} ${title}</div>
 
         <div class="field">
@@ -702,6 +793,25 @@ async function openProdModal(id) {
           </div>
         </div>
 
+        <!-- SECCIÓN GALERÍA DE FOTOS -->
+        <div class="field talles-manager-section">
+          <label style="margin:0 0 0.35rem; font-weight:600; font-size:0.85rem;">Galería de fotos</label>
+          <p style="font-size:0.74rem; color:var(--text-2); margin-top:0; margin-bottom:0.6rem; line-height:1.4;">
+            Si cargás fotos acá, en la página de detalle se muestran en un carrusel con zoom
+            (en vez de la foto única de abajo). El orden de la lista es el orden del carrusel.
+          </p>
+
+          <div id="lista-fotos-container" class="fotos-grid-list"></div>
+
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
+            <input type="url" id="nueva-foto-url" placeholder="https://…" style="flex:1;"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();agregarFotoItem();}">
+            <button type="button" class="btn sm primary" onclick="agregarFotoItem()" style="flex-shrink:0;">
+              + Agregar
+            </button>
+          </div>
+        </div>
+
         <div class="field">
           <label>Foto custom
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400">
@@ -748,6 +858,8 @@ async function openProdModal(id) {
   renderListaColoresModal();
   renderListaTallesModal();
   renderVariantesGrid();
+  renderListaFotosModal();
+  cargarFotosModal(p?.id);
 
   // Si hay filas cargadas en producto_talles, son la fuente de verdad
   // (reemplazan lo parseado del texto legado de p.talles/p.color)
@@ -763,15 +875,33 @@ async function openProdModal(id) {
       if (!error && data && data.length > 0) {
         const talles  = [];
         const colores = [];
+        const stockPorTalle = {};
         variantesStockState = {};
         data.forEach(d => {
           if (!talles.includes(d.talle)) talles.push(d.talle);
           const color = d.color || '';
           if (color && !colores.includes(color)) colores.push(color);
+          stockPorTalle[d.talle] = d.stock ?? 0;
           variantesStockState[claveVariante(d.talle, color)] = d.stock ?? 0;
         });
         tallesModalState = talles;
-        if (colores.length) coloresModalState = colores;
+
+        if (colores.length) {
+          coloresModalState = colores;
+        } else if (coloresModalState.length) {
+          // Las filas de producto_talles todavía no tienen color
+          // cargado (vienen de antes de esa función), pero el texto
+          // legado sí tiene colores: se cruzan para no perder el
+          // stock real ya cargado (se copia a cada color, el admin
+          // lo ajusta después si corresponde uno distinto por color).
+          variantesStockState = {};
+          talles.forEach(t => {
+            coloresModalState.forEach(c => {
+              variantesStockState[claveVariante(t, c)] = stockPorTalle[t] ?? 0;
+            });
+          });
+        }
+
         renderListaColoresModal();
         renderListaTallesModal();
         renderVariantesGrid();
@@ -819,10 +949,17 @@ async function saveProd() {
     oculto:         document.getElementById('p-oculto')?.checked || false,
   };
 
+  // Si hay galería pero no foto única, la miniatura del catálogo usa
+  // la primera foto de la galería (no todo el sitio sabe leer la galería).
+  if (!p.imagen_custom && !p.imagen_scraper && fotosModalState.length) {
+    p.imagen_scraper = fotosModalState[0];
+  }
+
   await persistirProducto(p);
 
   // Sincronizar en tabla producto_talles si está disponible
   await sincronizarTallesDB(p.id);
+  await sincronizarFotosDB(p.id);
 
   closeProdModal();
   renderCatalogo();
@@ -1000,7 +1137,6 @@ async function init() {
 window.toggleTheme          = toggleTheme;
 window.renderCatalogo       = renderCatalogo;
 window.cargarMas            = cargarMas;
-window.verProducto          = verProducto;
 window.openProdModal        = openProdModal;
 window.closeProdModal       = closeProdModal;
 window.saveProd             = saveProd;
@@ -1017,5 +1153,9 @@ window.agregarColorItem        = agregarColorItem;
 window.quitarColorItem         = quitarColorItem;
 window.agregarColorRapido      = agregarColorRapido;
 window.actualizarVarianteStock = actualizarVarianteStock;
+window.agregarFotoItem         = agregarFotoItem;
+window.quitarFotoItem          = quitarFotoItem;
+window.moverFotoItem           = moverFotoItem;
+window.cambiarHexColorUI       = cambiarHexColor;
 
 init();

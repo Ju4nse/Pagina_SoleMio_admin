@@ -169,6 +169,10 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 .prod-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -281,6 +285,17 @@ select:focus { outline: none; border-color: var(--primary); }
   animation: modalslideup 0.18s ease;
 }
 
+/* Modal de editar/crear producto: mucho más contenido (talles,
+   colores, grilla de stock, galería de fotos) que un modal chico. */
+.prod-modal-grande {
+  max-width: 860px;
+  padding: 2rem 2.25rem;
+}
+
+@media (max-width: 900px) {
+  .prod-modal-grande { max-width: 100%; padding: 1.5rem; }
+}
+
 /* ── GESTOR DE TALLES EN MODAL ───────────────────────────────── */
 .talles-manager-section {
   background: var(--surface2);
@@ -293,11 +308,50 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .talles-grid-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.4rem;
-  max-height: 160px;
+  max-height: 180px;
   overflow-y: auto;
   padding-right: 0.2rem;
+}
+
+/* ── GALERÍA DE FOTOS EN MODAL ───────────────────────────────── */
+.fotos-grid-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.foto-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+}
+
+.foto-item-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+
+.foto-item-url {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .talle-item-row {
@@ -421,6 +475,39 @@ select:focus { outline: none; border-color: var(--primary); }
   font-weight: 500;
 }
 
+/* Puntito de color editable: el punto que se ve es un <span> común
+   (así queda siempre redondo y del tamaño justo, sin pelearse con
+   cómo cada navegador dibuja un input[type=color] nativo); el input
+   de verdad va encima, invisible, para que el click abra el picker. */
+.color-item-swatch-wrap {
+  position: relative;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-item-swatch-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.color-item-swatch-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .btn-quitar-color {
   background: transparent;
   border: none;
@@ -479,6 +566,8 @@ select:focus { outline: none; border-color: var(--primary); }
 /* ── STOCK POR COMBINACIÓN (grilla talle×color) ─────────────────── */
 .variantes-grid-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 280px;
   border: 1px solid var(--border-md);
   border-radius: var(--radius-sm);
   background: var(--surface);

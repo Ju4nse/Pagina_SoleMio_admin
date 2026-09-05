@@ -248,19 +248,34 @@ async function abrirPedido(id) {
     variantesPorProducto[d.producto_id].push({ talle: d.talle, color: d.color || '', stock: d.stock ?? 0 });
   });
 
-  // Productos que todavía no pasaron por la grilla nueva de admin no
-  // tienen filas en producto_talles: arma las opciones desde el texto
-  // legado (productos.talles / productos.color), sin stock por combo.
-  const idsSinEstructura = productoIds.filter(pid => !variantesPorProducto[pid]?.length);
-  if (idsSinEstructura.length) {
+  // Productos sin ninguna fila en producto_talles, o cuyas filas
+  // todavía no tienen color cargado (se guardaron antes de que
+  // existiera la gestión de colores): se completan con el color del
+  // texto legado (productos.color), cruzándolo con los talles reales
+  // si ya hay stock cargado por talle.
+  const idsIncompletos = productoIds.filter(pid => {
+    const filas = variantesPorProducto[pid];
+    return !filas?.length || !filas.some(v => v.color);
+  });
+
+  if (idsIncompletos.length) {
     const { data: textos, error: errTextos } = await sb
       .from('productos')
       .select('id, talles, color')
-      .in('id', idsSinEstructura);
+      .in('id', idsIncompletos);
 
     if (!errTextos) {
       (textos || []).forEach(prod => {
-        variantesPorProducto[prod.id] = variantesFallbackDesdeTexto(prod);
+        const filasDB       = variantesPorProducto[prod.id];
+        const coloresTexto  = (prod.color || '').split(',').map(c => c.trim()).filter(Boolean);
+
+        if (filasDB && filasDB.length && coloresTexto.length) {
+          variantesPorProducto[prod.id] = filasDB.flatMap(f =>
+            coloresTexto.map(c => ({ talle: f.talle, color: c, stock: f.stock }))
+          );
+        } else if (!filasDB || !filasDB.length) {
+          variantesPorProducto[prod.id] = variantesFallbackDesdeTexto(prod);
+        }
       });
     } else {
       console.warn('Error cargando talles/color de texto:', errTextos.message);

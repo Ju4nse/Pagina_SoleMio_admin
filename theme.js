@@ -3,6 +3,7 @@
    Usado por login.js (solo initTheme) y catalogo.js (initTheme +
    toggleTheme + ICON).
    ================================================================ */
+import { sb } from './supabase-client.js';
 
 export const ICON = {
   sun: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/>
@@ -71,6 +72,39 @@ export function normalizarColor(nombre) {
     .trim();
 }
 
+/* Colores que el admin defini\u00f3 a mano (pisan/completan COLOR_MAP),
+   ej. el tono exacto de "Natural" o un verde puntual. Se cargan una
+   sola vez por p\u00e1gina con cargarColoresPersonalizados(). */
+let coloresPersonalizados = null;
+
+export async function cargarColoresPersonalizados() {
+  if (coloresPersonalizados) return coloresPersonalizados;
+  coloresPersonalizados = {};
+  try {
+    const { data, error } = await sb.from('colores_personalizados').select('nombre, hex');
+    if (!error && data) {
+      data.forEach(d => { coloresPersonalizados[d.nombre] = d.hex; });
+    }
+  } catch (_) {}
+  return coloresPersonalizados;
+}
+
+export async function guardarColorPersonalizado(nombre, hex) {
+  const clave = normalizarColor(nombre);
+  if (!coloresPersonalizados) coloresPersonalizados = {};
+  coloresPersonalizados[clave] = hex;
+  try {
+    const { error } = await sb
+      .from('colores_personalizados')
+      .upsert({ nombre: clave, hex }, { onConflict: 'nombre' });
+    if (error) console.warn('No se pudo guardar el color personalizado:', error.message);
+  } catch (err) {
+    console.warn('No se pudo guardar el color personalizado:', err);
+  }
+}
+
 export function hexDeColor(nombre) {
-  return COLOR_MAP[normalizarColor(nombre)] || null;
+  const clave = normalizarColor(nombre);
+  if (coloresPersonalizados && coloresPersonalizados[clave]) return coloresPersonalizados[clave];
+  return COLOR_MAP[clave] || null;
 }
