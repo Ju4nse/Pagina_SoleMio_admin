@@ -6,6 +6,7 @@ import { ICON, initTheme, toggleTheme } from './theme.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 let rolActual = 'guest';
 
@@ -26,6 +27,7 @@ async function cargarDestacados() {
     .eq('destacado', true)
     .eq('stock', true)
     .not('oculto', 'is', true)
+    .eq('eliminado', false)
     .order('id', { ascending: false })
     .limit(8);
 
@@ -86,6 +88,7 @@ async function init() {
 
   rolActual = await detectarRol();
   document.body.dataset.role = rolActual;
+  initAlertasPedidos(rolActual);
 
   const badge = document.getElementById('role-badge');
   if (badge) {

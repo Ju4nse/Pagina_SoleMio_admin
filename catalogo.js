@@ -8,6 +8,7 @@ import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, 
 import { initCarritoUI, agregarAlCarrito } from './carrito.js';
 import { renderTopbar }       from './topbar.js';
 import { renderFooter }       from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 /* ================================================================
    STATE
@@ -114,6 +115,7 @@ async function cargarProductos() {
     const { data, error } = await sb
       .from('productos')
       .select('*')
+      .eq('eliminado', false)
       .order('id', {ascending: true})
       .range(desde, desde + PAGINA - 1);
 
@@ -171,10 +173,15 @@ async function persistirProducto(p) {
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
 }
 
+/* "Eliminar" no borra la fila de la base — la marca como eliminada
+   (ver sql/2026-09-06_producto_eliminado_soft_delete.sql). Así el
+   producto deja de aparecer en cualquier lado (ni admin ni invitados)
+   pero el dato queda conservado, por ejemplo para no perder el
+   historial de pedidos que lo referencian. */
 async function eliminarProductoDB(id) {
   if (!isAdmin()) { console.warn('Acceso denegado'); return; }
 
-  const { error } = await sb.from('productos').delete().eq('id', id);
+  const { error } = await sb.from('productos').update({ eliminado: true }).eq('id', id);
   if (error) { console.warn('Error eliminando producto:', error.message); return; }
 
   productos = productos.filter(p => p.id !== id);
@@ -1105,7 +1112,7 @@ async function saveProd() {
 }
 
 async function confirmarEliminar(id) {
-  if (!confirm('¿Eliminar este producto?')) return;
+  if (!confirm('¿Eliminar este producto? Deja de verse en la página, pero el dato queda guardado en la base.')) return;
   await eliminarProductoDB(id);
   renderCatalogo();
 }
@@ -1211,10 +1218,11 @@ async function doLogout() {
    INIT / GUARDIA DE AUTENTICACIÓN
    ================================================================ */
 async function startApp() {
-  document.getElementById('app').style.display = 'block';
+  document.getElementById('app').style.display = 'flex';
 
   renderTopbar('catalogo', { search: true, marcas: true });
   renderFooter();
+  initAlertasPedidos(currentRole);
   initTheme();
   applyRole();
   initCarritoUI();

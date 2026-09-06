@@ -152,42 +152,43 @@ export function actualizarBadge() {
 }
 
 /* ================================================================
-   TOAST "agregado al carrito" — se muestra al costado de la página
-   (no navega, no interrumpe el catálogo) con un link a carrito.html
+   TOASTS "agregado al carrito" — se muestran al costado de la página
+   (no navegan, no interrumpen el catálogo) con un link a carrito.html.
+   Si se agregan varios productos seguido, se apilan uno debajo del
+   otro (ver #modal-carrito en catalogo.css) en vez de reemplazarse:
+   cada uno es independiente, con su propio timer de cierre.
    ================================================================ */
-let toastTimer = null;
+let toastSeq = 0;
 
 function mostrarToastAgregado(nombre) {
   const container = document.getElementById('modal-carrito');
   if (!container) return;
 
-  container.innerHTML = `
-    <div class="carrito-toast" id="carrito-toast">
-      <div class="carrito-toast-icon">✓</div>
-      <div class="carrito-toast-body">
-        <div class="carrito-toast-titulo">Producto agregado a tu pedido</div>
-        <div class="carrito-toast-nombre">${nombre}</div>
-      </div>
-      <a class="btn sm primary" href="carrito.html">Ver pedido</a>
-      <button type="button" class="carrito-toast-cerrar" onclick="cerrarToastCarritoUI()" aria-label="Cerrar">✕</button>
-    </div>`;
+  const id = `carrito-toast-${++toastSeq}`;
+  const toastEl = document.createElement('div');
+  toastEl.className = 'carrito-toast';
+  toastEl.id = id;
+  toastEl.innerHTML = `
+    <div class="carrito-toast-icon">✓</div>
+    <div class="carrito-toast-body">
+      <div class="carrito-toast-titulo">Producto agregado a tu pedido</div>
+      <div class="carrito-toast-nombre">${nombre}</div>
+    </div>
+    <a class="btn sm primary" href="carrito.html">Ver pedido</a>
+    <button type="button" class="carrito-toast-cerrar" onclick="cerrarToastCarritoUI('${id}')" aria-label="Cerrar">✕</button>`;
 
-  requestAnimationFrame(() => {
-    document.getElementById('carrito-toast')?.classList.add('open');
-  });
+  container.appendChild(toastEl);
 
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(cerrarToast, 4000);
+  requestAnimationFrame(() => toastEl.classList.add('open'));
+
+  setTimeout(() => cerrarToast(id), 4000);
 }
 
-function cerrarToast() {
-  const toast = document.getElementById('carrito-toast');
+function cerrarToast(id) {
+  const toast = document.getElementById(id);
   if (!toast) return;
   toast.classList.remove('open');
-  setTimeout(() => {
-    const container = document.getElementById('modal-carrito');
-    if (container) container.innerHTML = '';
-  }, 200);
+  setTimeout(() => toast.remove(), 200);
 }
 
 /* ================================================================

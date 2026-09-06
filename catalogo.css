@@ -4,10 +4,26 @@
    ================================================================ */
 
 /* ── LAYOUT ──────────────────────────────────────────────────── */
+/* #app se muestra con display:flex (ver *.js: app.style.display =
+   'flex') en vez de 'block' justamente por esto: en páginas con poco
+   contenido (ej. "Mis pedidos" sin pedidos guardados, carrito vacío)
+   el footer quedaba pegado al final del contenido, a mitad de
+   pantalla, en vez de ir al piso. Con #app en columna y .shell
+   ocupando el espacio sobrante, el footer se va solo al fondo. */
+#app {
+  min-height: 100vh;
+  flex-direction: column;
+}
+
 .shell {
+  width: 100%;   /* si queda en "auto", el margin:0 auto de acá abajo
+                    "absorbe" el stretch del flex de #app y .shell se
+                    encoge a su contenido en vez de ir hasta max-width
+                    (por eso se veían menos columnas en la grilla) */
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 1.5rem;
+  flex: 1 0 auto;
 }
 
 /* ── TOPBAR ──────────────────────────────────────────────────── */
@@ -78,7 +94,10 @@
   display: flex;
   align-items: center;
   align-self: stretch;
-  margin-left: 1.5rem;
+  /* corrido para quedar más o menos arriba del primer producto de la
+     grilla (que ahora arranca después del sidebar de categoría, ver
+     .catalogo-layout/.catalogo-sidebar) en vez de pegado al logo */
+  margin-left: calc(1.5rem + 157px);
   /* puente invisible: iguala el padding inferior de .topbar para que
      la caja "hoverable" del menú llegue hasta ese borde sin cortes
      (el margin-bottom negativo cancela el alto extra que sumaría) */
@@ -350,6 +369,11 @@
     gap: 0.4rem 1rem;
   }
   .categoria-item { width: auto; padding: 0.3rem 0; }
+
+  /* el corrido de MARCAS (ver .marcas-menu) es para alinearla con la
+     grilla de acá al lado del sidebar — sin sidebar (una sola columna)
+     no tiene sentido y solo desacomoda la topbar */
+  .marcas-menu { margin-left: 1.5rem; }
 }
 
 /* ── TOOLBAR ─────────────────────────────────────────────────── */
@@ -882,12 +906,47 @@ select:focus { outline: none; border-color: var(--primary); }
   justify-content: center;
 }
 
-/* ── CARRITO — toast "agregado al carrito" (esquina de la página) ── */
-.carrito-toast {
+/* ── ALERTA DE PEDIDOS (admin) — campanita + badge en la topbar ──
+   Inyectada por pedidos-alertas.js, no vive en el HTML de cada
+   página. Mismo tamaño que .cart-badge pero en rojo: es una alerta
+   ("hay algo por revisar"), no un simple contador informativo. ── */
+#pedido-alert-btn { position: relative; }
+
+.alert-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 99px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── CARRITO — toasts "agregado al carrito" (esquina de la página) ──
+   #modal-carrito es el contenedor fijo (una sola vez en la esquina);
+   cada aviso agregado es un .carrito-toast independiente que se apila
+   dentro con flex-column, para que agregar varios productos seguidos
+   los vaya acumulando uno debajo del otro en vez de reemplazarlos. ── */
+#modal-carrito {
   position: fixed;
   top: 5.5rem;
   right: 1.25rem;
   z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.carrito-toast {
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -907,6 +966,30 @@ select:focus { outline: none; border-color: var(--primary); }
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── AVISO DE PEDIDO NUEVO (admin) — mismo look que .carrito-toast
+   (reusa esas clases), pero apilado en un contenedor propio del lado
+   opuesto de la pantalla para no mezclarse con los toasts del
+   carrito. Inyectado por pedidos-alertas.js. ── */
+#pedido-alerta-stack {
+  position: fixed;
+  top: 5.5rem;
+  left: 1.25rem;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  pointer-events: none;
+}
+
+.pedido-alerta-icon {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+@media (max-width: 480px) {
+  #pedido-alerta-stack { left: 1rem; right: 1rem; }
 }
 
 .carrito-toast-icon {
@@ -952,7 +1035,8 @@ select:focus { outline: none; border-color: var(--primary); }
 .carrito-toast-cerrar:hover { color: var(--text); }
 
 @media (max-width: 480px) {
-  .carrito-toast { left: 1rem; right: 1rem; max-width: none; }
+  #modal-carrito { left: 1rem; right: 1rem; }
+  .carrito-toast { max-width: none; }
 }
 
 .carrito-body {

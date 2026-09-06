@@ -8,6 +8,7 @@ import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, 
 import { initCarritoUI, agregarAlCarrito, combinarVariantesConTexto } from './carrito.js';
 import { renderTopbar }       from './topbar.js';
 import { renderFooter }       from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -473,7 +474,7 @@ async function cargarProducto() {
   // colores personalizados, para que el selector no tenga que esperar
   // dos consultas seguidas para pintar los puntitos bien).
   const [{ data, error }] = await Promise.all([
-    sb.from('productos').select('*').eq('id', id).maybeSingle(),
+    sb.from('productos').select('*').eq('id', id).eq('eliminado', false).maybeSingle(),
     cargarColoresPersonalizados(),
   ]);
 
@@ -548,7 +549,8 @@ async function cargarVariantesYActualizar(id, data) {
 async function obtenerListaNav() {
   const { data, error } = await sb
     .from('productos')
-    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,imagen,oculto')
+    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,oculto')
+    .eq('eliminado', false)
     .order('id', { ascending: true });
   if (error) { console.warn('Error cargando navegación:', error.message); return []; }
   return data || [];
@@ -1370,10 +1372,11 @@ async function doLogout() {
    INIT / GUARDIA DE AUTENTICACIÓN
    ================================================================ */
 async function startApp() {
-  document.getElementById('app').style.display = 'block';
+  document.getElementById('app').style.display = 'flex';
 
   renderTopbar('catalogo');
   renderFooter();
+  initAlertasPedidos(currentRole);
   initTheme();
   applyRole();
   initCarritoUI();

@@ -6,6 +6,7 @@ import { sb, esAdmin, irAlCatalogo } from './supabase-client.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 let rolActual = 'guest';
 
@@ -37,6 +38,7 @@ async function init() {
 
   rolActual = await detectarRol();
   document.body.dataset.role = rolActual;
+  initAlertasPedidos(rolActual);
 
   const badge = document.getElementById('role-badge');
   if (badge) {

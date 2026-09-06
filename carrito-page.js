@@ -14,6 +14,7 @@ import {
 } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 let vista            = 'carrito'; // 'carrito' | 'listo'
 let rolActual         = 'guest';
@@ -344,6 +345,7 @@ async function init() {
   rolActual = await detectarRol();
   const app = document.getElementById('app');
   app.dataset.role = rolActual;
+  initAlertasPedidos(rolActual);
 
   const badge = document.getElementById('role-badge');
   if (badge) {
@@ -351,7 +353,7 @@ async function init() {
     badge.className   = 'role-badge ' + rolActual;
   }
 
-  app.style.display = 'block';
+  app.style.display = 'flex';
 }
 
 window.toggleTheme        = toggleTheme;

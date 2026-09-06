@@ -8,6 +8,7 @@ import { ICON, initTheme, toggleTheme } from './theme.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar }  from './topbar.js';
 import { renderFooter }  from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 /* ================================================================
    STATE
@@ -646,6 +647,7 @@ function buscarProductoNuevoPedido(term) {
     const { data, error } = await sb
       .from('productos')
       .select('id,nombre,marca,precio')
+      .eq('eliminado', false)
       .or(`nombre.ilike.%${safe}%,marca.ilike.%${safe}%,id.ilike.%${safe}%`)
       .limit(12);
 
@@ -884,10 +886,11 @@ async function doLogout() {
    ================================================================ */
 async function startApp() {
   document.getElementById('app').dataset.role = 'admin'; // página admin-only
-  document.getElementById('app').style.display = 'block';
+  document.getElementById('app').style.display = 'flex';
 
   renderTopbar('pedidos');
   renderFooter();
+  initAlertasPedidos('admin');
   initTheme();
   initCarritoUI();
 

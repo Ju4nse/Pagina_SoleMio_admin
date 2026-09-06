@@ -9,6 +9,7 @@ import { initTheme, toggleTheme } from './theme.js';
 import { leerMisPedidosLocal, initCarritoUI, TIEMPO_REVISION_HORAS } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
+import { initAlertasPedidos } from './pedidos-alertas.js';
 
 let rolActual = 'guest';
 
@@ -266,6 +267,7 @@ async function init() {
   rolActual = await detectarRol();
   const app = document.getElementById('app');
   app.dataset.role = rolActual;
+  initAlertasPedidos(rolActual);
 
   const badge = document.getElementById('role-badge');
   if (badge) {
@@ -273,7 +275,7 @@ async function init() {
     badge.className   = 'role-badge ' + rolActual;
   }
 
-  app.style.display = 'block';
+  app.style.display = 'flex';
 
   await buscarPedido(getIdDeUrl());
 }
