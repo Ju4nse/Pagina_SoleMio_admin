@@ -40,6 +40,27 @@ export function initTheme() {
   document.querySelectorAll('.theme-btn-icon').forEach(el => {
     el.innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
   });
+  initModalScrollLock();
+}
+
+/* Bloquea el scroll del body mientras haya algún modal (.modal-overlay)
+   abierto, para que al scrollear sobre el fondo oscuro no se scrollee
+   a la vez la página de atrás (catálogo, pedidos, etc.). Un solo
+   observer acá cubre todos los modales del sitio (editar producto,
+   pedido, nuevo pedido, cuenta…) sin tener que tocar cada open/close
+   por separado — initTheme() ya se llama una vez en cada página. */
+let modalScrollLockInit = false;
+
+function initModalScrollLock() {
+  if (modalScrollLockInit) return;
+  modalScrollLockInit = true;
+
+  const actualizar = () => {
+    document.body.classList.toggle('modal-abierto-lock', !!document.querySelector('.modal-overlay, .zoom-overlay'));
+  };
+
+  new MutationObserver(actualizar).observe(document.body, { childList: true, subtree: true });
+  actualizar();
 }
 
 export function toggleTheme() {

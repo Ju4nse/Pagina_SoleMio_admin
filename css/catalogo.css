@@ -251,12 +251,6 @@
 .topbar-nav a:hover { color: var(--text); }
 .topbar-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-/* Cambiar tema / Mi cuenta / Cerrar sesión DENTRO del desplegable —
-   solo tienen sentido en mobile (ver .topbar-nav-actions en la media
-   query de abajo); en desktop esos mismos controles siguen viviendo
-   como íconos sueltos en .topbar-icons, así que acá quedan ocultos. */
-.topbar-nav-actions { display: none; }
-
 /* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
    estilo que el ícono de login en landing/contacto ────────────── */
 .theme-btn,
@@ -326,6 +320,56 @@
   align-items: center;
   gap: 0.5rem;
   margin-right: -6rem;
+}
+
+/* ── MENÚ DE OPCIONES (tema / cuenta / salir) — mismo desplegable en
+   mobile y desktop (ver toggleSettingsMenuUI en topbar.js), en vez de
+   tres íconos circulares sueltos. ────────────────────────────────── */
+.settings-menu { position: relative; }
+
+.settings-panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  padding: 0.4rem;
+  min-width: 175px;
+  display: none;
+  flex-direction: column;
+  z-index: 25;
+}
+
+.settings-menu.open .settings-panel { display: flex; }
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0.55rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--trans);
+}
+.settings-item:hover { background: var(--surface2); color: var(--text); }
+
+.settings-item svg,
+.settings-item .theme-btn-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  flex-shrink: 0;
 }
 
 
@@ -739,14 +783,149 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 /* Modal de editar/crear producto: mucho más contenido (talles,
-   colores, grilla de stock, galería de fotos) que un modal chico. */
+   colores, grilla de stock, galería de fotos) que un modal chico —
+   layout de 2 columnas (form scrolleable + foto fija a un costado,
+   para poder ver el producto y usar el cuentagotas del selector de
+   color contra la imagen) con el pie ("Guardar") siempre visible sin
+   tener que bajar. Los hijos directos manejan su propio padding
+   porque acá arriba queda en 0 (ver .prod-modal-form/.modal-title/
+   .modal-footer de acá abajo). */
 .prod-modal-grande {
-  max-width: 860px;
-  padding: 2rem 2.25rem;
+  max-width: 1080px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.prod-modal-grande .modal-title {
+  padding: 1.75rem 2.25rem 0.5rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.prod-modal-body {
+  display: flex;
+  gap: 1.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.prod-modal-form {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0.75rem 2.25rem 1.5rem;
+}
+
+.prod-modal-preview {
+  width: 230px;
+  flex-shrink: 0;
+  padding: 0.75rem 2.25rem 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.prod-preview-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+.prod-preview-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.prod-preview-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.prod-preview-ph svg { width: 32px; height: 32px; stroke: var(--text-3); }
+
+.prod-preview-flecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.prod-preview-flecha:hover { background: rgba(0, 0, 0, 0.65); }
+.prod-preview-flecha-izq { left: 6px; }
+.prod-preview-flecha-der { right: 6px; }
+.prod-preview-flecha svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+
+.prod-preview-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.prod-preview-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-md);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.prod-preview-dot.activo { background: var(--primary); }
+
+.prod-preview-hint {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.prod-eyedropper-resultado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.prod-eyedropper-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  flex-shrink: 0;
+}
+
+.prod-modal-grande .modal-footer {
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 1rem 2.25rem;
+  background: var(--surface);
 }
 
 @media (max-width: 900px) {
-  .prod-modal-grande { max-width: 100%; padding: 1.5rem; }
+  .prod-modal-grande { max-width: 100%; }
+  .prod-modal-grande .modal-title { padding: 1.5rem 1.5rem 0.5rem; }
+  .prod-modal-body { flex-direction: column; overflow-y: auto; }
+  .prod-modal-preview { width: auto; order: -1; padding: 0.5rem 1.5rem 0; }
+  .prod-preview-photo { max-width: 220px; margin: 0 auto; }
+  .prod-modal-form { overflow-y: visible; padding: 0.5rem 1.5rem 1.5rem; }
+  .prod-modal-grande .modal-footer { padding: 1rem 1.5rem; }
 }
 
 /* ── GESTOR DE TALLES EN MODAL ───────────────────────────────── */
@@ -1334,6 +1513,10 @@ select:focus { outline: none; border-color: var(--primary); }
 
 body.carrito-drawer-lock { overflow: hidden; }
 
+/* Igual que arriba pero para cualquier modal (.modal-overlay) del
+   sitio — ver initModalScrollLock en theme.js. */
+body.modal-abierto-lock { overflow: hidden; }
+
 @media (max-width: 480px) {
   .carrito-drawer { width: 100vw; }
 }
@@ -1622,7 +1805,6 @@ body.carrito-drawer-lock { overflow: hidden; }
 /* ── MODO INVITADO — ocultar acciones de edición vía CSS también ── */
 [data-role="guest"] .prod-actions,
 [data-role="guest"] .toolbar .btn.primary,
-[data-role="guest"] #account-btn,
 [data-role="guest"] #filtro-stock,
 [data-role="guest"] .admin-only-link {
   display: none !important;
@@ -1723,9 +1905,14 @@ body.carrito-drawer-lock { overflow: hidden; }
      sin width:100% queda angosta (el ancho de "SoleMio") y el
      text-align:center de acá arriba no tiene margen para centrar
      nada, por eso se veía pegada a la izquierda mientras el resto sí
-     se centraba. */
+     se centraba. El max-width:260px de desktop (ver más arriba) sigue
+     ganándole al width:100% de acá si no se anula también: el cuadro
+     quedaba topeado en 260px y, al ser un solo ítem en su fila del
+     flex, ese cuadro angosto se iba entero a la izquierda aunque el
+     texto de adentro sí quedara centrado dentro de él. */
   .footer-brand,
   .footer-col { min-width: 0; width: 100%; }
+  .footer-brand { max-width: none; }
   .footer-col a { justify-content: center; }
   .footer-bottom { padding: 1rem 1.25rem 1.5rem; text-align: center; }
 }
@@ -1803,50 +1990,9 @@ body.carrito-drawer-lock { overflow: hidden; }
   }
   .topbar-nav.mobile-open a:last-child { border-bottom: none; }
 
-  /* Cambiar tema / Mi cuenta / Cerrar sesión pasan a vivir acá adentro
-     en vez de en .topbar-icons — ahí afuera en mobile solo queda el
-     carrito (ver más abajo). */
-  .topbar-nav-actions {
-    display: flex;
-    flex-direction: column;
-    margin-top: 0.4rem;
-    padding-top: 0.4rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .topbar-nav-action {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    width: 100%;
-    text-align: left;
-    font-family: inherit;
-    font-size: 0.78rem;
-    color: var(--text-2);
-    background: none;
-    border: none;
-    padding: 0.7rem 0.15rem;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-  }
-  .topbar-nav-action:last-child { border-bottom: none; }
-  .topbar-nav-action svg,
-  .topbar-nav-action .theme-btn-icon svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 1.8;
-    flex-shrink: 0;
-  }
-
-  /* En mobile, .topbar-icons queda solo con el carrito — el resto
-     (tema/cuenta/salir) se mudó adentro de la hamburguesa, arriba. */
-  .theme-btn,
-  #account-btn,
-  .topbar-icons .logout-btn {
-    display: none;
-  }
+  /* El menú de opciones (tema/cuenta/salir, ver .settings-menu más
+     arriba, fuera de este media query) queda igual que en desktop —
+     no hace falta nada especial para él acá abajo. */
 
   .topbar-icons {
     grid-area: icons;

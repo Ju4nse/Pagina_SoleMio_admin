@@ -1071,6 +1071,7 @@ function renderListaFotosModal() {
       <div style="font-size:0.78rem; color:var(--text-3); padding:0.5rem; text-align:center; font-style:italic;">
         Sin fotos en la galería todavía — se usa la foto única de más abajo.
       </div>`;
+    renderPreviewFoto();
     return;
   }
 
@@ -1083,6 +1084,108 @@ function renderListaFotosModal() {
       <button type="button" class="btn-quitar-talle" onclick="quitarFotoItem(${idx})" title="Quitar">✕</button>
     </div>
   `).join('');
+  renderPreviewFoto();
+}
+
+/* ================================================================
+   PREVIEW DE FOTO (panel lateral del modal) — muestra la galería si
+   hay (fotosModalState) o si no la foto única (custom/scraper), para
+   que el admin pueda ver el producto y usar el cuentagotas nativo del
+   selector de color (input type=color) contra la imagen sin tener que
+   ir y venir del catálogo. Carrusel simple si hay más de una foto.
+   ================================================================ */
+let previewFotoIdx = 0;
+
+function previewFotosLista() {
+  if (fotosModalState.length) return fotosModalState;
+  const custom  = document.getElementById('p-imagen-custom')?.value.trim();
+  const scraper = document.getElementById('p-imagen-scraper')?.value.trim();
+  const url = custom || scraper;
+  return url ? [url] : [];
+}
+
+function renderPreviewFoto() {
+  const wrap = document.getElementById('prod-preview-photo');
+  if (!wrap) return;
+
+  const fotos = previewFotosLista();
+  if (previewFotoIdx >= fotos.length) previewFotoIdx = 0;
+
+  if (!fotos.length) {
+    wrap.innerHTML = `<div class="prod-preview-ph">${ICON.shoe}</div>`;
+  } else {
+    const url      = fotos[previewFotoIdx];
+    const multiple = fotos.length > 1;
+    wrap.innerHTML = `
+      <img src="${url}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="prod-preview-ph" style="display:none">${ICON.shoe}</div>
+      ${multiple ? `
+        <button type="button" class="prod-preview-flecha prod-preview-flecha-izq" onclick="moverPreviewFotoUI(-1)" aria-label="Foto anterior">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="prod-preview-flecha prod-preview-flecha-der" onclick="moverPreviewFotoUI(1)" aria-label="Foto siguiente">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>` : ''}
+    `;
+  }
+
+  const dots = document.getElementById('prod-preview-dots');
+  if (dots) {
+    dots.innerHTML = fotos.length > 1
+      ? fotos.map((_, i) => `<button type="button" class="prod-preview-dot ${i === previewFotoIdx ? 'activo' : ''}" onclick="irAPreviewFotoUI(${i})" aria-label="Foto ${i + 1}"></button>`).join('')
+      : '';
+  }
+}
+
+function moverPreviewFoto(delta) {
+  const fotos = previewFotosLista();
+  if (fotos.length < 2) return;
+  previewFotoIdx = (previewFotoIdx + delta + fotos.length) % fotos.length;
+  renderPreviewFoto();
+}
+
+function irAPreviewFoto(idx) {
+  previewFotoIdx = idx;
+  renderPreviewFoto();
+}
+
+/* Cuentagotas nativo del navegador (Chrome/Edge de escritorio; no
+   soportado en Firefox/Safari) — deja tomar cualquier pixel de la
+   pantalla, no solo de la foto, así que también sirve contra fotos
+   ampliadas en otra pestaña. El resultado se muestra con un botón
+   para aplicarlo directo a uno de los colores ya cargados. */
+async function usarCuentagotas() {
+  const resultadoEl = document.getElementById('prod-eyedropper-resultado');
+  if (!('EyeDropper' in window)) {
+    if (resultadoEl) {
+      resultadoEl.innerHTML = `Tu navegador no soporta el cuentagotas (funciona en Chrome/Edge de escritorio).`;
+    }
+    return;
+  }
+
+  try {
+    const { sRGBHex } = await new window.EyeDropper().open();
+    if (!resultadoEl) return;
+
+    resultadoEl.innerHTML = `
+      <span class="prod-eyedropper-swatch" style="background:${sRGBHex}"></span>
+      <span>${sRGBHex}</span>
+      ${coloresModalState.length ? `
+        <select id="prod-eyedropper-color" style="font-size:0.72rem;padding:0.15rem 0.3rem">
+          ${coloresModalState.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('')}
+        </select>
+        <button type="button" class="btn-chip" onclick="aplicarCuentagotasUI('${sRGBHex}')">Usar</button>
+      ` : ''}
+    `;
+  } catch (_) {
+    // el admin canceló el cuentagotas (Escape / click afuera) — no hacer nada
+  }
+}
+
+async function aplicarCuentagotas(hex) {
+  const nombre = document.getElementById('prod-eyedropper-color')?.value;
+  if (!nombre) return;
+  await cambiarHexColor(nombre, hex);
 }
 
 function agregarFotoItem() {
@@ -1158,12 +1261,15 @@ async function openProdModal() {
   variantesPrecioState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
   fotosModalState = [];
+  previewFotoIdx = 0;
   categoriasModalState = (p?.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
       <div class="modal prod-modal-grande">
         <div class="modal-title">${ICON.edit} Editar producto</div>
+        <div class="prod-modal-body">
+        <div class="prod-modal-form">
 
         <div class="field">
           <label>Nombre</label>
@@ -1303,7 +1409,8 @@ async function openProdModal() {
               — reemplaza la foto del scraper en el catálogo
             </span>
           </label>
-          <input id="p-imagen-custom" type="url" placeholder="https://…" value="${p?.imagen_custom || ''}">
+          <input id="p-imagen-custom" type="url" placeholder="https://…" value="${p?.imagen_custom || ''}"
+            oninput="renderPreviewFoto()">
           ${p?.imagen_custom
             ? `<img src="${p.imagen_custom}" style="margin-top:.4rem;max-height:80px;border-radius:6px;object-fit:cover" alt="preview custom">`
             : ''}
@@ -1314,7 +1421,8 @@ async function openProdModal() {
               — la trae el script automáticamente
             </span>
           </label>
-          <input id="p-imagen-scraper" type="url" placeholder="https://…" value="${p?.imagen_scraper || p?.imagen || ''}">
+          <input id="p-imagen-scraper" type="url" placeholder="https://…" value="${p?.imagen_scraper || p?.imagen || ''}"
+            oninput="renderPreviewFoto()">
         </div>
 
         <div class="field" style="display:flex;align-items:center;gap:.5rem">
@@ -1332,6 +1440,22 @@ async function openProdModal() {
             Disponible (visible y comprable para el cliente, aunque la cantidad cargada sea 0)
           </label>
         </div>
+
+        </div><!-- /prod-modal-form -->
+
+        <div class="prod-modal-preview">
+          <div class="prod-preview-photo" id="prod-preview-photo"></div>
+          <div class="prod-preview-dots" id="prod-preview-dots"></div>
+          <button type="button" class="btn sm ghost" id="prod-eyedropper-btn" onclick="usarCuentagotasUI()">
+            🎨 Cuentagotas
+          </button>
+          <div class="prod-eyedropper-resultado" id="prod-eyedropper-resultado"></div>
+          <p class="prod-preview-hint">
+            Así se ve la foto del producto — usalo de referencia para elegir
+            los colores de arriba.
+          </p>
+        </div>
+        </div><!-- /prod-modal-body -->
 
         <div class="modal-footer">
           <button class="btn ghost" onclick="closeProdModal()">Cancelar</button>
@@ -1509,6 +1633,11 @@ window.quitarColorItem         = quitarColorItem;
 window.agregarColorRapido      = agregarColorRapido;
 window.actualizarVarianteStock = actualizarVarianteStock;
 window.actualizarVariantePrecio = actualizarVariantePrecio;
+window.renderPreviewFoto        = renderPreviewFoto;
+window.moverPreviewFotoUI       = moverPreviewFoto;
+window.irAPreviewFotoUI         = irAPreviewFoto;
+window.usarCuentagotasUI        = usarCuentagotas;
+window.aplicarCuentagotasUI     = aplicarCuentagotas;
 window.agregarFotoItem         = agregarFotoItem;
 window.quitarFotoItem          = quitarFotoItem;
 window.moverFotoItem           = moverFotoItem;

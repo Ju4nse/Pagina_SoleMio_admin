@@ -7,7 +7,7 @@
    Cada página solo necesita:
      <header class="topbar" id="topbar-slot"></header>
    y llamar a renderTopbar('<key>') antes de tocar #role-badge,
-   #theme-btn, #cart-btn, etc.
+   #cart-btn, etc.
 
    renderTopbar(activeKey, { search: true }) agrega además la barra de
    búsqueda entre el logo y el nav — hoy solo la usa catalogo.js (el
@@ -21,7 +21,12 @@
    Estructura: .logo (sobresale a la izquierda) — .marcas-menu —
    .topbar-search — .topbar-nav (Inicio…Contacto, alineado con el
    margen de la grilla de productos) — .topbar-icons (rol/carrito/
-   tema/cuenta/salir, sobresale a la derecha). Ver catalogo.css.
+   menú de opciones, sobresale a la derecha). Ver catalogo.css.
+
+   Tema/cuenta/salir viven juntos dentro de un mismo desplegable
+   (.settings-menu, ícono de las 3 rayitas) en vez de ser íconos
+   sueltos — igual en mobile que en desktop. "Mi cuenta" se oculta
+   solo para invitados vía la clase admin-only-link de siempre.
 
    Los botones de cuenta ("Mi cuenta") y logout dependen de que la
    página defina window.doLogout() (todas las páginas de la app lo
@@ -86,29 +91,6 @@ export function renderTopbar(activeKey, opts = {}) {
         ].filter(Boolean).join(' ');
         return `<a href="${item.href}"${classes ? ` class="${classes}"` : ''}>${item.label}</a>`;
       }).join('')}
-      <!-- Solo se ven en el desplegable mobile (ver .topbar-nav-actions
-           en catalogo.css) — en desktop siguen siendo los íconos de
-           siempre en .topbar-icons, más abajo. -->
-      <div class="topbar-nav-actions">
-        <button type="button" class="topbar-nav-action" onclick="toggleTheme();cerrarMobileNavUI()">
-          <span class="theme-btn-icon"></span> Cambiar tema
-        </button>
-        <button type="button" class="topbar-nav-action admin-only-link" onclick="irACuentaUI();cerrarMobileNavUI()">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="8" r="4"/>
-            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
-          </svg>
-          Mi cuenta
-        </button>
-        <button type="button" class="topbar-nav-action logout-btn" onclick="doLogout()">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Cerrar sesión
-        </button>
-      </div>
     </nav>
     <div class="topbar-icons">
       <span class="role-badge" id="role-badge"></span>
@@ -120,24 +102,38 @@ export function renderTopbar(activeKey, opts = {}) {
         </svg>
         <span class="cart-badge" id="cart-badge"></span>
       </a>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema">
-        <span class="theme-btn-icon"></span>
-      </button>
-      <button class="icon-btn admin-only-link" id="account-btn" onclick="irACuentaUI()" title="Mi cuenta">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-          <circle cx="12" cy="8" r="4"/>
-          <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
-        </svg>
-      </button>
-      <button class="icon-btn logout-btn" onclick="doLogout()" title="Cerrar sesión">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
+      <!-- Tema/cuenta/salir van todos acá adentro (mismo desplegable
+           en mobile y desktop) en vez de ser íconos sueltos — ver
+           toggleSettingsMenuUI más abajo. -->
+      <div class="settings-menu" id="settings-menu">
+        <button type="button" class="icon-btn" id="settings-btn" onclick="toggleSettingsMenuUI()" aria-label="Más opciones" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div class="settings-panel" id="settings-panel">
+          <button type="button" class="settings-item" onclick="toggleTheme();cerrarSettingsMenuUI()">
+            <span class="theme-btn-icon"></span> Cambiar tema
+          </button>
+          <button type="button" class="settings-item admin-only-link" onclick="irACuentaUI();cerrarSettingsMenuUI()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+            Mi cuenta
+          </button>
+          <button type="button" class="settings-item logout-btn" onclick="doLogout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -178,6 +174,32 @@ document.addEventListener('click', (e) => {
   cerrarMobileNav();
 });
 
-window.irACuentaUI       = irACuenta;
-window.toggleMobileNavUI = toggleMobileNav;
-window.cerrarMobileNavUI = cerrarMobileNav;
+/* ── MENÚ DE OPCIONES (tema / cuenta / salir) — mismo desplegable en
+   mobile y desktop, ver .settings-menu en catalogo.css. ─────────── */
+function toggleSettingsMenu() {
+  const menu = document.getElementById('settings-menu');
+  const btn  = document.getElementById('settings-btn');
+  if (!menu || !btn) return;
+  const abierto = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(abierto));
+}
+
+function cerrarSettingsMenu() {
+  const menu = document.getElementById('settings-menu');
+  const btn  = document.getElementById('settings-btn');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('settings-menu');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (e.target.closest('#settings-menu')) return;
+  cerrarSettingsMenu();
+});
+
+window.irACuentaUI          = irACuenta;
+window.toggleMobileNavUI    = toggleMobileNav;
+window.cerrarMobileNavUI    = cerrarMobileNav;
+window.toggleSettingsMenuUI = toggleSettingsMenu;
+window.cerrarSettingsMenuUI = cerrarSettingsMenu;
