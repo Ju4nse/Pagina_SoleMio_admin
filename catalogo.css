@@ -274,6 +274,24 @@
   background: var(--surface2);
 }
 
+/* ── HAMBURGUESA (solo mobile) — junta el nav en un desplegable, ver
+   .topbar-nav.mobile-open más abajo y toggleMobileNavUI en topbar.js */
+.hamburger-btn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--trans);
+}
+.hamburger-btn:hover { color: var(--primary); border-color: var(--primary); }
+.hamburger-btn svg { width: 16px; height: 16px; stroke: currentColor; }
+
 .theme-btn svg,
 .icon-btn svg {
   width: 16px;
@@ -1452,30 +1470,83 @@ select:focus { outline: none; border-color: var(--primary); }
 
 /* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */
 @media (max-width: 640px) {
-  html, body { overflow-x: hidden; }
+  /* OJO: overflow-x:hidden en "body" (no solo en "html") rompe
+     position:sticky de la topbar en mobile — body pasa a ser su
+     propio contenedor de scroll y la topbar deja de pegarse al
+     viewport real. Con "html" alcanza para evitar el scroll
+     horizontal sin perder el sticky. */
+  html { overflow-x: hidden; }
 
   .shell { padding: 0 1rem; }
 
+  /* Grid en vez de flex-wrap: así el logo se puede centrar de verdad
+     (columna del medio "1fr", el resto ocupa lo que necesite a los
+     costados) en lugar de depender del orden y ancho relativo de
+     flex-wrap, que además complicaba el desplegable de Inicio/
+     Catálogo/etc. como fila propia. */
   .topbar {
-    flex-wrap: wrap;
-    gap: 0.65rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "hamburger logo icons"
+      "marcas    marcas marcas"
+      "search    search search";
+    align-items: center;
+    row-gap: 0.65rem;
     padding: 1rem 0;
   }
 
+  .hamburger-btn { display: flex; grid-area: hamburger; }
+
+  /* Centrado absoluto (no "justify-self:center" en la columna del
+     medio): la hamburguesa (34px) y el grupo de íconos (bastante más
+     ancho, son 3 botones) no pesan lo mismo, así que la columna
+     central del grid quedaba corrida hacia la izquierda en vez de
+     quedar realmente centrada en la pantalla. */
   .logo {
-    margin-left: 0; /* en mobile no sangra hasta el borde: se ve muy pegado */
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 34px;
+    display: flex;
+    align-items: center;
+    margin: 0;
   }
 
-  .topbar-nav {
-    order: 3;              /* Inicio/Catálogo/Contacto bajan a su propia fila */
-    width: 100%;
-    justify-content: center;
-    gap: 1rem;
-    margin-left: 0;
+  .marcas-menu { grid-area: marcas; }
+
+  .topbar-search { grid-area: search; width: 100%; }
+
+  /* Inicio/Catálogo/Mis pedidos/Contacto ya no ocupan su propia fila
+     fija: quedan ocultos hasta que se abre la hamburguesa, y ahí se
+     muestran como desplegable debajo de toda la topbar. */
+  .topbar-nav { display: none; }
+
+  .topbar-nav.mobile-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+    padding: 0.4rem 1.25rem 0.75rem;
+    gap: 0;
+    z-index: 25;
   }
+
+  .topbar-nav.mobile-open a {
+    padding: 0.7rem 0.15rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-nav.mobile-open a:last-child { border-bottom: none; }
 
   .topbar-icons {
-    margin-left: auto;
+    grid-area: icons;
+    margin-left: 0;
     margin-right: 0; /* en mobile no sangra hasta el borde: se ve muy pegado */
     gap: 0.4rem;
   }
@@ -1488,5 +1559,14 @@ select:focus { outline: none; border-color: var(--primary); }
 
   .role-badge {
     display: none;          /* no crítico en mobile, libera espacio */
+  }
+
+  /* Panel de marcas: con 6 columnas fijas (ver .marcas-panel arriba)
+     cada una quedaba de ~50px de ancho en mobile — el nombre de la
+     marca terminaba partido letra por letra, casi vertical. */
+  .marcas-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(400px, calc(100vw - 2rem));
+    gap: 0.3rem 1.25rem;
   }
 }

@@ -64,6 +64,13 @@ export function renderTopbar(activeKey, opts = {}) {
     </div>` : '';
 
   slot.innerHTML = `
+    <button type="button" class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNavUI()" aria-label="Abrir menú" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
     <div class="logo">
       <a href="landing.html" class="logo-link">
         <span class="logo-word">SoleMio</span>
@@ -71,7 +78,7 @@ export function renderTopbar(activeKey, opts = {}) {
     </div>
     ${marcasHtml}
     ${searchHtml}
-    <nav class="topbar-nav">
+    <nav class="topbar-nav" id="topbar-nav">
       ${NAV_ITEMS.map(item => {
         const classes = [
           item.key === activeKey ? 'active' : '',
@@ -117,4 +124,34 @@ function irACuenta() {
   }
 }
 
-window.irACuentaUI = irACuenta;
+/* ── MENÚ MOBILE (hamburguesa) — junta Inicio/Catálogo/Mis pedidos/
+   Contacto en un desplegable en vez de ocupar su propia fila fija,
+   solo por debajo de cierto ancho (ver .hamburger-btn en catalogo.css,
+   que solo se muestra ahí). ────────────────────────────────────── */
+function toggleMobileNav() {
+  const nav = document.getElementById('topbar-nav');
+  const btn = document.getElementById('hamburger-btn');
+  if (!nav || !btn) return;
+  const abierto = nav.classList.toggle('mobile-open');
+  btn.classList.toggle('open', abierto);
+  btn.setAttribute('aria-expanded', String(abierto));
+}
+
+function cerrarMobileNav() {
+  const nav = document.getElementById('topbar-nav');
+  const btn = document.getElementById('hamburger-btn');
+  if (nav) nav.classList.remove('mobile-open');
+  if (btn) { btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+}
+
+// Cierra el menú al elegir una página o al tocar afuera — si no,
+// quedaría tapando el catálogo hasta el próximo toque en la campanita.
+document.addEventListener('click', (e) => {
+  const nav = document.getElementById('topbar-nav');
+  if (!nav || !nav.classList.contains('mobile-open')) return;
+  if (e.target.closest('#topbar-nav') || e.target.closest('#hamburger-btn')) return;
+  cerrarMobileNav();
+});
+
+window.irACuentaUI       = irACuenta;
+window.toggleMobileNavUI = toggleMobileNav;
