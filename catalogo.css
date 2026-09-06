@@ -460,13 +460,29 @@
     padding: 0;
     width: 100%;
     max-height: none;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.3rem 1.25rem;
     display: none;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   .catalogo-sidebar.marcas-open #marcas-panel-mobile {
-    display: grid;
+    display: flex;
     margin-top: 0.65rem;
+  }
+
+  /* Mismo "globito" que las categorías acá al lado (ver .categoria-item
+     más abajo) — antes era el link plano del desplegable de desktop,
+     que en esta lista de chips se veía deslucido. */
+  #marcas-panel-mobile .marcas-item {
+    display: block;
+    width: auto;
+    padding: 0.35rem 0.75rem;
+    background: var(--surface2);
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+  }
+  #marcas-panel-mobile .marcas-item.active {
+    background: var(--primary-soft);
+    color: var(--primary);
   }
 
   /* Arranca cerrada — se abre con toggleCategoriaSidebarUI() (ver
@@ -588,6 +604,19 @@ select:focus { outline: none; border-color: var(--primary); }
   gap: 1rem;
 }
 
+/* En celulares, minmax(196px,1fr) casi siempre termina en 1 sola
+   columna (dos no entran en ~375-414px de ancho) — la tarjeta queda
+   casi todo el ancho de la pantalla contra una imagen que antes tenía
+   alto fijo, así que se veía más "achatada"/recortada que en desktop.
+   Se fuerzan 2 columnas más angostas (el aspect-ratio de .prod-thumb
+   hace el resto: cada imagen queda más alta que ancha). */
+@media (max-width: 560px) {
+  .prod-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+}
+
 .prod-card {
   display: block;
   color: inherit;
@@ -607,7 +636,7 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .prod-thumb {
   width: 100%;
-  height: 220px;
+  aspect-ratio: 3 / 4;
   object-fit: cover;
   background: var(--surface2);
   display: block;
@@ -615,7 +644,7 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .prod-thumb-ph {
   width: 100%;
-  height: 220px;
+  aspect-ratio: 3 / 4;
   background: var(--surface2);
   display: flex;
   align-items: center;
