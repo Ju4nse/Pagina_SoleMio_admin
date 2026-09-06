@@ -363,6 +363,13 @@ function renderMarcasMenu(marcas, marcaActual) {
 document.addEventListener('click', (e) => {
   const item = e.target.closest('.marcas-item');
   if (!item) return;
+
+  // Hay que agarrar la referencia al contenedor ANTES de renderCatalogo():
+  // renderMarcasMenu() (llamada desde ahí) reescribe el innerHTML del
+  // panel, así que "item" queda desconectado del documento (closest()
+  // ya no encuentra nada) si se busca después — por eso nunca cerraba.
+  const menu = item.closest('.marcas-menu');
+
   marcaFiltro = item.dataset.marca || '';
   renderCatalogo(true);
 
@@ -370,10 +377,25 @@ document.addEventListener('click', (e) => {
   // seguiría abierto tapando los productos hasta que el mouse se fuera.
   // Solo aplica a la copia de la topbar (desktop) — la de mobile no
   // usa hover, se cierra con el toggle de acá abajo.
-  const menu = item.closest('.marcas-menu');
   if (menu) {
     menu.classList.add('force-closed');
-    menu.addEventListener('mouseleave', () => menu.classList.remove('force-closed'), { once: true });
+    // Ojo: NO usar "mouseleave" acá — el renderCatalogo() de arriba
+    // reemplaza el botón que estaba bajo el mouse (era hijo del panel),
+    // y eso solo (sin que el mouse se mueva) hace que el navegador
+    // dispare mouseleave/mouseenter fantasma sobre .marcas-menu unos
+    // milisegundos después, sin relación con que el usuario realmente
+    // se haya ido. Cualquier listener de mouseleave, por más que se
+    // demore con un setTimeout, termina agarrando alguno de esos
+    // fantasmas y reabriendo el panel solo, o peor: se lo come un
+    // fantasma y el mouseleave real (cuando el usuario sí se va)
+    // después no tiene nada que hacer, quedando cerrado para siempre.
+    // El trigger en sí nunca se reemplaza, así que su mouseenter es
+    // 100% confiable: recién vuelve a abrir cuando el usuario pasa el
+    // mouse por ahí de nuevo, a propósito.
+    const trigger = menu.querySelector('.marcas-trigger');
+    if (trigger) {
+      trigger.addEventListener('mouseenter', () => menu.classList.remove('force-closed'), { once: true });
+    }
   }
   document.getElementById('catalogo-sidebar')?.classList.remove('marcas-open');
 });

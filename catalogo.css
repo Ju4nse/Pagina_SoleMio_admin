@@ -494,6 +494,12 @@
      grilla de acá al lado del sidebar — sin sidebar (una sola columna)
      no tiene sentido y solo desacomoda la topbar */
   .marcas-menu { margin-left: 1.5rem; }
+
+  /* La de la topbar ya no hace falta acá: a este ancho "Categoría" ya
+     se colapsó a desplegable, y al lado tiene su propia copia de
+     "Marcas" (#marcas-trigger-mobile, ver catalogo.html) — mostrar
+     las dos sería redundante. */
+  .topbar > .marcas-menu { display: none; }
 }
 
 /* ── TOOLBAR ─────────────────────────────────────────────────── */
@@ -1572,7 +1578,6 @@ select:focus { outline: none; border-color: var(--primary); }
     grid-template-columns: auto 1fr auto;
     grid-template-areas:
       "hamburger logo icons"
-      "marcas    marcas marcas"
       "search    search search";
     align-items: center;
     row-gap: 0.65rem;
@@ -1596,8 +1601,6 @@ select:focus { outline: none; border-color: var(--primary); }
     align-items: center;
     margin: 0;
   }
-
-  .marcas-menu { grid-area: marcas; }
 
   .topbar-search { grid-area: search; width: 100%; }
 
