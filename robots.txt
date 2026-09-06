@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://solemiocatalogo.juansegundofrias.workers.dev/sitemap.xml

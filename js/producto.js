@@ -73,6 +73,37 @@ function applyRole() {
 
 
 /* ================================================================
+   SEO — el <title> y las meta tags del HTML son un fallback genérico
+   (ver producto.html): acá se pisan con los datos reales apenas se
+   conoce el producto. Ayuda a la pestaña del navegador y a Google
+   (que sí ejecuta JS al indexar), pero NO a crawlers que no corren JS
+   como el que arma la vista previa de un link en WhatsApp — para eso
+   haría falta armar la página en el servidor, que este sitio (100%
+   estático) no hace.
+   ================================================================ */
+function actualizarMetaSEO(p) {
+  const nombre = p.marca ? `${p.nombre} — ${p.marca}` : p.nombre;
+  document.title = `${nombre} | SoleMio`;
+
+  const descripcion = `${nombre} — SoleMio, lencería y corsetería en Tandil.`;
+  const imagen = resolverImagen(p);
+
+  const setMeta = (selector, contenido) => {
+    const el = document.querySelector(selector);
+    if (el) el.setAttribute('content', contenido);
+  };
+  setMeta('meta[name="description"]', descripcion);
+  setMeta('meta[property="og:title"]', nombre);
+  setMeta('meta[property="og:description"]', descripcion);
+  setMeta('meta[name="twitter:title"]', nombre);
+  setMeta('meta[name="twitter:description"]', descripcion);
+  if (imagen) {
+    setMeta('meta[property="og:image"]', imagen);
+    setMeta('meta[name="twitter:image"]', imagen);
+  }
+}
+
+/* ================================================================
    RENDER
    ================================================================ */
 function renderNoEncontrado() {
@@ -89,6 +120,8 @@ function renderNoEncontrado() {
 }
 
 function renderProducto(p, prev, next, similares) {
+  actualizarMetaSEO(p);
+
   const enStock  = p.stock === true || p.stock === 'in stock';
   const cantidad = p.num_stock ?? null;
 

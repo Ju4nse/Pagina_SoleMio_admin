@@ -12,7 +12,24 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- El título/descripción de acá abajo son un fallback genérico: el
+     contenido real de esta página lo arma producto.js con lo que trae
+     de Supabase, y ahí mismo actualiza <title> y esta descripción con
+     los datos del producto una vez que cargan (ver actualizarMetaSEO
+     en producto.js). Los crawlers que no ejecutan JS (como el de
+     WhatsApp al armar la vista previa de un link) van a ver esta
+     versión genérica igual, no la del producto puntual. -->
 <title>SoleMio — Producto</title>
+<meta name="description" content="Mirá el detalle de este producto de SoleMio — lencería y corsetería en Tandil.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SoleMio">
+<meta property="og:title" content="SoleMio — Producto">
+<meta property="og:description" content="Mirá el detalle de este producto de SoleMio — lencería y corsetería en Tandil.">
+<meta property="og:image" content="https://solemiocatalogo.juansegundofrias.workers.dev/img/logo.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SoleMio — Producto">
+<meta name="twitter:description" content="Mirá el detalle de este producto de SoleMio — lencería y corsetería en Tandil.">
+<meta name="twitter:image" content="https://solemiocatalogo.juansegundofrias.workers.dev/img/logo.png">
 <link rel="icon" type="image/png" href="img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
