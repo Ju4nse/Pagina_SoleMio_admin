@@ -413,7 +413,9 @@ function renderItemEdit(it) {
   return `
     <div class="pedido-item-edit">
       <div class="pedido-item-edit-info">
-        <div class="pedido-item-edit-nombre">${it.producto_nombre}</div>
+        <div class="pedido-item-edit-nombre">
+          <span class="pedido-item-edit-id">${it.producto_id || '—'}</span>${it.producto_nombre}
+        </div>
 
         <div class="pedido-item-edit-variantes">
           <div class="pedido-item-edit-campo">
@@ -865,7 +867,9 @@ function renderModalNuevoPedido() {
           ${nuevoPedidoItems.length ? nuevoPedidoItems.map((it, idx) => `
             <div class="pedido-item-edit">
               <div class="pedido-item-edit-info">
-                <div class="pedido-item-edit-nombre">${it.nombre}</div>
+                <div class="pedido-item-edit-nombre">
+                  <span class="pedido-item-edit-id">${it.productoId}</span>${it.nombre}
+                </div>
                 <div style="font-size:.75rem;color:var(--text-3);margin-top:.2rem">
                   ${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'} · x${it.cantidad}
                 </div>

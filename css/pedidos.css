@@ -140,6 +140,15 @@
   font-weight: 500;
 }
 
+/* El admin se maneja más por ID que por nombre (hay varios productos
+   con nombres parecidos) — va primero y con el mismo peso visual. */
+.pedido-item-edit-id {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary);
+  margin-right: 0.4rem;
+}
+
 .pedido-item-edit-variantes {
   display: flex;
   flex-wrap: wrap;
