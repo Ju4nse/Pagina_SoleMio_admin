@@ -17,6 +17,7 @@ let pedidos              = [];   // [{...pedido, items:[...]}]
 let pedidoAbiertoId      = null;
 let itemsEdicion         = {};   // item.id -> {disponible, talle, color, cantidad} (borrador mientras el modal está abierto)
 let variantesPorProducto = {};   // producto_id -> [{talle, color, stock}] (para elegir una combinación real)
+let verArchivados        = false; // false: solo pedidos activos. true: solo los archivados.
 
 const ESTADO_LABEL = {
   espera:      'En espera',
@@ -190,6 +191,7 @@ function renderPedidos() {
   const orden         = document.getElementById('orden-pedido')?.value  || 'fecha_desc';
 
   const lista = pedidos.filter(p => {
+    if (!!p.archivado !== verArchivados) return false;
     const qOk = !q
       || p.cliente_nombre.toLowerCase().includes(q)
       || p.cliente_telefono.toLowerCase().includes(q);
@@ -214,7 +216,7 @@ function renderPedidos() {
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        No hay pedidos que coincidan
+        ${verArchivados ? 'No hay pedidos archivados' : 'No hay pedidos que coincidan'}
       </div>`;
     return;
   }
@@ -234,6 +236,16 @@ function renderPedidos() {
       </div>
     </article>
   `).join('');
+}
+
+function toggleArchivados() {
+  verArchivados = !verArchivados;
+  const btn = document.getElementById('btn-ver-archivados');
+  if (btn) {
+    btn.textContent = verArchivados ? 'Ver activos' : 'Ver archivados';
+    btn.classList.toggle('active', verArchivados);
+  }
+  renderPedidos();
 }
 
 /* ================================================================
@@ -264,7 +276,8 @@ async function abrirPedido(id) {
     .from('producto_talles')
     .select('producto_id, talle, color, stock')
     .in('producto_id', productoIds)
-    .eq('activo', true);
+    .eq('activo', true)
+    .order('orden', { ascending: true });
 
   if (error) { console.warn('Error cargando variantes:', error.message); return; }
 
@@ -374,6 +387,7 @@ function renderModalPedido() {
             <button class="btn ghost" onclick="copiarMensajeWhatsappUI()">Copiar mensaje</button>
             <a class="btn" target="_blank" rel="noopener" href="${linkWhatsapp(p)}">Reenviar por WhatsApp</a>
           ` : ''}
+          <button class="btn ghost" onclick="archivarPedidoUI(${!p.archivado})">${p.archivado ? 'Desarchivar' : 'Archivar'}</button>
         </div>
       </div>
     </div>`;
@@ -497,6 +511,30 @@ async function marcarPagado(valor) {
     renderPedidos();
     alert('No se pudo actualizar el estado de pago.');
   }
+}
+
+/* Archivar: solo saca el pedido de la vista principal del panel, no lo
+   borra ni cambia su estado. Al archivar/desarchivar, el pedido deja
+   de pertenecer a la vista actual (activos vs. archivados), así que
+   el modal se cierra solo. */
+async function archivarPedido(valor) {
+  const p = pedidoAbierto();
+  if (!p || p.archivado === valor) return;
+
+  const anterior = p.archivado;
+  p.archivado = valor;
+
+  const { error } = await sb.from('pedidos').update({ archivado: valor }).eq('id', p.id);
+  if (error) {
+    console.warn('Error archivando pedido:', error.message);
+    p.archivado = anterior;
+    renderModalPedido();
+    alert('No se pudo actualizar el archivo del pedido.');
+    return;
+  }
+
+  cerrarPedido();
+  renderPedidos();
 }
 
 async function guardarPedido() {
@@ -667,12 +705,23 @@ async function seleccionarProductoNuevoPedido(id) {
 
   const { data, error } = await sb
     .from('producto_talles')
-    .select('talle, color, stock')
+    .select('talle, color, stock, precio')
     .eq('producto_id', id)
-    .eq('activo', true);
+    .eq('activo', true)
+    .order('orden', { ascending: true });
 
-  if (!error) npVariantes = (data || []).map(d => ({ talle: d.talle, color: d.color || '', stock: d.stock ?? 0 }));
+  if (!error) npVariantes = (data || []).map(d => ({ talle: d.talle, color: d.color || '', stock: d.stock ?? 0, precio: d.precio ?? null }));
   renderModalNuevoPedido();
+}
+
+/* Precio de la combinación elegida (con el mismo margen que el resto
+   del sitio) — usa el precio propio de esa fila de producto_talles si
+   existe (ver "Stock por combinación" en el modal de edición), o si no
+   el precio general del producto seleccionado. */
+function npPrecioSeleccionado() {
+  const fila = npVariantes.find(v => v.talle === (npTalleSel || '') && v.color === (npColorSel || ''));
+  const base = (fila && fila.precio != null) ? fila.precio : (npProductoSeleccionado?.precio || 0);
+  return Math.round(base * 1.5);
 }
 
 function seleccionarTalleNP(talle) {
@@ -703,7 +752,7 @@ function agregarItemNuevoPedido() {
     nuevoPedidoItems.push({
       productoId:     p.id,
       nombre:         p.nombre,
-      precioUnitario: Math.round((p.precio || 0) * 1.5),
+      precioUnitario: npPrecioSeleccionado(),
       talle:          npTalleSel || '',
       color:          npColorSel || '',
       cantidad,
@@ -865,7 +914,9 @@ function renderConfigNP() {
           <input type="number" min="1" id="np-cantidad" class="pedido-item-edit-cant" value="1">
         </div>
       </div>
-      ${stock !== null ? `<div class="pedido-item-edit-stock" style="margin-top:.4rem">Stock actual: ${stock}</div>` : ''}
+      <div class="pedido-item-edit-stock" style="margin-top:.4rem">
+        Precio: ${fmtARS(npPrecioSeleccionado())}${stock !== null ? ` · Stock actual: ${stock}` : ''}
+      </div>
       <div style="margin-top:.65rem">
         <button type="button" class="btn sm primary" onclick="agregarItemNuevoPedidoUI()">+ Agregar al pedido</button>
       </div>
@@ -923,6 +974,8 @@ window.abrirPedidoUI  = abrirPedido;
 window.cerrarPedidoUI = cerrarPedido;
 window.marcarItemUI   = marcarItem;
 window.marcarPagadoUI = marcarPagado;
+window.archivarPedidoUI = archivarPedido;
+window.toggleArchivadosUI = toggleArchivados;
 window.guardarPedidoUI = guardarPedido;
 window.cambiarTalleItemUI    = cambiarTalleItem;
 window.cambiarColorItemUI    = cambiarColorItem;

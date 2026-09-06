@@ -68,6 +68,13 @@
 .badge-pago-si { background: var(--green-bg); color: var(--green); }
 .badge-pago-no { background: var(--surface2); color: var(--text-3); }
 
+/* ── ARCHIVADOS (solo admin) ─────────────────────────────────── */
+#btn-ver-archivados.active {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-color: transparent;
+}
+
 /* ── MODAL DE DETALLE ────────────────────────────────────────── */
 .pedido-modal-grande {
   max-width: 760px;

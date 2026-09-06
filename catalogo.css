@@ -556,6 +556,31 @@ select {
 
 select:focus { outline: none; border-color: var(--primary); }
 
+/* ── MARCA ACTIVA — remarca qué marca se está mostrando en el
+   catálogo, para que no quede escondido dentro del desplegable
+   "Marcas" (ver quitarFiltroMarca en catalogo.js). ────────────── */
+.marca-activa-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.marca-activa-quitar {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 50%;
+  transition: var(--trans);
+}
+
+.marca-activa-quitar:hover { background: rgba(0,0,0,0.08); }
+
 /* ── PRODUCT GRID ────────────────────────────────────────────── */
 .prod-grid {
   display: grid;
@@ -761,6 +786,22 @@ select:focus { outline: none; border-color: var(--primary); }
   border-radius: var(--radius-sm);
   padding: 0.35rem 0.6rem;
   animation: fadein 0.15s ease;
+}
+
+/* ── DRAG & DROP — reordenar talles/colores en el modal de edición ── */
+.drag-handle {
+  cursor: grab;
+  color: var(--text-3);
+  font-size: 0.95rem;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+
+.talle-item-row.dragging,
+.color-item-chip.dragging {
+  opacity: 0.4;
 }
 
 .talle-tag-badge {
@@ -1003,6 +1044,15 @@ select:focus { outline: none; border-color: var(--primary); }
   border-bottom: none;
 }
 
+.variantes-grid-table td {
+  display: table-cell;
+}
+
+.variantes-grid-table td > input {
+  display: block;
+  margin: 0 auto;
+}
+
 .variante-stock-input {
   width: 56px;
   padding: 0.25rem 0.3rem;
@@ -1010,6 +1060,17 @@ select:focus { outline: none; border-color: var(--primary); }
   text-align: center;
   border-radius: var(--radius-sm);
 }
+
+.variante-precio-input {
+  width: 56px;
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+}
+.variante-precio-input::placeholder { color: var(--text-3); }
 
 /* ── CARRITO — ícono + badge ─────────────────────────────────── */
 #cart-btn { position: relative; }

@@ -27,7 +27,8 @@ let pedidoIdCreado    = null;
    variantesCache[id] === undefined  → todavía no se cargaron
    variantesCache[id] === []         → cargadas, el producto no tiene variantes
    ================================================================ */
-let variantesCache = {};
+let variantesCache     = {};
+let precioBaseCache    = {}; // productoId -> precio base del producto (sin markup)
 
 async function cargarVariantesParaItems(items) {
   const ids = [...new Set(items.map(it => it.productoId))]
@@ -35,20 +36,33 @@ async function cargarVariantesParaItems(items) {
   if (!ids.length) return;
 
   const [{ data: talles }, { data: prods }] = await Promise.all([
-    sb.from('producto_talles').select('producto_id, talle, color').eq('activo', true).in('producto_id', ids),
-    sb.from('productos').select('id, talles, color').in('id', ids),
+    sb.from('producto_talles').select('producto_id, talle, color, precio').eq('activo', true).in('producto_id', ids).order('orden', { ascending: true }),
+    sb.from('productos').select('id, talles, color, precio').in('id', ids),
   ]);
 
   const prodMap = new Map((prods || []).map(p => [p.id, p]));
   ids.forEach(id => {
     const variantesDB = (talles || [])
       .filter(t => t.producto_id === id)
-      .map(t => ({ talle: t.talle, color: t.color || '' }));
+      .map(t => ({ talle: t.talle, color: t.color || '', precio: t.precio ?? null }));
     const prod = prodMap.get(id);
+    precioBaseCache[id] = prod?.precio || 0;
     variantesCache[id] = variantesDB.length
       ? combinarVariantesConTexto(variantesDB, prod || {})
       : (prod ? variantesFallbackDesdeTexto(prod) : []);
   });
+}
+
+/* Igual que en producto.js: una combinación de talle/color puede tener
+   su propio precio (dos productos del scraper que en el fondo son la
+   misma prenda, ej. "AG0108"/"AG0108B"). Se aplica recién cuando se
+   termina de elegir esa combinación acá — hasta entonces vale el
+   precio con el que se agregó (el precio base del producto). */
+function precioUnitarioDeItem(it) {
+  const variantes = variantesCache[it.productoId] || [];
+  const match = variantes.find(v => v.talle === (it.talle || '') && v.color === (it.color || ''));
+  const base = (match && match.precio != null) ? match.precio : precioBaseCache[it.productoId];
+  return base != null ? Math.round(base * 1.5) : null;
 }
 
 function tallesDelItem(it) {
@@ -120,12 +134,23 @@ function elegirTalleItem(idx, talle) {
   );
   if (it.color && !coloresParaEseTalle.has(it.color)) cambios.color = '';
 
+  const precio = precioUnitarioDeItem({ ...it, ...cambios });
+  if (precio != null) cambios.precioUnitario = precio;
+
   actualizarAtributoItem(idx, cambios);
   render();
 }
 
 function elegirColorItem(idx, color) {
-  actualizarAtributoItem(idx, { color });
+  const items = leerCarrito();
+  const it = items[idx];
+  if (!it) return;
+
+  const cambios = { color };
+  const precio = precioUnitarioDeItem({ ...it, ...cambios });
+  if (precio != null) cambios.precioUnitario = precio;
+
+  actualizarAtributoItem(idx, cambios);
   render();
 }
 

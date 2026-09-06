@@ -135,7 +135,7 @@ function renderProducto(p, prev, next, similares) {
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
 
-        <div class="view-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
+        <div class="view-price" id="view-price">${fmtARS(precioMostrado())}</div>
 
         <div id="selector-compra-container">${renderSelectorCompra()}</div>
 
@@ -281,12 +281,12 @@ async function cargarVariantesProducto(productoId) {
   try {
     const { data, error } = await sb
       .from('producto_talles')
-      .select('talle, color')
+      .select('talle, color, precio')
       .eq('producto_id', productoId)
       .eq('activo', true)
-      .order('id', { ascending: true });
+      .order('orden', { ascending: true });
     if (!error && data && data.length) {
-      return data.map(d => ({ talle: d.talle, color: d.color || '' }));
+      return data.map(d => ({ talle: d.talle, color: d.color || '', precio: d.precio ?? null }));
     }
   } catch (_) {}
   return null;
@@ -300,6 +300,23 @@ function coloresParaTalle(talle) {
   return [...new Set(
     variantesProducto.filter(v => !talle || v.talle === talle).map(v => v.color).filter(Boolean)
   )];
+}
+
+/* La combinación talle/color elegida puede tener su propio precio
+   (ver "Stock por combinación" en el modal de edición — pensado para
+   productos que en el fondo son la misma prenda pero un talle sale
+   distinto, ej. "AG0108"/"AG0108B" del scraper). Si no hay una
+   selección completa que matchee una fila con precio propio, se usa
+   el precio general del producto como siempre. */
+function varianteSeleccionada() {
+  if (!variantesProducto.length) return null;
+  return variantesProducto.find(v => v.talle === (selTalle || '') && v.color === (selColor || '')) || null;
+}
+
+function precioMostrado() {
+  const v = varianteSeleccionada();
+  const base = (v && v.precio != null) ? v.precio : (productoActual?.precio || 0);
+  return Math.round(base * 1.5);
 }
 
 function renderSelectorCompra() {
@@ -347,6 +364,9 @@ function renderSelectorCompra() {
 function actualizarSelectorCompra() {
   const container = document.getElementById('selector-compra-container');
   if (container && productoActual) container.innerHTML = renderSelectorCompra();
+
+  const precioEl = document.getElementById('view-price');
+  if (precioEl && productoActual) precioEl.textContent = fmtARS(precioMostrado());
 }
 
 function seleccionarTalle(talle) {
@@ -385,7 +405,7 @@ function agregarAlCarritoDesdeProducto() {
   agregarAlCarrito({
     productoId:     p.id,
     nombre:         p.nombre,
-    precioUnitario: Math.round(p.precio * 1.5),
+    precioUnitario: precioMostrado(),
     imagen:         resolverImagen(p),
     talle:          selTalle || '',
     color:          selColor || '',
@@ -584,6 +604,7 @@ function productosDeMarca(lista, marca, excludeId) {
 let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
 let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
 let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
+let variantesPrecioState = {};  // `${talle}||${color}` -> precio base (null = usa el precio del producto)
 let fotosModalState      = [];  // urls de producto_fotos, en orden
 let categoriasModalState = [];  // claves de CATEGORIA_LABELS elegidas, ej. ['bombachas','conjuntos']
 
@@ -644,14 +665,17 @@ function parsearColoresTexto(str) {
    conservando el stock ya cargado en las combinaciones que sobreviven. */
 function regenerarVariantesGrid() {
   const columnas = coloresModalState.length ? coloresModalState : [''];
-  const nuevo = {};
+  const nuevoStock  = {};
+  const nuevoPrecio = {};
   tallesModalState.forEach(talle => {
     columnas.forEach(color => {
       const k = claveVariante(talle, color);
-      nuevo[k] = variantesStockState[k] ?? 0;
+      nuevoStock[k]  = variantesStockState[k] ?? 0;
+      nuevoPrecio[k] = variantesPrecioState[k] ?? null;
     });
   });
-  variantesStockState = nuevo;
+  variantesStockState  = nuevoStock;
+  variantesPrecioState = nuevoPrecio;
 }
 
 function renderListaTallesModal() {
@@ -667,7 +691,10 @@ function renderListaTallesModal() {
   }
 
   container.innerHTML = tallesModalState.map((t, idx) => `
-    <div class="talle-item-row">
+    <div class="talle-item-row" data-talle="${t.replace(/"/g, '&quot;')}">
+      <span class="drag-handle" draggable="true"
+        ondragstart="iniciarDragReordenUI(event,'talle')" ondragend="terminarDragReordenUI(event,'talle')"
+        title="Arrastrar para reordenar">⠿</span>
       <span class="talle-tag-badge">${t}</span>
       <button type="button" class="btn-quitar-talle" onclick="quitarTalleItem(${idx})" title="Quitar talle ${t}">
         ✕
@@ -726,7 +753,10 @@ function renderListaColoresModal() {
     const hex = hexDeColor(c) || '#999999';
     const nombreAttr = c.replace(/"/g, '&quot;');
     return `
-      <div class="color-item-chip">
+      <div class="color-item-chip" data-color="${nombreAttr}">
+        <span class="drag-handle" draggable="true"
+          ondragstart="iniciarDragReordenUI(event,'color')" ondragend="terminarDragReordenUI(event,'color')"
+          title="Arrastrar para reordenar">⠿</span>
         <span class="color-item-swatch-wrap" title="Elegir el color exacto de &quot;${nombreAttr}&quot;">
           <span class="color-item-swatch-dot" style="background:${hex}"></span>
           <input type="color" class="color-item-swatch-input" value="${hex}"
@@ -741,6 +771,91 @@ function renderListaColoresModal() {
 async function cambiarHexColor(nombre, hex) {
   await guardarColorPersonalizado(nombre, hex);
   renderListaColoresModal();
+}
+
+/* Reordenar arrastrando (talles y colores del modal de edición): el
+   handle (⠿) es lo único draggable, así no se dispara sin querer al
+   clickear el swatch de color o el botón de quitar. Cambia también el
+   orden en que se guarda producto_talles (ver sincronizarTallesDB).
+
+   El nodo arrastrado se mueve de verdad dentro del DOM a medida que
+   pasa por encima de los demás (en vez de solo reaccionar al soltar),
+   para que el resto se corra en tiempo real dejando el lugar donde va
+   a quedar. Nunca se destruye ese nodo mientras dura el arrastre —
+   recrearlo con innerHTML cortaría el drag a mitad de camino. Recién
+   al soltar se reconstruye el array leyendo el orden final del DOM. */
+let dragReordenEl    = null; // nodo .talle-item-row / .color-item-chip que se está arrastrando
+let dragReordenLista = null; // 'talle' | 'color'
+
+function iniciarDragReorden(event, lista) {
+  dragReordenEl    = event.target.closest('.talle-item-row, .color-item-chip');
+  dragReordenLista = lista;
+  if (!dragReordenEl) return;
+
+  event.dataTransfer.effectAllowed = 'move';
+  try { event.dataTransfer.setData('text/plain', ''); } catch (_) {} // Firefox lo exige para permitir el drag
+  // Imagen de arrastre = el ítem completo (talle/color), no el ⠿ solo.
+  event.dataTransfer.setDragImage(dragReordenEl, dragReordenEl.offsetWidth / 2, dragReordenEl.offsetHeight / 2);
+
+  requestAnimationFrame(() => dragReordenEl?.classList.add('dragging'));
+}
+
+/* Ubica, de los ítems del contenedor, cuál está más cerca del cursor
+   y devuelve el elemento antes del cual habría que insertar el que se
+   está arrastrando (o null para ir al final). Funciona tanto en listas
+   de una columna (talles) como en chips que arman varias filas por
+   wrap (colores). */
+function elementoDragMasCercano(container, lista, x, y) {
+  const selector = lista === 'talle' ? '.talle-item-row' : '.color-item-chip';
+  const items = [...container.querySelectorAll(selector)].filter(el => el !== dragReordenEl);
+  if (!items.length) return null;
+
+  let masCercano = null;
+  let menorDist  = Infinity;
+  items.forEach(el => {
+    const box = el.getBoundingClientRect();
+    const dist = Math.hypot(x - (box.left + box.width / 2), y - (box.top + box.height / 2));
+    if (dist < menorDist) { menorDist = dist; masCercano = el; }
+  });
+
+  const box = masCercano.getBoundingClientRect();
+  const antes = x < box.left + box.width / 2;
+  return antes ? masCercano : masCercano.nextElementSibling;
+}
+
+function sobreContenedorDrag(event, lista) {
+  event.preventDefault(); // habilita soltar acá
+  if (!dragReordenEl || dragReordenLista !== lista) return;
+
+  const container  = event.currentTarget;
+  const referencia = elementoDragMasCercano(container, lista, event.clientX, event.clientY);
+  if (referencia === dragReordenEl) return;
+
+  if (referencia == null) container.appendChild(dragReordenEl);
+  else                    container.insertBefore(dragReordenEl, referencia);
+}
+
+function terminarDragReorden(event, lista) {
+  dragReordenEl?.classList.remove('dragging');
+
+  const containerId = lista === 'talle' ? 'lista-talles-container' : 'lista-colores-container';
+  const selector    = lista === 'talle' ? '.talle-item-row'        : '.color-item-chip';
+  const atributo    = lista === 'talle' ? 'talle'                  : 'color';
+  const container   = document.getElementById(containerId);
+
+  if (container) {
+    const nuevoOrden = [...container.querySelectorAll(selector)].map(el => el.dataset[atributo]);
+    if (lista === 'talle') tallesModalState = nuevoOrden;
+    else                   coloresModalState = nuevoOrden;
+  }
+
+  dragReordenEl    = null;
+  dragReordenLista = null;
+
+  // Reconstruye igual desde el estado (no solo el DOM ya movido) para
+  // que los índices de los botones "quitar" queden correctos.
+  if (lista === 'talle') renderListaTallesModal(); else renderListaColoresModal();
+  renderVariantesGrid();
 }
 
 function agregarColorItem() {
@@ -792,6 +907,7 @@ function renderVariantesGrid() {
   }
 
   const columnas = coloresModalState.length ? coloresModalState : [''];
+  const precioBase = parseFloat(document.getElementById('p-precio')?.value) || 0;
 
   container.innerHTML = `
     <table class="variantes-grid-table">
@@ -809,9 +925,18 @@ function renderVariantesGrid() {
               const k = claveVariante(talle, color);
               const talleAttr = talle.replace(/"/g, '&quot;');
               const colorAttr = color.replace(/"/g, '&quot;');
-              return `<td><input type="number" min="0" class="variante-stock-input"
-                value="${variantesStockState[k] ?? 0}"
-                oninput="actualizarVarianteStock(this, &quot;${talleAttr}&quot;, &quot;${colorAttr}&quot;)"></td>`;
+              const precioVariante = variantesPrecioState[k];
+              return `<td>
+                <input type="number" min="0" class="variante-stock-input"
+                  value="${variantesStockState[k] ?? 0}"
+                  title="Stock de ${talle}${color ? ` · ${color}` : ''}"
+                  oninput="actualizarVarianteStock(this, &quot;${talleAttr}&quot;, &quot;${colorAttr}&quot;)">
+                <input type="number" min="0" class="variante-precio-input"
+                  value="${precioVariante ?? ''}"
+                  placeholder="$${precioBase || 0}"
+                  title="Precio especial para esta combinación — vacío usa el precio del producto ($${precioBase || 0})"
+                  oninput="actualizarVariantePrecio(this, &quot;${talleAttr}&quot;, &quot;${colorAttr}&quot;)">
+              </td>`;
             }).join('')}
           </tr>
         `).join('')}
@@ -824,6 +949,11 @@ function renderVariantesGrid() {
 function actualizarVarianteStock(input, talle, color) {
   variantesStockState[claveVariante(talle, color)] = Math.max(0, parseInt(input.value, 10) || 0);
   actualizarResumenVariantes();
+}
+
+function actualizarVariantePrecio(input, talle, color) {
+  const valor = parseFloat(input.value);
+  variantesPrecioState[claveVariante(talle, color)] = (input.value === '' || isNaN(valor)) ? null : valor;
 }
 
 function actualizarResumenVariantes() {
@@ -852,6 +982,7 @@ async function sincronizarTallesDB(productoId) {
   try {
     const columnas = coloresModalState.length ? coloresModalState : [''];
     const filas = [];
+    let orden = 0;
     tallesModalState.forEach(talle => {
       columnas.forEach(color => {
         filas.push({
@@ -859,7 +990,9 @@ async function sincronizarTallesDB(productoId) {
           talle,
           color,
           stock: variantesStockState[claveVariante(talle, color)] ?? 0,
-          activo: true
+          precio: variantesPrecioState[claveVariante(talle, color)] ?? null,
+          activo: true,
+          orden: orden++
         });
       });
     });
@@ -989,6 +1122,7 @@ async function openProdModal() {
   tallesModalState   = seedTalles.map(t => t.talle);
   coloresModalState  = parsearColoresTexto(p?.color || '');
   variantesStockState = {};
+  variantesPrecioState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
   fotosModalState = [];
   categoriasModalState = (p?.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
@@ -1026,7 +1160,7 @@ async function openProdModal() {
             Agregá o quitá colores disponibles para este producto:
           </p>
 
-          <div id="lista-colores-container" class="colores-chips-list"></div>
+          <div id="lista-colores-container" class="colores-chips-list" ondragover="sobreContenedorDragUI(event,'color')" ondrop="event.preventDefault()"></div>
 
           <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
             <input type="text" id="nuevo-color-nombre" placeholder="Ej: Negro, Blanco, Rosa…" style="flex:1; min-width:120px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarColorItem();}">
@@ -1057,7 +1191,7 @@ async function openProdModal() {
             Agregá o quitá los talles que tiene este producto:
           </p>
 
-          <div id="lista-talles-container" class="talles-grid-list"></div>
+          <div id="lista-talles-container" class="talles-grid-list" ondragover="sobreContenedorDragUI(event,'talle')" ondrop="event.preventDefault()"></div>
 
           <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.65rem;">
             <input type="text" id="nuevo-talle-nombre" placeholder="Ej: 90, M, S…" style="flex:1; min-width:80px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarTalleItem();}">
@@ -1186,22 +1320,26 @@ async function openProdModal() {
     try {
       const { data, error } = await sb
         .from('producto_talles')
-        .select('talle, color, stock')
+        .select('talle, color, stock, precio')
         .eq('producto_id', p.id)
         .eq('activo', true)
-        .order('id', { ascending: true });
+        .order('orden', { ascending: true });
 
       if (!error && data && data.length > 0) {
         const talles  = [];
         const colores = [];
-        const stockPorTalle = {};
-        variantesStockState = {};
+        const stockPorTalle  = {};
+        const precioPorTalle = {};
+        variantesStockState  = {};
+        variantesPrecioState = {};
         data.forEach(d => {
           if (!talles.includes(d.talle)) talles.push(d.talle);
           const color = d.color || '';
           if (color && !colores.includes(color)) colores.push(color);
-          stockPorTalle[d.talle] = d.stock ?? 0;
-          variantesStockState[claveVariante(d.talle, color)] = d.stock ?? 0;
+          stockPorTalle[d.talle]  = d.stock ?? 0;
+          precioPorTalle[d.talle] = d.precio ?? null;
+          variantesStockState[claveVariante(d.talle, color)]  = d.stock ?? 0;
+          variantesPrecioState[claveVariante(d.talle, color)] = d.precio ?? null;
         });
         tallesModalState = talles;
 
@@ -1211,12 +1349,14 @@ async function openProdModal() {
           // Las filas de producto_talles todavía no tienen color
           // cargado (vienen de antes de esa función), pero el texto
           // legado sí tiene colores: se cruzan para no perder el
-          // stock real ya cargado (se copia a cada color, el admin
+          // stock/precio ya cargado (se copia a cada color, el admin
           // lo ajusta después si corresponde uno distinto por color).
-          variantesStockState = {};
+          variantesStockState  = {};
+          variantesPrecioState = {};
           talles.forEach(t => {
             coloresModalState.forEach(c => {
-              variantesStockState[claveVariante(t, c)] = stockPorTalle[t] ?? 0;
+              variantesStockState[claveVariante(t, c)]  = stockPorTalle[t] ?? 0;
+              variantesPrecioState[claveVariante(t, c)] = precioPorTalle[t] ?? null;
             });
           });
         }
@@ -1335,10 +1475,14 @@ window.agregarColorItem        = agregarColorItem;
 window.quitarColorItem         = quitarColorItem;
 window.agregarColorRapido      = agregarColorRapido;
 window.actualizarVarianteStock = actualizarVarianteStock;
+window.actualizarVariantePrecio = actualizarVariantePrecio;
 window.agregarFotoItem         = agregarFotoItem;
 window.quitarFotoItem          = quitarFotoItem;
 window.moverFotoItem           = moverFotoItem;
 window.cambiarHexColorUI       = cambiarHexColor;
+window.iniciarDragReordenUI      = iniciarDragReorden;
+window.sobreContenedorDragUI     = sobreContenedorDrag;
+window.terminarDragReordenUI     = terminarDragReorden;
 window.seleccionarTalleUI              = seleccionarTalle;
 window.seleccionarColorUI              = seleccionarColor;
 window.cambiarCantidadSelectorUI       = cambiarCantidadSelector;
