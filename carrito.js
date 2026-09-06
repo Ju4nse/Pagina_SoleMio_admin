@@ -9,6 +9,7 @@
    "agregado al carrito".
    ================================================================ */
 import { sb } from './supabase-client.js';
+import { ICON } from './theme.js';
 
 const CARRITO_KEY      = 'solemio-carrito';
 const MIS_PEDIDOS_KEY  = 'solemio-mis-pedidos';
@@ -192,6 +193,155 @@ function cerrarToast(id) {
 }
 
 /* ================================================================
+   DRAWER DEL CARRITO — panel lateral que abre el ícono del carrito
+   de la topbar (en cualquier página) para ver el pedido sin navegar.
+   Se inyecta una sola vez en document.body la primera vez que se
+   abre, así no hace falta agregar su contenedor a cada HTML.
+   ================================================================ */
+let drawerAbierto = false;
+
+function asegurarDrawer() {
+  if (document.getElementById('carrito-drawer')) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div class="carrito-drawer-overlay" id="carrito-drawer-overlay" onclick="cerrarCarritoDrawerUI()"></div>
+    <aside class="carrito-drawer" id="carrito-drawer">
+      <div class="carrito-drawer-header">
+        <h2>Tu pedido</h2>
+        <button type="button" class="carrito-drawer-cerrar" onclick="cerrarCarritoDrawerUI()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="carrito-body" id="carrito-drawer-body"></div>
+    </aside>`;
+  document.body.append(...wrap.children);
+}
+
+/* Junta en una sola fila las líneas que son "el mismo" ítem (mismo
+   producto/talle/color) — típicamente varias agregadas sin talle/color
+   elegido todavía desde el botón rápido del catálogo, que quedan como
+   líneas independientes a propósito (ver agregarAlCarritoRapido en
+   catalogo.js) porque cada una podría terminar con un talle/color
+   distinto. En el drawer eso solo se ve como ruido visual, así que acá
+   se agrupan para mostrar; al llegar al carrito completo (carrito.html)
+   siguen apareciendo separadas para poder elegirles el talle/color
+   una por una. */
+function agruparItemsParaDrawer(items) {
+  const grupos = [];
+  const posPorClave = new Map();
+
+  items.forEach((it, idx) => {
+    const clave = `${it.productoId}|${it.talle || ''}|${it.color || ''}`;
+    if (posPorClave.has(clave)) {
+      const grupo = grupos[posPorClave.get(clave)];
+      grupo.cantidad += it.cantidad;
+      grupo.idxs.push(idx);
+    } else {
+      posPorClave.set(clave, grupos.length);
+      grupos.push({ ...it, idxs: [idx] });
+    }
+  });
+
+  return grupos;
+}
+
+function renderDrawerBody() {
+  const body = document.getElementById('carrito-drawer-body');
+  if (!body) return;
+  const items  = leerCarrito();
+  const grupos = agruparItemsParaDrawer(items);
+
+  if (!grupos.length) {
+    body.innerHTML = `
+      <div class="carrito-vacio">
+        Todavía no agregaste productos a tu pedido.<br>
+        <a class="btn primary" href="catalogo.html" style="margin-top:1rem;display:inline-flex">Ir al catálogo</a>
+      </div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="carrito-items">
+      ${grupos.map(g => `
+        <div class="carrito-item">
+          <div class="carrito-item-img">
+            ${g.imagen
+              ? `<img src="${g.imagen}" alt="${g.nombre}"
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                 <div class="carrito-item-img-ph" style="display:none">${ICON.shoe}</div>`
+              : `<div class="carrito-item-img-ph">${ICON.shoe}</div>`}
+          </div>
+          <div class="carrito-item-info">
+            <div class="carrito-item-nombre">${g.nombre}</div>
+            <div class="carrito-item-attrs">${[g.talle, g.color].filter(Boolean).join(' · ') || '&nbsp;'}</div>
+            <div class="carrito-item-precio">${fmtARS(g.precioUnitario)} c/u</div>
+          </div>
+          <div class="carrito-item-qty">
+            <button type="button" class="btn-qty" onclick="cambiarCantidadDrawerUI([${g.idxs}],-1)">−</button>
+            <span>${g.cantidad}</span>
+            <button type="button" class="btn-qty" onclick="cambiarCantidadDrawerUI([${g.idxs}],1)">+</button>
+          </div>
+          <button type="button" class="btn-quitar-item" onclick="quitarItemDrawerUI([${g.idxs}])" title="Quitar">✕</button>
+        </div>
+      `).join('')}
+    </div>
+    <div class="carrito-drawer-footer">
+      <div class="carrito-total">
+        <span>Total estimado</span>
+        <strong>${fmtARS(totalCarrito(items))}</strong>
+      </div>
+      <div class="carrito-drawer-botones">
+        <button type="button" class="btn ghost" onclick="cerrarCarritoDrawerUI()">Seguir comprando</button>
+        <a class="btn primary" href="carrito.html">Ir al pedido</a>
+      </div>
+    </div>`;
+}
+
+function abrirCarritoDrawer(event) {
+  if (event) event.preventDefault();
+  asegurarDrawer();
+  renderDrawerBody();
+  document.getElementById('carrito-drawer-overlay')?.classList.add('open');
+  document.getElementById('carrito-drawer')?.classList.add('open');
+  document.body.classList.add('carrito-drawer-lock');
+  drawerAbierto = true;
+  return false;
+}
+
+function cerrarCarritoDrawer() {
+  document.getElementById('carrito-drawer-overlay')?.classList.remove('open');
+  document.getElementById('carrito-drawer')?.classList.remove('open');
+  document.body.classList.remove('carrito-drawer-lock');
+  drawerAbierto = false;
+}
+
+/* idxs: todas las líneas agrupadas bajo esta fila del drawer (ver
+   agruparItemsParaDrawer). El +/- actúa solo sobre la última línea del
+   grupo (la más reciente); si el "-" la deja en 0, se saca esa línea
+   entera en vez de quedar en cantidad 0. */
+function cambiarCantidadDrawer(idxs, delta) {
+  const items   = leerCarrito();
+  const ultimo  = idxs[idxs.length - 1];
+  if (!items[ultimo]) return;
+
+  if (delta < 0 && items[ultimo].cantidad <= 1) {
+    quitarItem(ultimo);
+  } else {
+    cambiarCantidad(ultimo, delta);
+  }
+  renderDrawerBody();
+}
+
+function quitarItemDrawer(idxs) {
+  // de mayor a menor índice: sacar uno no debe correr los índices de
+  // los que todavía faltan sacar del mismo grupo
+  [...idxs].sort((a, b) => b - a).forEach(i => quitarItem(i));
+  renderDrawerBody();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drawerAbierto) cerrarCarritoDrawer();
+});
+
+/* ================================================================
    ENVÍO DEL PEDIDO A SUPABASE — usado por carrito-page.js
 
    El id del pedido se genera en el cliente (uuid) porque un invitado
@@ -274,4 +424,8 @@ export function initCarritoUI() {
   actualizarBadge();
 }
 
-window.cerrarToastCarritoUI = cerrarToast;
+window.cerrarToastCarritoUI    = cerrarToast;
+window.abrirCarritoDrawerUI    = abrirCarritoDrawer;
+window.cerrarCarritoDrawerUI   = cerrarCarritoDrawer;
+window.cambiarCantidadDrawerUI = cambiarCantidadDrawer;
+window.quitarItemDrawerUI      = quitarItemDrawer;

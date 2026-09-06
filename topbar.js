@@ -112,7 +112,7 @@ export function renderTopbar(activeKey, opts = {}) {
     </nav>
     <div class="topbar-icons">
       <span class="role-badge" id="role-badge"></span>
-      <a class="icon-btn" id="cart-btn" href="carrito.html" title="Tu pedido">
+      <a class="icon-btn" id="cart-btn" href="carrito.html" title="Tu pedido" onclick="return abrirCarritoDrawerUI(event)">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
           <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>

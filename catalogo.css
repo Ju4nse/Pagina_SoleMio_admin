@@ -1165,6 +1165,88 @@ select:focus { outline: none; border-color: var(--primary); }
   .carrito-toast { max-width: none; }
 }
 
+/* ── CARRITO — drawer lateral (ícono de la topbar) ───────────────
+   Se abre desde cualquier página sin navegar: franja angosta a la
+   derecha, alto completo, para ver rápido qué hay en el pedido. ── */
+.carrito-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.carrito-drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.carrito-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 100vw);
+  background: var(--surface);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.16);
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+}
+
+.carrito-drawer.open {
+  transform: translateX(0);
+}
+
+.carrito-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.carrito-drawer-header h2 {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.carrito-drawer-cerrar {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.3rem;
+}
+.carrito-drawer-cerrar:hover { color: var(--text); }
+
+.carrito-drawer-footer {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.carrito-drawer-botones {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.carrito-drawer-botones .btn { flex: 1; }
+
+body.carrito-drawer-lock { overflow: hidden; }
+
+@media (max-width: 480px) {
+  .carrito-drawer { width: 100vw; }
+}
+
 .carrito-body {
   flex: 1;
   overflow-y: auto;
