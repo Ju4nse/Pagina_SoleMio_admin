@@ -344,19 +344,20 @@ function agregarAlCarritoRapido(id) {
    marcas, así siempre refleja el catálogo actual. En varias columnas
    (CSS columns) para que entren aunque haya muchas. ────────────── */
 function renderMarcasMenu(marcas, marcaActual) {
-  const panel = document.getElementById('marcas-panel');
-  if (!panel) return;
+  // Dos copias: la de la topbar (#marcas-panel, solo desktop) y la de
+  // al lado de "Categoría" (#marcas-panel-mobile, solo mobile) — ver
+  // catalogo.html. Comparten clase .marcas-panel, se llenan igual.
+  const panels = document.querySelectorAll('.marcas-panel');
+  if (!panels.length) return;
 
-  if (!marcas.length) {
-    panel.innerHTML = '<span class="marcas-empty">Todavía no hay marcas cargadas</span>';
-    return;
-  }
+  const html = !marcas.length
+    ? '<span class="marcas-empty">Todavía no hay marcas cargadas</span>'
+    : `<button type="button" class="marcas-item${marcaActual ? '' : ' active'}" data-marca="">Todas las marcas</button>` +
+      marcas.map(m =>
+        `<button type="button" class="marcas-item${m === marcaActual ? ' active' : ''}" data-marca="${m}">${m}</button>`
+      ).join('');
 
-  panel.innerHTML =
-    `<button type="button" class="marcas-item${marcaActual ? '' : ' active'}" data-marca="">Todas las marcas</button>` +
-    marcas.map(m =>
-      `<button type="button" class="marcas-item${m === marcaActual ? ' active' : ''}" data-marca="${m}">${m}</button>`
-    ).join('');
+  panels.forEach(panel => { panel.innerHTML = html; });
 }
 
 document.addEventListener('click', (e) => {
@@ -367,12 +368,22 @@ document.addEventListener('click', (e) => {
 
   // Cierra el desplegable al elegir: como se abre con :hover, sin esto
   // seguiría abierto tapando los productos hasta que el mouse se fuera.
+  // Solo aplica a la copia de la topbar (desktop) — la de mobile no
+  // usa hover, se cierra con el toggle de acá abajo.
   const menu = item.closest('.marcas-menu');
   if (menu) {
     menu.classList.add('force-closed');
     menu.addEventListener('mouseleave', () => menu.classList.remove('force-closed'), { once: true });
   }
+  document.getElementById('catalogo-sidebar')?.classList.remove('marcas-open');
 });
+
+/* Trigger de "Marcas" al lado de "Categoría" (solo mobile, ver
+   catalogo.css) — a diferencia del de la topbar, no depende de hover
+   (no existe en touch) sino de este toggle explícito. */
+function toggleMarcasMobile() {
+  document.getElementById('catalogo-sidebar')?.classList.toggle('marcas-open');
+}
 
 /* ── SIDEBAR "CATEGORÍA" — a la izquierda del catálogo. Solo lista
    las categorías que efectivamente tienen algún producto cargado
@@ -1295,6 +1306,7 @@ window.renderCatalogo       = renderCatalogo;
 window.cargarMas            = cargarMas;
 window.agregarAlCarritoRapidoUI = agregarAlCarritoRapido;
 window.toggleCategoriaSidebarUI = toggleCategoriaSidebar;
+window.toggleMarcasMobileUI     = toggleMarcasMobile;
 window.openProdModal        = openProdModal;
 window.closeProdModal       = closeProdModal;
 window.saveProd             = saveProd;

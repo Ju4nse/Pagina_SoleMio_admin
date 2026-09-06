@@ -32,12 +32,26 @@
     <div class="catalogo-layout">
 
       <aside class="catalogo-sidebar" id="catalogo-sidebar">
-        <button type="button" class="sidebar-title sidebar-title-trigger" id="categoria-trigger" onclick="toggleCategoriaSidebarUI()">
-          Categoría
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
+        <!-- "Marcas" acá solo se ve en mobile (ver catalogo.css) para
+             quedar a la misma altura que "Categoría" — en desktop
+             Marcas sigue viviendo únicamente en la topbar. Mismo panel
+             (misma clase .marcas-panel), lo llena renderMarcasMenu()
+             en catalogo.js igual que al de la topbar. -->
+        <div class="filtros-triggers-row">
+          <button type="button" class="sidebar-title sidebar-title-trigger" id="marcas-trigger-mobile" onclick="toggleMarcasMobileUI()">
+            Marcas
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <button type="button" class="sidebar-title sidebar-title-trigger" id="categoria-trigger" onclick="toggleCategoriaSidebarUI()">
+            Categoría
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+        <div class="marcas-panel" id="marcas-panel-mobile"></div>
         <ul class="categoria-list" id="categoria-list"></ul>
       </aside>
 

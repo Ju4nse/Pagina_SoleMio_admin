@@ -365,6 +365,14 @@
 }
 .sidebar-title-trigger svg { display: none; }
 
+/* En desktop "Marcas" solo vive en la topbar — esta copia (ver
+   catalogo.html) es exclusiva de mobile, para quedar a la misma
+   altura que "Categoría". */
+#marcas-trigger-mobile,
+#marcas-panel-mobile {
+  display: none;
+}
+
 .categoria-list {
   list-style: none;
   margin: 0;
@@ -424,7 +432,42 @@
     stroke: currentColor;
     transition: transform 0.2s ease;
   }
-  .catalogo-sidebar.open .sidebar-title-trigger svg { transform: rotate(180deg); }
+  .catalogo-sidebar.open #categoria-trigger svg { transform: rotate(180deg); }
+
+  /* "Marcas" y "Categoría" a la misma altura, uno al lado del otro —
+     cada uno abre su propio panel por separado (ver toggleMarcasMobileUI
+     / toggleCategoriaSidebarUI en catalogo.js). */
+  .filtros-triggers-row {
+    display: flex;
+    gap: 1.5rem;
+  }
+  .filtros-triggers-row .sidebar-title-trigger { width: auto; flex: 1; }
+
+  #marcas-trigger-mobile { display: flex; }
+  .catalogo-sidebar.marcas-open #marcas-trigger-mobile svg { transform: rotate(180deg); }
+
+  /* El panel de marcas acá va en flujo normal (empuja el contenido de
+     abajo), no flotante como en la topbar — ahí depende de :hover, que
+     no existe en touch, así que se maneja con el mismo toggle explícito
+     que Categoría en vez de esa lógica. */
+  #marcas-panel-mobile {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    width: 100%;
+    max-height: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem 1.25rem;
+    display: none;
+  }
+  .catalogo-sidebar.marcas-open #marcas-panel-mobile {
+    display: grid;
+    margin-top: 0.65rem;
+  }
 
   /* Arranca cerrada — se abre con toggleCategoriaSidebarUI() (ver
      catalogo.js), igual que el desplegable de Marcas de la topbar. */
