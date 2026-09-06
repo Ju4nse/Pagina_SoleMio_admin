@@ -14,7 +14,7 @@ const WHATSAPP  = 'https://wa.me/542494003595';
 const INSTAGRAM = 'https://instagram.com/solemio.tandil';
 const DIRECCION = 'Tacuari 33, Tandil, Buenos Aires';
 const MAPS_URL  = 'https://www.google.com/maps/search/?api=1&query=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina';
-const HORARIOS  = ['Lunes a sábados', '10 a 13 hs y 17 a 20:30 hs'];
+const ATENCION  = ['Solo con reserva previa', 'Coordiná tu horario por WhatsApp'];
 
 /* Mismas páginas que el nav de topbar.js (ver NAV_ITEMS ahí). El link
    a Pedidos lleva la clase admin-only-link, que ya oculta ese tipo de
@@ -71,8 +71,8 @@ export function renderFooter() {
       </div>
 
       <div class="footer-col">
-        <span class="footer-col-title">Horarios</span>
-        ${HORARIOS.map(l => `<p>${l}</p>`).join('')}
+        <span class="footer-col-title">Atención</span>
+        ${ATENCION.map(l => `<p>${l}</p>`).join('')}
       </div>
     </div>
 
