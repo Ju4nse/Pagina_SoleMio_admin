@@ -337,7 +337,7 @@
   align-items: start;
 }
 
-.catalogo-sidebar { position: sticky; top: 1rem; margin-top: 2.6rem; }
+.catalogo-sidebar { margin-top: 2.6rem; }
 
 .sidebar-title {
   font-size: 0.72rem;
@@ -690,7 +690,7 @@ select:focus { outline: none; border-color: var(--primary); }
   margin-bottom: 0.75rem;
 }
 
-.prod-actions { display: flex; gap: 0.4rem; }
+.prod-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .prod-quickadd { display: flex; }
 .prod-quickadd .btn { width: 100%; justify-content: center; }

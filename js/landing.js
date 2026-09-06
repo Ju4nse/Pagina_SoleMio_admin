@@ -25,8 +25,7 @@ async function cargarDestacados() {
     .from('productos')
     .select('*')
     .eq('destacado', true)
-    .eq('stock', true)
-    .not('oculto', 'is', true)
+    .eq('disponible', true)
     .eq('eliminado', false)
     .order('id', { ascending: false })
     .limit(8);

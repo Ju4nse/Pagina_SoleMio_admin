@@ -188,6 +188,31 @@ async function eliminarProductoDB(id) {
   localStorage.setItem('solemio-productos', JSON.stringify(productos));
 }
 
+/* Toggle rápido desde la propia grilla, sin entrar a editar. Es
+   independiente de num_stock/stock (la cantidad real) — permite
+   mostrar un producto aunque la cantidad cargada sea 0 (ej: se puede
+   conseguir por encargue), o esconderlo aunque haya stock. */
+async function toggleDisponible(id, valor) {
+  if (!isAdmin()) { console.warn('Acceso denegado'); return; }
+
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+
+  const anterior = p.disponible;
+  p.disponible = valor;
+  localStorage.setItem('solemio-productos', JSON.stringify(productos));
+  renderCatalogo();
+
+  const { error } = await sb.from('productos').update({ disponible: valor }).eq('id', id);
+  if (error) {
+    console.warn('Error actualizando disponibilidad:', error.message);
+    p.disponible = anterior;
+    localStorage.setItem('solemio-productos', JSON.stringify(productos));
+    renderCatalogo();
+    alert('No se pudo actualizar la disponibilidad.');
+  }
+}
+
 
 /* ================================================================
    RENDER CATÁLOGO
@@ -203,22 +228,22 @@ function renderCatalogo(resetear = false) {
   if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
 
   // Para invitados, el desplegable de marcas solo ofrece marcas con algo
-  // que realmente puedan ver (en stock y no oculto) — así no lleva a un
-  // catálogo vacío. El admin sí necesita ver todas, oculto/sin stock
-  // incluido, para poder encontrar y editar esos productos.
+  // que realmente puedan ver (disponible) — así no lleva a un catálogo
+  // vacío. El admin sí necesita ver todas, no disponible incluido, para
+  // poder encontrar y editar esos productos.
   const marcas = isGuest()
-    ? [...new Set(productos.filter(p => p.stock && !p.oculto).map(p => p.marca).filter(Boolean))].sort()
+    ? [...new Set(productos.filter(p => p.disponible).map(p => p.marca).filter(Boolean))].sort()
     : [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
   renderMarcasMenu(marcas, marcaFiltro);
 
-  // El conteo del sidebar refleja solo lo que ve un invitado (en stock y no
-  // oculto), sea cual sea el rol de quien está mirando el catálogo ahora —
-  // así el número siempre coincide con lo que un cliente realmente ve.
-  // También respeta la marca filtrada: si estás viendo "Nike", las
-  // categorías y sus conteos son las que tiene Nike, no todo el catálogo.
+  // El conteo del sidebar refleja solo lo que ve un invitado (disponible),
+  // sea cual sea el rol de quien está mirando el catálogo ahora — así el
+  // número siempre coincide con lo que un cliente realmente ve. También
+  // respeta la marca filtrada: si estás viendo "Nike", las categorías y
+  // sus conteos son las que tiene Nike, no todo el catálogo.
   const categoriasContadas = {};
   productos.forEach(p => {
-    if (!p.stock || p.oculto) return;
+    if (!p.disponible) return;
     if (marca && p.marca !== marca) return;
     categoriasDeProducto(p).forEach(c => { categoriasContadas[c] = (categoriasContadas[c] || 0) + 1; });
   });
@@ -238,8 +263,7 @@ function renderCatalogo(resetear = false) {
   }
 
   const lista = productos.filter(p => {
-    if (p.oculto && isGuest()) return false;
-    if (!p.stock && isGuest()) return false; // el invitado solo ve productos con stock
+    if (!p.disponible && isGuest()) return false; // el invitado solo ve productos disponibles
     const q_ok =
       (p.nombre || '').toLowerCase().includes(q) ||
       (p.marca  || '').toLowerCase().includes(q) ||
@@ -297,7 +321,6 @@ function renderCatalogo(resetear = false) {
           ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
           ${p.destacado && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">★ Destacado</span>` : ''}
-          ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
         ${isAdmin() ? `
@@ -305,12 +328,17 @@ function renderCatalogo(resetear = false) {
           <button class="btn sm ghost" onclick="event.preventDefault();event.stopPropagation();openProdModal('${p.id}')">
             ${ICON.edit} Editar
           </button>
+          <button type="button" class="btn sm ${p.disponible ? 'ghost' : 'primary'}"
+            title="El cliente ${p.disponible ? 'sí' : 'no'} puede ver ni comprar este producto ahora"
+            onclick="event.preventDefault();event.stopPropagation();toggleDisponibleUI('${p.id}', ${!p.disponible})">
+            ${p.disponible ? 'Disponible' : 'No disponible'}
+          </button>
           <button class="btn sm danger" onclick="event.preventDefault();event.stopPropagation();confirmarEliminar('${p.id}')">
             ${ICON.trash}
           </button>
         </div>` : `
         <div class="prod-quickadd">
-          <button type="button" class="btn sm primary" ${!enStock ? 'disabled' : ''}
+          <button type="button" class="btn sm primary" ${!p.disponible ? 'disabled' : ''}
             onclick="event.preventDefault();event.stopPropagation();agregarAlCarritoRapidoUI('${p.id}')">
             ${ICON.cart} Agregar
           </button>
@@ -1172,10 +1200,10 @@ async function openProdModal(id) {
         </div>
 
         <div class="field" style="display:flex;align-items:center;gap:.5rem">
-          <input type="checkbox" id="p-oculto" ${p?.oculto ? 'checked' : ''}
+          <input type="checkbox" id="p-disponible" ${(p?.disponible ?? true) ? 'checked' : ''}
             style="width:auto;accent-color:var(--text)">
-          <label for="p-oculto" style="margin:0;cursor:pointer">
-            Ocultar producto (solo visible para admin)
+          <label for="p-disponible" style="margin:0;cursor:pointer">
+            Disponible (visible y comprable para el cliente, aunque la cantidad cargada sea 0)
           </label>
         </div>
 
@@ -1284,7 +1312,7 @@ async function saveProd() {
     imagen_custom:  document.getElementById('p-imagen-custom').value.trim(),
     imagen_scraper: document.getElementById('p-imagen-scraper').value.trim(),
     destacado:      document.getElementById('p-destacado')?.checked || false,
-    oculto:         document.getElementById('p-oculto')?.checked || false,
+    disponible:     document.getElementById('p-disponible')?.checked ?? true,
   };
 
   // Si hay galería pero no foto única, la miniatura del catálogo usa
@@ -1486,6 +1514,7 @@ window.closeProdModal       = closeProdModal;
 window.saveProd             = saveProd;
 window.actualizarBadgeStock = actualizarBadgeStock;
 window.confirmarEliminar    = confirmarEliminar;
+window.toggleDisponibleUI   = toggleDisponible;
 window.openAccountModal     = openAccountModal;
 window.closeAccountModal    = closeAccountModal;
 window.cambiarPassword      = cambiarPassword;

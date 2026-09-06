@@ -48,10 +48,10 @@ function getProductoId() {
   return new URLSearchParams(location.search).get('id');
 }
 
-/* Un invitado no puede ver productos ocultos ni sin stock (mismo
-   criterio que el listado del catálogo en catalogo.js). */
+/* Un invitado no puede ver productos no disponibles (mismo criterio
+   que el listado del catálogo en catalogo.js). */
 function noVisibleParaGuest(p) {
-  return isGuest() && (p.oculto || !p.stock);
+  return isGuest() && !p.disponible;
 }
 
 /* hexDeColor(nombre) viene de theme.js — mapa de color compartido con catalogo.js */
@@ -164,7 +164,7 @@ function renderProducto(p, prev, next, similares) {
         <div class="product-meta-row">
           <span class="meta-code">ID: ${p.id}</span>
           ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
-          ${p.oculto && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">Oculto</span>` : ''}
+          ${!p.disponible && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">No disponible</span>` : ''}
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
         </div>
 
@@ -602,7 +602,7 @@ async function cargarVariantesYActualizar(id, data) {
 async function obtenerListaNav() {
   const { data, error } = await sb
     .from('productos')
-    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,oculto')
+    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,disponible')
     .eq('eliminado', false)
     .order('id', { ascending: true });
   if (error) { console.warn('Error cargando navegación:', error.message); return []; }
@@ -1326,10 +1326,10 @@ async function openProdModal() {
         </div>
 
         <div class="field" style="display:flex;align-items:center;gap:.5rem">
-          <input type="checkbox" id="p-oculto" ${p?.oculto ? 'checked' : ''}
+          <input type="checkbox" id="p-disponible" ${(p?.disponible ?? true) ? 'checked' : ''}
             style="width:auto;accent-color:var(--text)">
-          <label for="p-oculto" style="margin:0;cursor:pointer">
-            Ocultar producto (solo visible para admin)
+          <label for="p-disponible" style="margin:0;cursor:pointer">
+            Disponible (visible y comprable para el cliente, aunque la cantidad cargada sea 0)
           </label>
         </div>
 
@@ -1479,7 +1479,7 @@ async function saveProd() {
     imagen_custom:  document.getElementById('p-imagen-custom').value.trim(),
     imagen_scraper: document.getElementById('p-imagen-scraper').value.trim(),
     destacado:      document.getElementById('p-destacado')?.checked || false,
-    oculto:         document.getElementById('p-oculto')?.checked || false,
+    disponible:     document.getElementById('p-disponible')?.checked ?? true,
   };
 
   // Si hay galería pero no foto única, la miniatura del catálogo usa
