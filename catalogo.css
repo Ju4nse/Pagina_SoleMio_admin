@@ -361,14 +361,33 @@
 
 @media (max-width: 760px) {
   .catalogo-layout { grid-template-columns: 1fr; }
-  .catalogo-sidebar { position: static; }
+  .catalogo-sidebar {
+    position: static;
+    /* el margin-top grande es para alinear "Categoría" con la grilla
+       de al lado en desktop — apilado no hace falta, solo un respiro
+       chico antes de la lista de chips */
+    margin-top: 1.25rem;
+    padding-bottom: 1.1rem;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border);
+  }
 
   .categoria-list {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.4rem 1rem;
+    gap: 0.5rem;
   }
-  .categoria-item { width: auto; padding: 0.3rem 0; }
+  .categoria-item {
+    width: auto;
+    padding: 0.35rem 0.75rem;
+    background: var(--surface2);
+    border-radius: var(--radius-pill);
+  }
+  .categoria-item.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+  .categoria-count { color: inherit; opacity: 0.65; }
 
   /* el corrido de MARCAS (ver .marcas-menu) es para alinearla con la
      grilla de acá al lado del sidebar — sin sidebar (una sola columna)
@@ -1419,7 +1438,13 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 @media (max-width: 640px) {
-  .footer-inner { padding: 2.5rem 1.25rem 1.5rem; gap: 2rem; text-align: center; }
+  .footer-inner { padding: 2.5rem 1.25rem 1.5rem; gap: 1.75rem; text-align: center; }
+  /* .footer-brand no entra en ".footer-col" (es una clase aparte) —
+     sin width:100% queda angosta (el ancho de "SoleMio") y el
+     text-align:center de acá arriba no tiene margen para centrar
+     nada, por eso se veía pegada a la izquierda mientras el resto sí
+     se centraba. */
+  .footer-brand,
   .footer-col { min-width: 0; width: 100%; }
   .footer-col a { justify-content: center; }
   .footer-bottom { padding: 1rem 1.25rem 1.5rem; text-align: center; }
@@ -1438,7 +1463,7 @@ select:focus { outline: none; border-color: var(--primary); }
   }
 
   .logo {
-    margin-left: -1rem; /* igual al padding de .shell en mobile */
+    margin-left: 0; /* en mobile no sangra hasta el borde: se ve muy pegado */
   }
 
   .topbar-nav {
@@ -1451,7 +1476,7 @@ select:focus { outline: none; border-color: var(--primary); }
 
   .topbar-icons {
     margin-left: auto;
-    margin-right: -1rem; /* igual al padding de .shell en mobile */
+    margin-right: 0; /* en mobile no sangra hasta el borde: se ve muy pegado */
     gap: 0.4rem;
   }
 
