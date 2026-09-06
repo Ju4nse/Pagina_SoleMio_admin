@@ -29,21 +29,26 @@ export const ICON = {
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`,
 };
 
-/* Aplica el tema guardado. Si existe #theme-btn en la página (solo en
-   catálogo) también actualiza su ícono. Seguro de usar en login. */
+/* Aplica el tema guardado y actualiza el ícono de cada .theme-btn-icon
+   presente (puede haber más de uno — ver topbar.js: el botón de la
+   topbar y su copia dentro del desplegable mobile). Por clase y no por
+   id, para que ambas copias queden sincronizadas sin importar cuál se
+   tocó. Seguro de usar en login (ninguna coincidencia, no hace nada). */
 export function initTheme() {
   const saved = localStorage.getItem('solemio-theme') || 'light';
   document.documentElement.dataset.theme = saved;
-  const btn = document.getElementById('theme-btn');
-  if (btn) btn.innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
+  document.querySelectorAll('.theme-btn-icon').forEach(el => {
+    el.innerHTML = saved === 'dark' ? ICON.sun : ICON.moon;
+  });
 }
 
 export function toggleTheme() {
   const html   = document.documentElement;
   const isDark = html.dataset.theme === 'dark';
   html.dataset.theme = isDark ? 'light' : 'dark';
-  const btn = document.getElementById('theme-btn');
-  if (btn) btn.innerHTML = isDark ? ICON.moon : ICON.sun;
+  document.querySelectorAll('.theme-btn-icon').forEach(el => {
+    el.innerHTML = isDark ? ICON.moon : ICON.sun;
+  });
   localStorage.setItem('solemio-theme', html.dataset.theme);
 }
 

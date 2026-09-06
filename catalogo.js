@@ -400,11 +400,19 @@ function renderCategoriasSidebar(categoriasContadas, categoriaActual) {
       </li>`).join('');
 }
 
+/* En mobile la lista de categorías arranca cerrada (ver .categoria-list
+   en catalogo.css) — este toggle solo importa ahí; en desktop el CSS
+   la mantiene siempre abierta sin importar esta clase. */
+function toggleCategoriaSidebar() {
+  document.getElementById('catalogo-sidebar')?.classList.toggle('open');
+}
+
 document.addEventListener('click', (e) => {
   const item = e.target.closest('.categoria-item');
   if (!item) return;
   categoriaFiltro = item.dataset.categoria || '';
   renderCatalogo(true);
+  document.getElementById('catalogo-sidebar')?.classList.remove('open');
 });
 
 
@@ -1286,6 +1294,7 @@ window.toggleTheme          = toggleTheme;
 window.renderCatalogo       = renderCatalogo;
 window.cargarMas            = cargarMas;
 window.agregarAlCarritoRapidoUI = agregarAlCarritoRapido;
+window.toggleCategoriaSidebarUI = toggleCategoriaSidebar;
 window.openProdModal        = openProdModal;
 window.closeProdModal       = closeProdModal;
 window.saveProd             = saveProd;

@@ -86,6 +86,29 @@ export function renderTopbar(activeKey, opts = {}) {
         ].filter(Boolean).join(' ');
         return `<a href="${item.href}"${classes ? ` class="${classes}"` : ''}>${item.label}</a>`;
       }).join('')}
+      <!-- Solo se ven en el desplegable mobile (ver .topbar-nav-actions
+           en catalogo.css) — en desktop siguen siendo los íconos de
+           siempre en .topbar-icons, más abajo. -->
+      <div class="topbar-nav-actions">
+        <button type="button" class="topbar-nav-action" onclick="toggleTheme();cerrarMobileNavUI()">
+          <span class="theme-btn-icon"></span> Cambiar tema
+        </button>
+        <button type="button" class="topbar-nav-action admin-only-link" onclick="irACuentaUI();cerrarMobileNavUI()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          Mi cuenta
+        </button>
+        <button type="button" class="topbar-nav-action logout-btn" onclick="doLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Cerrar sesión
+        </button>
+      </div>
     </nav>
     <div class="topbar-icons">
       <span class="role-badge" id="role-badge"></span>
@@ -97,7 +120,9 @@ export function renderTopbar(activeKey, opts = {}) {
         </svg>
         <span class="cart-badge" id="cart-badge"></span>
       </a>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema"></button>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" aria-label="Cambiar tema">
+        <span class="theme-btn-icon"></span>
+      </button>
       <button class="icon-btn admin-only-link" id="account-btn" onclick="irACuentaUI()" title="Mi cuenta">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
@@ -155,3 +180,4 @@ document.addEventListener('click', (e) => {
 
 window.irACuentaUI       = irACuenta;
 window.toggleMobileNavUI = toggleMobileNav;
+window.cerrarMobileNavUI = cerrarMobileNav;

@@ -251,6 +251,12 @@
 .topbar-nav a:hover { color: var(--text); }
 .topbar-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
 
+/* Cambiar tema / Mi cuenta / Cerrar sesión DENTRO del desplegable —
+   solo tienen sentido en mobile (ver .topbar-nav-actions en la media
+   query de abajo); en desktop esos mismos controles siguen viviendo
+   como íconos sueltos en .topbar-icons, así que acá quedan ocultos. */
+.topbar-nav-actions { display: none; }
+
 /* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
    estilo que el ícono de login en landing/contacto ────────────── */
 .theme-btn,
@@ -292,7 +298,7 @@
 .hamburger-btn:hover { color: var(--primary); border-color: var(--primary); }
 .hamburger-btn svg { width: 16px; height: 16px; stroke: currentColor; }
 
-.theme-btn svg,
+.theme-btn-icon svg,
 .icon-btn svg {
   width: 16px;
   height: 16px;
@@ -342,6 +348,23 @@
   margin: 0 0 0.6rem;
 }
 
+/* Es un <button> (para poder abrir/cerrar en mobile, ver media query),
+   pero en desktop se ve y se comporta como el título de siempre — la
+   flechita solo aparece donde realmente hace algo. */
+.sidebar-title-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+.sidebar-title-trigger svg { display: none; }
+
 .categoria-list {
   list-style: none;
   margin: 0;
@@ -390,11 +413,28 @@
     border-bottom: 1px solid var(--border);
   }
 
+  .sidebar-title-trigger {
+    cursor: pointer;
+    justify-content: space-between;
+  }
+  .sidebar-title-trigger svg {
+    display: block;
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    transition: transform 0.2s ease;
+  }
+  .catalogo-sidebar.open .sidebar-title-trigger svg { transform: rotate(180deg); }
+
+  /* Arranca cerrada — se abre con toggleCategoriaSidebarUI() (ver
+     catalogo.js), igual que el desplegable de Marcas de la topbar. */
   .categoria-list {
+    display: none;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
+  .catalogo-sidebar.open .categoria-list { display: flex; margin-top: 0.65rem; }
   .categoria-item {
     width: auto;
     padding: 0.35rem 0.75rem;
@@ -1544,6 +1584,51 @@ select:focus { outline: none; border-color: var(--primary); }
   }
   .topbar-nav.mobile-open a:last-child { border-bottom: none; }
 
+  /* Cambiar tema / Mi cuenta / Cerrar sesión pasan a vivir acá adentro
+     en vez de en .topbar-icons — ahí afuera en mobile solo queda el
+     carrito (ver más abajo). */
+  .topbar-nav-actions {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .topbar-nav-action {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--text-2);
+    background: none;
+    border: none;
+    padding: 0.7rem 0.15rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .topbar-nav-action:last-child { border-bottom: none; }
+  .topbar-nav-action svg,
+  .topbar-nav-action .theme-btn-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    flex-shrink: 0;
+  }
+
+  /* En mobile, .topbar-icons queda solo con el carrito — el resto
+     (tema/cuenta/salir) se mudó adentro de la hamburguesa, arriba. */
+  .theme-btn,
+  #account-btn,
+  .topbar-icons .logout-btn {
+    display: none;
+  }
+
   .topbar-icons {
     grid-area: icons;
     margin-left: 0;
@@ -1551,7 +1636,6 @@ select:focus { outline: none; border-color: var(--primary); }
     gap: 0.4rem;
   }
 
-  .theme-btn,
   .icon-btn {
     width: 30px;
     height: 30px;
