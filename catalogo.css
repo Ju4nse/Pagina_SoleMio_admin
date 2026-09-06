@@ -286,6 +286,72 @@
 }
 
 
+/* ── CATÁLOGO: SIDEBAR DE CATEGORÍA + GRILLA ────────────────────── */
+.catalogo-layout {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.catalogo-sidebar { position: sticky; top: 1rem; margin-top: 2.6rem; }
+
+.sidebar-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 0.6rem;
+}
+
+.categoria-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.categoria-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  transition: var(--trans);
+}
+.categoria-item:hover  { color: var(--primary); }
+.categoria-item.active { color: var(--primary); font-weight: 500; }
+
+.categoria-count { font-size: 0.72rem; color: var(--text-3); }
+
+.categoria-empty {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  list-style: none;
+}
+
+@media (max-width: 760px) {
+  .catalogo-layout { grid-template-columns: 1fr; }
+  .catalogo-sidebar { position: static; }
+
+  .categoria-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+  }
+  .categoria-item { width: auto; padding: 0.3rem 0; }
+}
+
 /* ── TOOLBAR ─────────────────────────────────────────────────── */
 .toolbar {
   display: flex;
@@ -420,6 +486,9 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 .prod-actions { display: flex; gap: 0.4rem; }
+
+.prod-quickadd { display: flex; }
+.prod-quickadd .btn { width: 100%; justify-content: center; }
 
 /* ── BADGES ──────────────────────────────────────────────────── */
 .badge {
@@ -1155,8 +1224,7 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 .role-badge.guest {
-  background: var(--blue-bg);
-  color: var(--blue);
+  display: none; /* el "Invitado" no aporta nada al cliente — solo queda el de Admin */
 }
 
 /* ── BOTONES DE ACCIÓN EN TOPBAR (cuenta / logout) ──────────────── */
@@ -1175,6 +1243,102 @@ select:focus { outline: none; border-color: var(--primary); }
 [data-role="guest"] #filtro-stock,
 [data-role="guest"] .admin-only-link {
   display: none !important;
+}
+
+/* ── FOOTER COMPARTIDO (footer.js) ──────────────────────────────
+   Fondo en --primary-soft (el tinte clarito ya usado en el resto del
+   sitio para fondos suaves, ej. chips seleccionados) — texto en los
+   mismos grises de siempre, así queda correcto en tema claro y
+   oscuro sin necesidad de tonos aparte. */
+.site-footer {
+  background: var(--primary-soft);
+  color: var(--text);
+  margin-top: 4rem;
+}
+
+.footer-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem;
+  justify-content: space-between;
+}
+
+.footer-brand { max-width: 260px; }
+
+.footer-logo {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.footer-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.footer-col { min-width: 150px; }
+
+.footer-col-title {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.75rem;
+}
+
+.footer-col a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 0.6rem;
+  transition: var(--trans);
+}
+
+.footer-col a:last-child { margin-bottom: 0; }
+.footer-col a:hover { color: var(--primary); }
+
+.footer-col a svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.footer-col p {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin: 0 0 0.3rem;
+  line-height: 1.5;
+}
+.footer-col p:last-child { margin-bottom: 0; }
+
+.footer-bottom {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem 1.5rem;
+  max-width: 1160px;
+  margin: 0 auto;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+
+@media (max-width: 640px) {
+  .footer-inner { padding: 2.5rem 1.25rem 1.5rem; gap: 2rem; text-align: center; }
+  .footer-col { min-width: 0; width: 100%; }
+  .footer-col a { justify-content: center; }
+  .footer-bottom { padding: 1rem 1.25rem 1.5rem; text-align: center; }
 }
 
 /* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */

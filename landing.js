@@ -5,6 +5,7 @@ import { sb, esAdmin, irAlCatalogo } from './supabase-client.js';
 import { ICON, initTheme, toggleTheme } from './theme.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
+import { renderFooter } from './footer.js';
 
 let rolActual = 'guest';
 
@@ -37,15 +38,6 @@ async function cargarDestacados() {
   if (!data.length) {
     grid.innerHTML = '<div class="empty">Todavía no hay productos destacados con stock disponible</div>';
     return;
-  }
-
-  // Usar la foto del primer destacado como imagen del hero
-  const primeraImg = resolverImagen(data[0]);
-  if (primeraImg) {
-    const heroImg = document.getElementById('hero-photo');
-    const fallback = document.getElementById('hero-photo-fallback');
-    heroImg.src = primeraImg;
-    heroImg.onload = () => { heroImg.style.display = 'block'; fallback.style.display = 'none'; };
   }
 
   grid.innerHTML = data.map(p => {
@@ -88,6 +80,7 @@ async function doLogout() {
 
 async function init() {
   renderTopbar('inicio');
+  renderFooter();
   initTheme();
   initCarritoUI();
 
@@ -100,7 +93,6 @@ async function init() {
     badge.className   = 'role-badge ' + rolActual;
   }
 
-  document.getElementById('year').textContent = new Date().getFullYear();
   cargarDestacados();
 }
 

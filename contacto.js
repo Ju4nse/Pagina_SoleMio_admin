@@ -5,6 +5,7 @@ import { initTheme, toggleTheme } from './theme.js';
 import { sb, esAdmin, irAlCatalogo } from './supabase-client.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
+import { renderFooter } from './footer.js';
 
 let rolActual = 'guest';
 
@@ -30,6 +31,7 @@ async function doLogout() {
 
 async function init() {
   renderTopbar('contacto');
+  renderFooter();
   initTheme();
   initCarritoUI();
 
@@ -41,8 +43,6 @@ async function init() {
     badge.textContent = rolActual === 'admin' ? 'Admin' : 'Invitado';
     badge.className   = 'role-badge ' + rolActual;
   }
-
-  document.getElementById('year').textContent = new Date().getFullYear();
 }
 
 window.verCatalogo = irAlCatalogo;

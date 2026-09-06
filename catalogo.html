@@ -29,30 +29,43 @@
     <header class="topbar" id="topbar-slot"></header>
 
     <!-- CATÁLOGO -->
-    <div class="toolbar">
-      <select id="filtro-stock" onchange="renderCatalogo()">
-        <option value="">Todo el stock</option>
-        <option value="in stock">En stock</option>
-        <option value="out of stock">Sin stock</option>
-      </select>
-      <button class="btn primary" style="margin-left:auto" onclick="openProdModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        Nuevo producto
-      </button>
-    </div>
+    <div class="catalogo-layout">
 
-    <div id="catalogo-grid" class="prod-grid">
-      <div class="empty" style="grid-column:1/-1">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        Cargando catálogo…
+      <aside class="catalogo-sidebar">
+        <h3 class="sidebar-title">Categoría</h3>
+        <ul class="categoria-list" id="categoria-list"></ul>
+      </aside>
+
+      <div class="catalogo-main">
+        <div class="toolbar">
+          <select id="filtro-stock" onchange="renderCatalogo()">
+            <option value="">Todo el stock</option>
+            <option value="in stock">En stock</option>
+            <option value="out of stock">Sin stock</option>
+          </select>
+          <button class="btn primary" style="margin-left:auto" onclick="openProdModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Nuevo producto
+          </button>
+        </div>
+
+        <div id="catalogo-grid" class="prod-grid">
+          <div class="empty" style="grid-column:1/-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            Cargando catálogo…
+          </div>
+        </div>
       </div>
+
     </div>
 
   </div><!-- /shell -->
+
+  <footer class="site-footer" id="footer-slot"></footer>
 </div><!-- /app -->
 
 <!-- Modales -->

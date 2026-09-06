@@ -35,10 +35,16 @@ function guardarCarrito(items) {
   actualizarBadge();
 }
 
-export function agregarAlCarrito({ productoId, nombre, precioUnitario, imagen, talle, color, cantidad }) {
+/* separado:true evita fusionar con una línea existente aunque
+   coincidan producto/talle/color — lo usa el botón rápido del
+   catálogo, donde talle/color quedan vacíos "a propósito" (se eligen
+   después en el carrito) y cada click debe ser una unidad aparte, no
+   sumarse a la anterior. Una vez que cada línea tenga su talle/color
+   elegido, actualizarAtributoItem() sí las fusiona si terminan iguales. */
+export function agregarAlCarrito({ productoId, nombre, precioUnitario, imagen, talle, color, cantidad, separado }) {
   const items = leerCarrito();
   const cant  = Math.max(1, parseInt(cantidad, 10) || 1);
-  const idx   = items.findIndex(it =>
+  const idx   = separado ? -1 : items.findIndex(it =>
     it.productoId === productoId && it.talle === (talle || '') && it.color === (color || ''));
 
   if (idx >= 0) {
@@ -70,6 +76,59 @@ export function cambiarCantidad(idx, delta) {
   if (!items[idx]) return;
   items[idx].cantidad = Math.max(1, (parseInt(items[idx].cantidad, 10) || 1) + delta);
   guardarCarrito(items);
+}
+
+/* Usado por carrito-page.js para completar talle/color de un ítem
+   agregado sin elegirlos (desde el botón rápido del catálogo). Si el
+   cambio hace que el ítem coincida con otro ya existente, se fusionan
+   las cantidades en vez de dejar dos líneas iguales. */
+export function actualizarAtributoItem(idx, cambios) {
+  const items = leerCarrito();
+  if (!items[idx]) return;
+  const item = { ...items[idx], ...cambios };
+
+  const otroIdx = items.findIndex((it, i) =>
+    i !== idx && it.productoId === item.productoId &&
+    it.talle === (item.talle || '') && it.color === (item.color || ''));
+
+  items[idx] = item;
+  if (otroIdx >= 0) {
+    items[otroIdx].cantidad += item.cantidad;
+    items.splice(idx, 1);
+  }
+  guardarCarrito(items);
+}
+
+/* ================================================================
+   VARIANTES DE PRODUCTO (talle/color) — helpers compartidos por
+   producto.js (selector en la página de detalle) y carrito-page.js
+   (selector inline para ítems agregados sin talle/color elegidos).
+   ================================================================ */
+export function variantesFallbackDesdeTexto(p) {
+  const talles  = (p.talles || '').split(',').map(t => t.trim()).filter(Boolean);
+  const colores = (p.color  || '').split(',').map(c => c.trim()).filter(Boolean);
+  if (talles.length) {
+    return colores.length
+      ? talles.flatMap(t => colores.map(c => ({ talle: t, color: c })))
+      : talles.map(t => ({ talle: t, color: '' }));
+  }
+  return colores.map(c => ({ talle: '', color: c }));
+}
+
+/* producto_talles puede tener filas que solo cubren el talle (color='')
+   si se cargaron antes de que existiera la gestión de colores. En ese
+   caso se cruzan los talles reales con los colores del campo de texto
+   legado, en vez de perder el color por completo. */
+export function combinarVariantesConTexto(variantesDB, data) {
+  if (!variantesDB) return variantesFallbackDesdeTexto(data);
+
+  const tieneColorEstructurado = variantesDB.some(v => v.color);
+  if (tieneColorEstructurado) return variantesDB;
+
+  const coloresTexto = (data.color || '').split(',').map(c => c.trim()).filter(Boolean);
+  if (!coloresTexto.length) return variantesDB;
+
+  return variantesDB.flatMap(v => coloresTexto.map(c => ({ talle: v.talle, color: c })));
 }
 
 export function vaciarCarrito() {

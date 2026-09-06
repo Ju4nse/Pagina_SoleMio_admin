@@ -7,6 +7,7 @@ import { sb, esAdmin }   from './supabase-client.js';
 import { ICON, initTheme, toggleTheme } from './theme.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar }  from './topbar.js';
+import { renderFooter }  from './footer.js';
 
 /* ================================================================
    STATE
@@ -886,6 +887,7 @@ async function startApp() {
   document.getElementById('app').style.display = 'block';
 
   renderTopbar('pedidos');
+  renderFooter();
   initTheme();
   initCarritoUI();
 

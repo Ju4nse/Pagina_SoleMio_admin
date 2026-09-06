@@ -1,6 +1,7 @@
 /* ================================================================
-   site.css — Header y footer compartidos del sitio público
-   Usado por landing.html y contacto.html
+   site.css — Header compartido del sitio público
+   Usado por landing.html y contacto.html (el footer es footer.js +
+   .site-footer y compañía, definidos en catalogo.css)
    ================================================================ */
 
 body { background: var(--bg); }
@@ -20,59 +21,6 @@ header.site-header-topbar {
   border-bottom: none;
 }
 
-/* ── FOOTER ──────────────────────────────────────────────────── */
-.site-footer {
-  max-width: 1160px;
-  margin: 5rem auto 0;
-  padding: 2.5rem 1.5rem 3rem;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.site-footer-links {
-  display: flex;
-  gap: 1.75rem;
-  flex-wrap: wrap;
-}
-
-.site-footer-links a {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: var(--trans);
-}
-
-.site-footer-links a:hover { color: var(--primary); }
-
-.site-footer-links svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.site-footer-copy {
-  width: 100%;
-  font-size: 0.68rem;
-  color: var(--text-3);
-  letter-spacing: 0.08em;
-  margin-top: 0.75rem;
-  text-transform: uppercase;
-}
-
 /* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */
 @media (max-width: 640px) {
   /* frena el scroll horizontal si algo se pasa por poco */
@@ -80,10 +28,5 @@ header.site-header-topbar {
 
   header.site-header-topbar {
     padding: 1.25rem 1rem 1rem;
-  }
-
-  .site-footer {
-    justify-content: center;
-    text-align: center;
   }
 }

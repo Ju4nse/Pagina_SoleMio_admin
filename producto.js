@@ -5,8 +5,9 @@
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
 import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, guardarColorPersonalizado } from './theme.js';
-import { initCarritoUI, agregarAlCarrito } from './carrito.js';
+import { initCarritoUI, agregarAlCarrito, combinarVariantesConTexto } from './carrito.js';
 import { renderTopbar }       from './topbar.js';
+import { renderFooter }       from './footer.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -290,17 +291,6 @@ async function cargarVariantesProducto(productoId) {
   return null;
 }
 
-function variantesFallbackDesdeTexto(p) {
-  const talles  = (p.talles || '').split(',').map(t => t.trim()).filter(Boolean);
-  const colores = (p.color  || '').split(',').map(c => c.trim()).filter(Boolean);
-  if (talles.length) {
-    return colores.length
-      ? talles.flatMap(t => colores.map(c => ({ talle: t, color: c })))
-      : talles.map(t => ({ talle: t, color: '' }));
-  }
-  return colores.map(c => ({ talle: '', color: c }));
-}
-
 function tallesDeVariantes() {
   return [...new Set(variantesProducto.map(v => v.talle).filter(Boolean))];
 }
@@ -555,18 +545,6 @@ async function cargarVariantesYActualizar(id, data) {
    admin todavía no volvió a guardar el producto con la grilla nueva.
    En ese caso se cruzan los talles reales con los colores del campo
    de texto legado, en vez de perder el color por completo. */
-function combinarVariantesConTexto(variantesDB, data) {
-  if (!variantesDB) return variantesFallbackDesdeTexto(data);
-
-  const tieneColorEstructurado = variantesDB.some(v => v.color);
-  if (tieneColorEstructurado) return variantesDB;
-
-  const coloresTexto = (data.color || '').split(',').map(c => c.trim()).filter(Boolean);
-  if (!coloresTexto.length) return variantesDB;
-
-  return variantesDB.flatMap(v => coloresTexto.map(c => ({ talle: v.talle, color: c })));
-}
-
 async function obtenerListaNav() {
   const { data, error } = await sb
     .from('productos')
@@ -605,8 +583,37 @@ let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
 let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
 let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
 let fotosModalState      = [];  // urls de producto_fotos, en orden
+let categoriasModalState = [];  // claves de CATEGORIA_LABELS elegidas, ej. ['bombachas','conjuntos']
+
+/* Mismas categorías que ofrece catalogo.js — un producto puede tener
+   varias, se guardan separadas por coma en p.categoria. */
+const CATEGORIA_LABELS = {
+  conjuntos:   'Conjuntos',
+  'corpiños':  'Corpiños',
+  bombachas:   'Bombachas',
+  pijamas:     'Pijamas & Homewear',
+  maternal:    'Maternal & Lactancia',
+  modeladora:  'Línea Modeladora & Fajas',
+};
 
 function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
+
+function renderCategoriaChipsPicker() {
+  const container = document.getElementById('categoria-chips-picker');
+  if (!container) return;
+
+  container.innerHTML = Object.entries(CATEGORIA_LABELS).map(([valor, label]) => `
+    <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
+      onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
+  `).join('');
+}
+
+function toggleCategoriaModal(valor) {
+  const idx = categoriasModalState.indexOf(valor);
+  if (idx >= 0) categoriasModalState.splice(idx, 1);
+  else          categoriasModalState.push(valor);
+  renderCategoriaChipsPicker();
+}
 
 function parsearTallesTexto(str) {
   if (!str) return [];
@@ -982,6 +989,7 @@ async function openProdModal() {
   variantesStockState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
   fotosModalState = [];
+  categoriasModalState = (p?.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
@@ -1003,16 +1011,10 @@ async function openProdModal() {
           </div>
         </div>
         <div class="field">
-          <label>Categoría</label>
-          <select id="p-categoria">
-            <option value="">(Detectar automáticamente)</option>
-            <option value="conjuntos" ${p?.categoria === 'conjuntos' ? 'selected' : ''}>Conjuntos</option>
-            <option value="corpiños" ${p?.categoria === 'corpiños' ? 'selected' : ''}>Corpiños</option>
-            <option value="bombachas" ${p?.categoria === 'bombachas' ? 'selected' : ''}>Bombachas</option>
-            <option value="pijamas" ${p?.categoria === 'pijamas' ? 'selected' : ''}>Pijamas & Homewear</option>
-            <option value="maternal" ${p?.categoria === 'maternal' ? 'selected' : ''}>Maternal & Lactancia</option>
-            <option value="modeladora" ${p?.categoria === 'modeladora' ? 'selected' : ''}>Línea Modeladora & Fajas</option>
-          </select>
+          <label>Categorías
+            <span style="font-size:.72rem;color:var(--text-3);font-weight:400"> — podés elegir más de una</span>
+          </label>
+          <div class="selector-compra" id="categoria-chips-picker" style="margin:0"></div>
         </div>
 
         <!-- SECCIÓN GESTIÓN DE COLORES -->
@@ -1169,6 +1171,7 @@ async function openProdModal() {
       </div>
     </div>`;
 
+  renderCategoriaChipsPicker();
   renderListaColoresModal();
   renderListaTallesModal();
   renderVariantesGrid();
@@ -1293,7 +1296,7 @@ async function saveProd() {
     nombre,
     marca:          document.getElementById('p-marca').value.trim(),
     precio:         parseFloat(document.getElementById('p-precio').value) || 0,
-    categoria:      document.getElementById('p-categoria')?.value.trim() || null,
+    categoria:      categoriasModalState.join(',') || null,
     color:          strColor,
     talles:         strTalles,
     num_stock,
@@ -1322,6 +1325,7 @@ async function saveProd() {
 }
 
 // Exponer funciones para los onclick del modal
+window.toggleCategoriaModalUI  = toggleCategoriaModal;
 window.agregarTalleItem        = agregarTalleItem;
 window.quitarTalleItem         = quitarTalleItem;
 window.agregarTalleRapido      = agregarTalleRapido;
@@ -1369,6 +1373,7 @@ async function startApp() {
   document.getElementById('app').style.display = 'block';
 
   renderTopbar('catalogo');
+  renderFooter();
   initTheme();
   applyRole();
   initCarritoUI();

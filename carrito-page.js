@@ -6,16 +6,127 @@
    falta sesión: funciona igual para invitados y para admin.
    ================================================================ */
 import { sb, esAdmin } from './supabase-client.js';
-import { ICON, initTheme, toggleTheme } from './theme.js';
+import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
 import {
   leerCarrito, quitarItem, cambiarCantidad, totalCarrito,
   enviarPedidoSupabase, actualizarBadge, fmtARS, TIEMPO_REVISION_HORAS,
+  actualizarAtributoItem, variantesFallbackDesdeTexto, combinarVariantesConTexto,
 } from './carrito.js';
 import { renderTopbar } from './topbar.js';
+import { renderFooter } from './footer.js';
 
 let vista            = 'carrito'; // 'carrito' | 'listo'
 let rolActual         = 'guest';
 let pedidoIdCreado    = null;
+
+/* ================================================================
+   VARIANTES POR PRODUCTO (talle/color) — para los ítems que se
+   agregaron sin elegirlos (botón rápido del catálogo). Se cachean
+   por productoId para no repetir consultas al re-renderizar.
+   variantesCache[id] === undefined  → todavía no se cargaron
+   variantesCache[id] === []         → cargadas, el producto no tiene variantes
+   ================================================================ */
+let variantesCache = {};
+
+async function cargarVariantesParaItems(items) {
+  const ids = [...new Set(items.map(it => it.productoId))]
+    .filter(id => variantesCache[id] === undefined);
+  if (!ids.length) return;
+
+  const [{ data: talles }, { data: prods }] = await Promise.all([
+    sb.from('producto_talles').select('producto_id, talle, color').eq('activo', true).in('producto_id', ids),
+    sb.from('productos').select('id, talles, color').in('id', ids),
+  ]);
+
+  const prodMap = new Map((prods || []).map(p => [p.id, p]));
+  ids.forEach(id => {
+    const variantesDB = (talles || [])
+      .filter(t => t.producto_id === id)
+      .map(t => ({ talle: t.talle, color: t.color || '' }));
+    const prod = prodMap.get(id);
+    variantesCache[id] = variantesDB.length
+      ? combinarVariantesConTexto(variantesDB, prod || {})
+      : (prod ? variantesFallbackDesdeTexto(prod) : []);
+  });
+}
+
+function tallesDelItem(it) {
+  return [...new Set((variantesCache[it.productoId] || []).map(v => v.talle).filter(Boolean))];
+}
+
+function coloresDelItem(it) {
+  const variantes = variantesCache[it.productoId] || [];
+  return [...new Set(
+    variantes.filter(v => !it.talle || v.talle === it.talle).map(v => v.color).filter(Boolean)
+  )];
+}
+
+/* true si al ítem todavía le falta un talle o color que el producto
+   sí tiene cargado (bloquea la confirmación del pedido). */
+function faltaSeleccion(it) {
+  const variantes = variantesCache[it.productoId];
+  if (variantes === undefined) return true; // todavía no se sabe: por las dudas, bloquea
+  const faltaTalle = tallesDelItem(it).length > 0 && !it.talle;
+  const faltaColor = coloresDelItem(it).length > 0 && !it.color;
+  return faltaTalle || faltaColor;
+}
+
+function renderSelectorItem(it, idx) {
+  const variantes = variantesCache[it.productoId];
+  if (variantes === undefined) {
+    return (!it.talle || !it.color)
+      ? `<p class="carrito-item-selector-cargando">Cargando opciones…</p>`
+      : '';
+  }
+
+  const talles = tallesDelItem(it);
+  const colores = coloresDelItem(it);
+  const faltaTalle = talles.length > 0 && !it.talle;
+  const faltaColor = colores.length > 0 && !it.color;
+  if (!faltaTalle && !faltaColor) return '';
+
+  return `
+    <div class="carrito-item-selector">
+      ${faltaTalle ? `
+        <div class="attr-group">
+          <span class="attr-label">Elegí un talle</span>
+          ${talles.map(t => `
+            <button type="button" class="attr-tag selector-chip" onclick="elegirTalleItemUI(${idx},&quot;${t.replace(/"/g, '&quot;')}&quot;)">${t}</button>
+          `).join('')}
+        </div>` : ''}
+      ${faltaColor ? `
+        <div class="attr-group">
+          <span class="attr-label">Elegí un color</span>
+          ${colores.map(c => {
+            const hex = hexDeColor(c);
+            return `
+              <button type="button" class="color-tag selector-chip" onclick="elegirColorItemUI(${idx},&quot;${c.replace(/"/g, '&quot;')}&quot;)">
+                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${c}
+              </button>`;
+          }).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function elegirTalleItem(idx, talle) {
+  const items = leerCarrito();
+  const it = items[idx];
+  if (!it) return;
+
+  const cambios = { talle };
+  const coloresParaEseTalle = new Set(
+    (variantesCache[it.productoId] || []).filter(v => v.talle === talle).map(v => v.color).filter(Boolean)
+  );
+  if (it.color && !coloresParaEseTalle.has(it.color)) cambios.color = '';
+
+  actualizarAtributoItem(idx, cambios);
+  render();
+}
+
+function elegirColorItem(idx, color) {
+  actualizarAtributoItem(idx, { color });
+  render();
+}
 
 function render() {
   const root = document.getElementById('carrito-page-root');
@@ -39,25 +150,30 @@ function renderCarrito(items) {
     <div class="carrito-page-grid">
       <div class="carrito-items">
         ${items.map((it, idx) => `
-          <div class="carrito-item">
-            <div class="carrito-item-img">
-              ${it.imagen
-                ? `<img src="${it.imagen}" alt="${it.nombre}"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                   <div class="carrito-item-img-ph" style="display:none">${ICON.shoe}</div>`
-                : `<div class="carrito-item-img-ph">${ICON.shoe}</div>`}
+          <div class="carrito-item-wrap" id="carrito-item-${idx}">
+            <div class="carrito-item">
+              <a class="carrito-item-link" href="producto.html?id=${encodeURIComponent(it.productoId)}" title="Ver producto">
+                <div class="carrito-item-img">
+                  ${it.imagen
+                    ? `<img src="${it.imagen}" alt="${it.nombre}"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                       <div class="carrito-item-img-ph" style="display:none">${ICON.shoe}</div>`
+                    : `<div class="carrito-item-img-ph">${ICON.shoe}</div>`}
+                </div>
+                <div class="carrito-item-info">
+                  <div class="carrito-item-nombre">${it.nombre}</div>
+                  <div class="carrito-item-attrs">${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'}</div>
+                  <div class="carrito-item-precio">${fmtARS(it.precioUnitario)} c/u</div>
+                </div>
+              </a>
+              <div class="carrito-item-qty">
+                <button type="button" class="btn-qty" onclick="cambiarCantidadUI(${idx},-1)">−</button>
+                <span>${it.cantidad}</span>
+                <button type="button" class="btn-qty" onclick="cambiarCantidadUI(${idx},1)">+</button>
+              </div>
+              <button type="button" class="btn-quitar-item" onclick="quitarItemUI(${idx})" title="Quitar">✕</button>
             </div>
-            <div class="carrito-item-info">
-              <div class="carrito-item-nombre">${it.nombre}</div>
-              <div class="carrito-item-attrs">${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'}</div>
-              <div class="carrito-item-precio">${fmtARS(it.precioUnitario)} c/u</div>
-            </div>
-            <div class="carrito-item-qty">
-              <button type="button" class="btn-qty" onclick="cambiarCantidadUI(${idx},-1)">−</button>
-              <span>${it.cantidad}</span>
-              <button type="button" class="btn-qty" onclick="cambiarCantidadUI(${idx},1)">+</button>
-            </div>
-            <button type="button" class="btn-quitar-item" onclick="quitarItemUI(${idx})" title="Quitar">✕</button>
+            ${renderSelectorItem(it, idx)}
           </div>
         `).join('')}
       </div>
@@ -147,6 +263,29 @@ async function enviarPedido(event) {
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   if (errorEl) errorEl.style.display = 'none';
 
+  await cargarVariantesParaItems(items);
+  const idxPendiente = items.findIndex(faltaSeleccion);
+  if (idxPendiente >= 0) {
+    render(); // recrea el DOM del carrito con los selectores de talle/color visibles
+
+    // render() reconstruye el formulario entero: se restauran los datos
+    // que la persona ya había escrito para que no tenga que reescribirlos.
+    const nombreEl   = document.getElementById('chk-nombre');
+    const telefonoEl = document.getElementById('chk-telefono');
+    const notaEl     = document.getElementById('chk-nota');
+    if (nombreEl)   nombreEl.value   = nombre;
+    if (telefonoEl) telefonoEl.value = telefono;
+    if (notaEl)     notaEl.value     = nota || '';
+
+    const errorElNuevo = document.getElementById('chk-error');
+    if (errorElNuevo) {
+      errorElNuevo.textContent = 'Todavía tenés un producto sin talle o color elegido.';
+      errorElNuevo.style.display = 'block';
+    }
+    document.getElementById(`carrito-item-${idxPendiente}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+
   const res = await enviarPedidoSupabase({ nombre, telefono, nota }, items);
 
   if (res.ok) {
@@ -193,9 +332,14 @@ async function doLogout() {
 
 async function init() {
   renderTopbar('carrito');
+  renderFooter();
   initTheme();
   actualizarBadge();
   render();
+
+  // Carga las variantes talle/color de los productos del carrito (para
+  // los ítems agregados sin elegirlas) y re-renderiza cuando llegan.
+  cargarVariantesParaItems(leerCarrito()).then(render);
 
   rolActual = await detectarRol();
   const app = document.getElementById('app');
@@ -215,5 +359,7 @@ window.cambiarCantidadUI  = cambiarCantidadUI;
 window.quitarItemUI       = quitarItemUI;
 window.enviarPedidoUI     = enviarPedido;
 window.doLogout           = doLogout;
+window.elegirTalleItemUI  = elegirTalleItem;
+window.elegirColorItemUI  = elegirColorItem;
 
 init();

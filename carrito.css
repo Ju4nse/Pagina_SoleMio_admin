@@ -61,3 +61,46 @@
 }
 
 .carrito-explica li + li { margin-top: 0.35rem; }
+
+/* ── SELECTOR DE TALLE/COLOR INLINE (ítems agregados sin elegirlos) ── */
+.carrito-item-wrap {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.carrito-item-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.carrito-item-link:hover .carrito-item-nombre { color: var(--primary); }
+
+.carrito-item-wrap .carrito-item {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.carrito-item-selector,
+.carrito-item-selector-cargando {
+  margin-top: 0.6rem;
+  padding-left: calc(60px + 0.75rem);
+}
+
+.carrito-item-selector .attr-group { margin-bottom: 0.5rem; }
+.carrito-item-selector .attr-group:last-child { margin-bottom: 0; }
+
+.carrito-item-selector-cargando {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .carrito-item-selector,
+  .carrito-item-selector-cargando { padding-left: 0; }
+}

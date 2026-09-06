@@ -5,8 +5,9 @@
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
 import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, guardarColorPersonalizado } from './theme.js';
-import { initCarritoUI }      from './carrito.js';
+import { initCarritoUI, agregarAlCarrito } from './carrito.js';
 import { renderTopbar }       from './topbar.js';
+import { renderFooter }       from './footer.js';
 
 /* ================================================================
    STATE
@@ -16,6 +17,23 @@ let productos           = [];
 let productosVisibles   = 50;
 let editingProdId       = null;
 let marcaFiltro         = '';    // marca elegida en el menú "Marcas" del topbar
+let categoriaFiltro     = '';    // categoría elegida en el sidebar del catálogo
+
+/* Mismas categorías que ofrece el picker del modal de edición (ver
+   openProdModal) — de ahí sale el valor guardado en p.categoria. Un
+   producto puede tener varias: se guardan separadas por coma. */
+const CATEGORIA_LABELS = {
+  conjuntos:   'Conjuntos',
+  'corpiños':  'Corpiños',
+  bombachas:   'Bombachas',
+  pijamas:     'Pijamas & Homewear',
+  maternal:    'Maternal & Lactancia',
+  modeladora:  'Línea Modeladora & Fajas',
+};
+
+function categoriasDeProducto(p) {
+  return (p.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
+}
 
 function isAdmin()    { return currentRole === 'admin'; }
 function isGuest()    { return currentRole === 'guest'; }
@@ -180,6 +198,16 @@ function renderCatalogo(resetear = false) {
   const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))].sort();
   renderMarcasMenu(marcas, marcaFiltro);
 
+  // El conteo del sidebar refleja solo lo que ve un invitado (en stock y no
+  // oculto), sea cual sea el rol de quien está mirando el catálogo ahora —
+  // así el número siempre coincide con lo que un cliente realmente ve.
+  const categoriasContadas = {};
+  productos.forEach(p => {
+    if (!p.stock || p.oculto) return;
+    categoriasDeProducto(p).forEach(c => { categoriasContadas[c] = (categoriasContadas[c] || 0) + 1; });
+  });
+  renderCategoriasSidebar(categoriasContadas, categoriaFiltro);
+
   const lista = productos.filter(p => {
     if (p.oculto && isGuest()) return false;
     if (!p.stock && isGuest()) return false; // el invitado solo ve productos con stock
@@ -189,6 +217,7 @@ function renderCatalogo(resetear = false) {
       (p.id     || '').toLowerCase().includes(q);
     if (q && !q_ok)                            return false;
     if (marca && p.marca !== marca)            return false;
+    if (categoriaFiltro && !categoriasDeProducto(p).includes(categoriaFiltro)) return false;
     // El filtro manual de stock (dropdown) es una herramienta de admin.
     if (isAdmin()) {
       if (stock === 'in stock'     && !p.stock) return false;
@@ -250,7 +279,13 @@ function renderCatalogo(resetear = false) {
           <button class="btn sm danger" onclick="event.preventDefault();event.stopPropagation();confirmarEliminar('${p.id}')">
             ${ICON.trash}
           </button>
-        </div>` : ''}
+        </div>` : `
+        <div class="prod-quickadd">
+          <button type="button" class="btn sm primary" ${!enStock ? 'disabled' : ''}
+            onclick="event.preventDefault();event.stopPropagation();agregarAlCarritoRapidoUI('${p.id}')">
+            ${ICON.cart} Agregar
+          </button>
+        </div>`}
       </div>
     </a>`;
   }).join('');
@@ -268,6 +303,32 @@ function renderCatalogo(resetear = false) {
 function cargarMas() {
   productosVisibles += 50;
   renderCatalogo();
+}
+
+/* Agrega un producto al carrito directo desde su tarjeta del catálogo,
+   sin pasar por su detalle. Va sin talle/color: se eligen después en
+   el carrito (ver carrito-page.js). Si el producto tiene talles y/o
+   colores para elegir, cada click agrega una línea separada (en vez
+   de sumar cantidad a una ya pendiente de elección), para poder
+   agregar el mismo producto varias veces y darle a cada uno un talle
+   o color distinto — si dos terminan con la misma combinación, el
+   carrito las fusiona solo en ese momento. */
+function agregarAlCarritoRapido(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+
+  const necesitaSeleccion = !!(p.talles || p.color);
+
+  agregarAlCarrito({
+    productoId:     p.id,
+    nombre:         p.nombre,
+    precioUnitario: Math.round(p.precio * 1.5),
+    imagen:         p.imagen,
+    talle:          '',
+    color:          '',
+    cantidad:       1,
+    separado:       necesitaSeleccion,
+  });
 }
 
 /* ── MENÚ "MARCAS" DEL TOPBAR — panel que se despliega al hacer
@@ -306,6 +367,39 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/* ── SIDEBAR "CATEGORÍA" — a la izquierda del catálogo. Solo lista
+   las categorías que efectivamente tienen algún producto cargado
+   (muchos productos todavía no tienen categoria asignada). ────── */
+function renderCategoriasSidebar(categoriasContadas, categoriaActual) {
+  const list = document.getElementById('categoria-list');
+  if (!list) return;
+
+  const categorias = Object.keys(categoriasContadas)
+    .sort((a, b) => (CATEGORIA_LABELS[a] || a).localeCompare(CATEGORIA_LABELS[b] || a));
+
+  if (!categorias.length) {
+    list.innerHTML = '<li class="categoria-empty">Todavía no hay categorías cargadas</li>';
+    return;
+  }
+
+  list.innerHTML =
+    `<li><button type="button" class="categoria-item${categoriaActual ? '' : ' active'}" data-categoria="">Todas</button></li>` +
+    categorias.map(c => `
+      <li>
+        <button type="button" class="categoria-item${c === categoriaActual ? ' active' : ''}" data-categoria="${c}">
+          <span>${CATEGORIA_LABELS[c] || c}</span>
+          <span class="categoria-count">${categoriasContadas[c]}</span>
+        </button>
+      </li>`).join('');
+}
+
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('.categoria-item');
+  if (!item) return;
+  categoriaFiltro = item.dataset.categoria || '';
+  renderCatalogo(true);
+});
+
 
 /* ================================================================
    GESTOR DE TALLES + COLORES + STOCK POR COMBINACIÓN (MODAL)
@@ -318,8 +412,26 @@ let tallesModalState     = [];  // nombres de talle, ej. ['S','M','L']
 let coloresModalState    = [];  // nombres de color, ej. ['Negro','Rojo']
 let variantesStockState  = {};  // `${talle}||${color}` -> stock (int)
 let fotosModalState      = [];  // urls de producto_fotos, en orden
+let categoriasModalState = [];  // claves de CATEGORIA_LABELS elegidas, ej. ['bombachas','conjuntos']
 
 function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
+
+function renderCategoriaChipsPicker() {
+  const container = document.getElementById('categoria-chips-picker');
+  if (!container) return;
+
+  container.innerHTML = Object.entries(CATEGORIA_LABELS).map(([valor, label]) => `
+    <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
+      onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
+  `).join('');
+}
+
+function toggleCategoriaModal(valor) {
+  const idx = categoriasModalState.indexOf(valor);
+  if (idx >= 0) categoriasModalState.splice(idx, 1);
+  else          categoriasModalState.push(valor);
+  renderCategoriaChipsPicker();
+}
 
 function parsearTallesTexto(str) {
   if (!str) return [];
@@ -696,6 +808,7 @@ async function openProdModal(id) {
   variantesStockState = {};
   seedTalles.forEach(t => { variantesStockState[claveVariante(t.talle, '')] = t.stock; });
   fotosModalState = [];
+  categoriasModalState = (p?.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
 
   document.getElementById('modal-prod').innerHTML = `
     <div class="modal-overlay" id="mpo" onclick="if(event.target.id==='mpo') closeProdModal()">
@@ -717,16 +830,10 @@ async function openProdModal(id) {
           </div>
         </div>
         <div class="field">
-          <label>Categoría</label>
-          <select id="p-categoria">
-            <option value="">(Detectar automáticamente)</option>
-            <option value="conjuntos" ${p?.categoria === 'conjuntos' ? 'selected' : ''}>Conjuntos</option>
-            <option value="corpiños" ${p?.categoria === 'corpiños' ? 'selected' : ''}>Corpiños</option>
-            <option value="bombachas" ${p?.categoria === 'bombachas' ? 'selected' : ''}>Bombachas</option>
-            <option value="pijamas" ${p?.categoria === 'pijamas' ? 'selected' : ''}>Pijamas & Homewear</option>
-            <option value="maternal" ${p?.categoria === 'maternal' ? 'selected' : ''}>Maternal & Lactancia</option>
-            <option value="modeladora" ${p?.categoria === 'modeladora' ? 'selected' : ''}>Línea Modeladora & Fajas</option>
-          </select>
+          <label>Categorías
+            <span style="font-size:.72rem;color:var(--text-3);font-weight:400"> — podés elegir más de una</span>
+          </label>
+          <div class="selector-compra" id="categoria-chips-picker" style="margin:0"></div>
         </div>
 
         <!-- SECCIÓN GESTIÓN DE COLORES -->
@@ -886,6 +993,7 @@ async function openProdModal(id) {
       </div>
     </div>`;
 
+  renderCategoriaChipsPicker();
   renderListaColoresModal();
   renderListaTallesModal();
   renderVariantesGrid();
@@ -969,7 +1077,7 @@ async function saveProd() {
     nombre,
     marca:          document.getElementById('p-marca').value.trim(),
     precio:         parseFloat(document.getElementById('p-precio').value) || 0,
-    categoria:      document.getElementById('p-categoria')?.value.trim() || null,
+    categoria:      categoriasModalState.join(',') || null,
     color:          strColor,
     talles:         strTalles,
     num_stock,
@@ -1106,6 +1214,7 @@ async function startApp() {
   document.getElementById('app').style.display = 'block';
 
   renderTopbar('catalogo', { search: true, marcas: true });
+  renderFooter();
   initTheme();
   applyRole();
   initCarritoUI();
@@ -1168,6 +1277,7 @@ async function init() {
 window.toggleTheme          = toggleTheme;
 window.renderCatalogo       = renderCatalogo;
 window.cargarMas            = cargarMas;
+window.agregarAlCarritoRapidoUI = agregarAlCarritoRapido;
 window.openProdModal        = openProdModal;
 window.closeProdModal       = closeProdModal;
 window.saveProd             = saveProd;
@@ -1177,6 +1287,7 @@ window.openAccountModal     = openAccountModal;
 window.closeAccountModal    = closeAccountModal;
 window.cambiarPassword      = cambiarPassword;
 window.doLogout              = doLogout;
+window.toggleCategoriaModalUI  = toggleCategoriaModal;
 window.agregarTalleItem        = agregarTalleItem;
 window.quitarTalleItem         = quitarTalleItem;
 window.agregarTalleRapido      = agregarTalleRapido;

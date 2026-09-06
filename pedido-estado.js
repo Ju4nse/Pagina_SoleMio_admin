@@ -8,6 +8,7 @@ import { sb, esAdmin } from './supabase-client.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { leerMisPedidosLocal, initCarritoUI, TIEMPO_REVISION_HORAS } from './carrito.js';
 import { renderTopbar } from './topbar.js';
+import { renderFooter } from './footer.js';
 
 let rolActual = 'guest';
 
@@ -258,6 +259,7 @@ async function doLogout() {
 
 async function init() {
   renderTopbar('mis-pedidos');
+  renderFooter();
   initTheme();
   initCarritoUI();
 
