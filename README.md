@@ -6,34 +6,42 @@ cliente que habla con Supabase).
 
 ## Estructura de archivos
 
+Los `.html` viven en la raíz (son la URL pública real del sitio — el
+hosting sirve el repo tal cual, ver `wrangler.jsonc`). El JS y el CSS
+están agrupados en `js/` y `css/`, las imágenes en `img/`, y las
+migraciones SQL hand-run en `sql/`. Este listado es parcial (no cubre
+pedidos.html/producto.html/carrito.html/pedido-estado.html ni sus JS,
+agregados después) — ver los `.html` de la raíz para el set completo
+de páginas.
+
 ```
 index.html           → redirige a landing.html (punto de entrada del hosting)
 
 landing.html          → recibidor público: hero + novedades del catálogo
-landing.css           → estilos exclusivos de la landing
-landing.js             → carga las novedades desde Supabase, acceso invitado
+css/landing.css       → estilos exclusivos de la landing
+js/landing.js         → carga las novedades desde Supabase, acceso invitado
 
-contacto.html          → página de contacto (Instagram, WhatsApp, dirección/horarios)
-contacto.css           → estilos exclusivos de contacto
-contacto.js             → tema + acceso invitado desde contacto
+contacto.html         → página de contacto (Instagram, WhatsApp, dirección/horarios)
+css/contacto.css      → estilos exclusivos de contacto
+js/contacto.js        → tema + acceso invitado desde contacto
 
 login.html           → pantalla de login
-login.css            → estilos exclusivos del login
-login.js             → lógica de autenticación (admin + invitado, rate limiting)
+css/login.css        → estilos exclusivos del login
+js/login.js          → lógica de autenticación (admin + invitado, rate limiting)
 
 catalogo.html         → panel de catálogo (sin pestañas: es la única vista)
-catalogo.css           → estilos exclusivos del catálogo
-catalogo.js             → lógica del catálogo (CRUD de productos, modal
-                          de cuenta con cambio de contraseña, logout)
+css/catalogo.css      → estilos exclusivos del catálogo
+js/catalogo.js        → lógica del catálogo (CRUD de productos, modal
+                        de cuenta con cambio de contraseña, logout)
 
-shared.css           → tokens de color, reset, botones y campos de formulario
+css/shared.css       → tokens de color, reset, botones y campos de formulario
                         (usado por todas las páginas)
-site.css              → header y footer compartidos entre landing.html y
+css/site.css          → header y footer compartidos entre landing.html y
                         contacto.html
-supabase-client.js    → cliente Supabase singleton + helper esAdmin()
-theme.js              → tema claro/oscuro + set de íconos SVG compartidos
+js/supabase-client.js → cliente Supabase singleton + helper esAdmin()
+js/theme.js           → tema claro/oscuro + set de íconos SVG compartidos
 
-logo.png              → logo (sin cambios)
+img/logo.png          → logo (sin cambios)
 compras.json          → sin cambios (revisar si sigue en uso)
 ```
 
