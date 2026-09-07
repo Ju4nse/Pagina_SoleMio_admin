@@ -24,7 +24,7 @@
    menú de opciones, sobresale a la derecha). Ver catalogo.css.
 
    Tema/cuenta/salir viven juntos dentro de un mismo desplegable
-   (.settings-menu, ícono de las 3 rayitas) en vez de ser íconos
+   (.settings-menu, ícono de engranaje) en vez de ser íconos
    sueltos — igual en mobile que en desktop. "Mi cuenta" se oculta
    solo para invitados vía la clase admin-only-link de siempre.
 
@@ -108,9 +108,8 @@ export function renderTopbar(activeKey, opts = {}) {
       <div class="settings-menu" id="settings-menu">
         <button type="button" class="icon-btn" id="settings-btn" onclick="toggleSettingsMenuUI()" aria-label="Más opciones" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="7" x2="20" y2="7"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="17" x2="20" y2="17"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
         <div class="settings-panel" id="settings-panel">
