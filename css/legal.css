@@ -1,0 +1,71 @@
+/* ================================================================
+   legal.css — Estilos compartidos por las páginas de contenido chico
+   (404.html, terminos.html): mismo hero centrado que contacto.css
+   (.contact-hero, reutilizado tal cual) + lo propio de cada una.
+   ================================================================ */
+
+/* ── 404 ─────────────────────────────────────────────────────── */
+.not-found {
+  max-width: 480px;
+  margin: 3rem auto 5rem;
+  padding: 0 1.5rem;
+  text-align: center;
+}
+
+.not-found-code {
+  font-family: var(--font-serif);
+  font-size: clamp(3.5rem, 12vw, 5.5rem);
+  line-height: 1;
+  color: var(--primary);
+}
+
+.not-found h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.4rem, 3.5vw, 1.8rem);
+  margin: 0.75rem 0 0.5rem;
+}
+
+.not-found p {
+  font-size: 0.88rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+}
+
+.not-found-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── TÉRMINOS ────────────────────────────────────────────────── */
+.legal-content {
+  max-width: 640px;
+  margin: 0 auto 5rem;
+  padding: 0 1.5rem;
+}
+
+.legal-content h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 1.05rem;
+  margin: 2rem 0 0.6rem;
+}
+.legal-content h2:first-child { margin-top: 0; }
+
+.legal-content p {
+  font-size: 0.88rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  margin: 0 0 0.5rem;
+}
+
+.legal-content a { color: var(--primary); }
+
+.legal-updated {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: 2.5rem;
+}

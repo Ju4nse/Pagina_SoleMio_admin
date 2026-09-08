@@ -1899,6 +1899,13 @@ body.modal-abierto-lock { overflow: hidden; }
   color: var(--text-3);
 }
 
+.footer-bottom a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.footer-bottom a:hover { color: var(--primary); }
+
 @media (max-width: 640px) {
   .footer-inner { padding: 2.5rem 1.25rem 1.5rem; gap: 1.75rem; text-align: center; }
   /* .footer-brand no entra en ".footer-col" (es una clase aparte) —

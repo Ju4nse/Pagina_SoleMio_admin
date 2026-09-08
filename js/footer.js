@@ -78,6 +78,7 @@ export function renderFooter() {
 
     <div class="footer-bottom">
       © <span id="footer-year"></span> SoleMio. Todos los derechos reservados.
+      · <a href="terminos.html">Términos</a>
     </div>`;
 
   const yearEl = document.getElementById('footer-year');

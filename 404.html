@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Evita el "flash" de tema claro antes de aplicar el tema guardado
+  (function () {
+    try {
+      var t = localStorage.getItem('solemio-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoleMio — Página no encontrada</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/catalogo.css">
+<link rel="stylesheet" href="css/legal.css">
+</head>
+<body>
+
+<!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
+<header class="topbar site-header-topbar" id="topbar-slot"></header>
+
+<section class="not-found">
+  <div class="not-found-code">404</div>
+  <h1>No encontramos esta página</h1>
+  <p>El link puede estar mal escrito o la página ya no existe. Volvé a un lugar conocido:</p>
+  <div class="not-found-actions">
+    <a class="btn primary" href="catalogo.html">Ver el catálogo</a>
+    <a class="btn ghost" href="landing.html">Ir al inicio</a>
+  </div>
+</section>
+
+<footer class="site-footer" id="footer-slot"></footer>
+
+<script type="module" src="js/no-encontrado.js"></script>
+</body>
+</html>

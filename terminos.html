@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Evita el "flash" de tema claro antes de aplicar el tema guardado
+  (function () {
+    try {
+      var t = localStorage.getItem('solemio-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoleMio — Términos y datos</title>
+<meta name="description" content="Qué datos te pedimos al hacer un pedido en SoleMio y para qué los usamos.">
+<link rel="canonical" href="https://solemiocatalogo.juansegundofrias.workers.dev/terminos.html">
+<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/catalogo.css">
+<link rel="stylesheet" href="css/contacto.css">
+<link rel="stylesheet" href="css/legal.css">
+</head>
+<body>
+
+<!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
+<header class="topbar site-header-topbar" id="topbar-slot"></header>
+
+<section class="contact-hero">
+  <span class="eyebrow">Legal</span>
+  <h1>Términos y datos</h1>
+  <p>Cómo usamos la información que nos dejás al hacer un pedido.</p>
+</section>
+
+<section class="legal-content">
+
+  <h2>Qué datos pedimos</h2>
+  <p>
+    Para armar tu pedido te pedimos tu nombre y tu WhatsApp, y opcionalmente
+    una nota. No hace falta que crees una cuenta ni que nos dejes ningún
+    otro dato para comprar como invitado.
+  </p>
+
+  <h2>Para qué los usamos</h2>
+  <p>
+    Solo para coordinar tu pedido: confirmarte disponibilidad, el monto
+    final, y ponernos de acuerdo en el pago y la entrega por WhatsApp. No
+    usamos tus datos para nada más — no te mandamos publicidad ni se los
+    pasamos a terceros.
+  </p>
+
+  <h2>Pagos</h2>
+  <p>
+    No procesamos pagos ni pedimos datos de tarjetas en el sitio: el pago
+    se coordina directamente por WhatsApp una vez que confirmamos tu
+    pedido.
+  </p>
+
+  <h2>Tus datos, tus reglas</h2>
+  <p>
+    Si en algún momento querés que borremos tu información o tenés
+    cualquier duda sobre esto, escribinos por
+    <a href="https://wa.me/542494003595" target="_blank" rel="noopener">WhatsApp</a>
+    y lo resolvemos.
+  </p>
+
+  <p class="legal-updated">Última actualización: septiembre de 2026.</p>
+
+</section>
+
+<footer class="site-footer" id="footer-slot"></footer>
+
+<script type="module" src="js/terminos.js"></script>
+</body>
+</html>
