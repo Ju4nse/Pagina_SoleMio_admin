@@ -223,6 +223,7 @@ function renderCatalogo(resetear = false) {
   const q     = (document.getElementById('buscar')?.value      || '').toLowerCase();
   const marca = marcaFiltro;
   const stock = document.getElementById('filtro-stock')?.value || '';
+  const disponibleFiltro = document.getElementById('filtro-disponible')?.value || '';
 
   const newBtn = document.querySelector('.toolbar .btn.primary');
   if (newBtn) newBtn.style.display = isGuest() ? 'none' : '';
@@ -271,10 +272,13 @@ function renderCatalogo(resetear = false) {
     if (q && !q_ok)                            return false;
     if (marca && p.marca !== marca)            return false;
     if (categoriaFiltro && !categoriasDeProducto(p).includes(categoriaFiltro)) return false;
-    // El filtro manual de stock (dropdown) es una herramienta de admin.
+    // El filtro manual de stock y de disponible (dropdowns) son
+    // herramientas de admin — el invitado ya está filtrado arriba.
     if (isAdmin()) {
       if (stock === 'in stock'     && !p.stock) return false;
       if (stock === 'out of stock' &&  p.stock) return false;
+      if (disponibleFiltro === 'disponible'    && !p.disponible) return false;
+      if (disponibleFiltro === 'no-disponible' &&  p.disponible) return false;
     }
     return true;
   });
@@ -329,7 +333,7 @@ function renderCatalogo(resetear = false) {
             ${ICON.edit} Editar
           </button>
           <button type="button" class="btn sm ${p.disponible ? 'ghost' : 'primary'}"
-            title="El cliente ${p.disponible ? 'sí' : 'no'} puede ver ni comprar este producto ahora"
+            title="El cliente ${p.disponible ? 'sí puede ver y comprar' : 'no puede ver ni comprar'} este producto ahora"
             onclick="event.preventDefault();event.stopPropagation();toggleDisponibleUI('${p.id}', ${!p.disponible})">
             ${p.disponible ? 'Disponible' : 'No disponible'}
           </button>

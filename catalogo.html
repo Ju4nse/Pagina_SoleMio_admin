@@ -74,6 +74,11 @@
             <option value="in stock">En stock</option>
             <option value="out of stock">Sin stock</option>
           </select>
+          <select id="filtro-disponible" onchange="renderCatalogo()">
+            <option value="">Disponible y no disponible</option>
+            <option value="disponible">Solo disponibles</option>
+            <option value="no-disponible">Solo no disponibles</option>
+          </select>
           <button class="btn primary" style="margin-left:auto" onclick="openProdModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 5v14M5 12h14"/>

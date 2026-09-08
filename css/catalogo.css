@@ -1806,6 +1806,7 @@ body.modal-abierto-lock { overflow: hidden; }
 [data-role="guest"] .prod-actions,
 [data-role="guest"] .toolbar .btn.primary,
 [data-role="guest"] #filtro-stock,
+[data-role="guest"] #filtro-disponible,
 [data-role="guest"] .admin-only-link {
   display: none !important;
 }
