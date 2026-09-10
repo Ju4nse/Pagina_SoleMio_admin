@@ -164,11 +164,19 @@
 }
 
 .dest-frame {
+  position: relative;
   aspect-ratio: 3/4;
   margin-bottom: 0.85rem;
   transition: var(--trans);
 }
 .dest-card:hover .dest-frame { border-color: var(--primary); }
+
+.dest-badge-nuevo {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+}
 
 .dest-thumb-ph {
   width: 100%;

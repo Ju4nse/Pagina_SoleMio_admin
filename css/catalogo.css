@@ -751,6 +751,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .badge.stock   { background: var(--green-bg); color: var(--green); }
 .badge.nostock { background: var(--red-bg);   color: var(--red);   }
 .badge.marca   { background: var(--surface2); color: var(--text-2); }
+.badge.nuevo   { background: var(--primary-soft); color: var(--primary-dark); }
 
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-overlay {

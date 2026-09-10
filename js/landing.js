@@ -10,6 +10,11 @@ import { initAlertasPedidos } from './pedidos-alertas.js';
 
 let rolActual = 'guest';
 
+const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+function esProductoNuevo(p) {
+  return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
+}
+
 function fmtARS(n) {
   return '$\u202F' + Math.round(n).toLocaleString('es-AR');
 }
@@ -46,6 +51,7 @@ async function cargarDestacados() {
     return `
     <article class="dest-card" onclick="verCatalogo()">
       <div class="frame dest-frame">
+        ${esProductoNuevo(p) ? `<span class="badge nuevo dest-badge-nuevo">Nuevo</span>` : ''}
         ${img
           ? `<img src="${img}" alt="${p.nombre}" loading="lazy"
                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`

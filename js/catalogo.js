@@ -20,6 +20,11 @@ let editingProdId       = null;
 let marcaFiltro         = '';    // marca elegida en el menú "Marcas" del topbar
 let categoriaFiltro     = '';    // categoría elegida en el sidebar del catálogo
 
+const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+function esProductoNuevo(p) {
+  return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
+}
+
 /* Mismas categorías que ofrece el picker del modal de edición (ver
    openProdModal) — de ahí sale el valor guardado en p.categoria. Un
    producto puede tener varias: se guardan separadas por coma. */
@@ -336,6 +341,7 @@ function renderCatalogo(resetear = false) {
         <div class="prod-meta">${[p.color, p.talles].filter(Boolean).join(' · ')}</div>
         <div class="prod-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
         <div class="prod-badges">
+          ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
           ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
           ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
           ${p.destacado && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">★ Destacado</span>` : ''}

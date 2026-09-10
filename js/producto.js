@@ -24,6 +24,11 @@ const CONTACTO = {
 let currentRole    = null;   // 'admin' | 'guest'
 let productoActual = null;   // producto que se está mostrando/editando
 
+const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
+function esProductoNuevo(p) {
+  return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
+}
+
 let fotosProducto    = [];    // urls de la galería (o [imagen única] de fallback)
 let indiceFotoActual = 0;
 let zoomAbierto       = false;
@@ -163,6 +168,7 @@ function renderProducto(p, prev, next, similares) {
 
         <div class="product-meta-row">
           <span class="meta-code">ID: ${p.id}</span>
+          ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
           ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
           ${!p.disponible && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">No disponible</span>` : ''}
           ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
@@ -488,6 +494,7 @@ function renderSimilares(marca, lista) {
               <div class="prod-name">${p.nombre}</div>
               <div class="prod-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
               <div class="prod-badges">
+                ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
                 ${isAdmin() ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>` : ''}
               </div>
             </div>
@@ -602,7 +609,7 @@ async function cargarVariantesYActualizar(id, data) {
 async function obtenerListaNav() {
   const { data, error } = await sb
     .from('productos')
-    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,disponible')
+    .select('id,nombre,marca,precio,stock,num_stock,imagen_custom,imagen_scraper,disponible,creado_en')
     .eq('eliminado', false)
     .order('id', { ascending: true });
   if (error) { console.warn('Error cargando navegación:', error.message); return []; }

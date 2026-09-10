@@ -1,0 +1,21 @@
+-- 2026-09-10b_productos_disponible_default_false.sql
+-- A partir de ahora, todo producto nuevo que entra por el scraper
+-- (vía el trigger que sincroniza productos_externos -> productos, el
+-- que hace "INSERT INTO productos (...) ON CONFLICT (id) DO UPDATE")
+-- arranca como NO disponible — el admin lo revisa y lo activa a mano
+-- cuando corresponda, en vez de quedar visible para el cliente de
+-- entrada solo por haber llegado del scraper.
+--
+-- Confirmado con el código real de ese trigger: el INSERT no incluye
+-- la columna `disponible` en su lista de columnas, así que toma el
+-- default de la columna — este cambio alcanza solo, no hace falta
+-- tocar el trigger.
+--
+-- Esto SOLO afecta productos nuevos de acá en adelante. Los productos
+-- ya cargados hoy siguen con el valor que tengan — no hay forma de
+-- saber retroactivamente cuáles de esos fueron realmente revisados
+-- por un admin y cuáles quedaron en el default viejo (true) sin que
+-- nadie los mirara, así que no se tocan solos (decisión tomada junto
+-- con el dueño, conversación del 2026-09-10).
+
+alter table public.productos alter column disponible set default false;
