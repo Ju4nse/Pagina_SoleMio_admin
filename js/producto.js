@@ -654,14 +654,39 @@ const CATEGORIA_LABELS = {
 
 function claveVariante(talle, color) { return `${talle}||${color || ''}`; }
 
+// Se llena una vez al abrir el modal (ver cargarCategoriasConocidas) —
+// esta página no tiene la lista completa de productos en memoria como
+// catalogo.js, así que se pide aparte con una consulta liviana (una
+// sola columna) para poder ofrecer categorías creadas desde otro lado.
+let categoriasConocidasCache = { ...CATEGORIA_LABELS };
+
+async function cargarCategoriasConocidas() {
+  const mapa = { ...CATEGORIA_LABELS };
+  const { data, error } = await sb.from('productos').select('categoria').eq('eliminado', false);
+  if (!error) {
+    (data || []).forEach(p => {
+      (p.categoria || '').split(',').map(c => c.trim()).filter(Boolean)
+        .forEach(c => { if (!mapa[c]) mapa[c] = c; });
+    });
+  }
+  categoriasConocidasCache = mapa;
+}
+
 function renderCategoriaChipsPicker() {
   const container = document.getElementById('categoria-chips-picker');
   if (!container) return;
 
-  container.innerHTML = Object.entries(CATEGORIA_LABELS).map(([valor, label]) => `
-    <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
-      onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
-  `).join('');
+  const conocidas = { ...categoriasConocidasCache };
+  // Si el admin recién tipeó una categoría nueva que todavía no está
+  // guardada en ningún producto, igual se muestra ya seleccionada.
+  categoriasModalState.forEach(c => { if (!conocidas[c]) conocidas[c] = c; });
+
+  container.innerHTML = Object.entries(conocidas)
+    .sort(([, a], [, b]) => a.localeCompare(b, 'es'))
+    .map(([valor, label]) => `
+      <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
+        onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
+    `).join('');
 }
 
 function toggleCategoriaModal(valor) {
@@ -669,6 +694,22 @@ function toggleCategoriaModal(valor) {
   if (idx >= 0) categoriasModalState.splice(idx, 1);
   else          categoriasModalState.push(valor);
   renderCategoriaChipsPicker();
+}
+
+function agregarCategoriaNueva() {
+  const input = document.getElementById('nueva-categoria-nombre');
+  if (!input) return;
+  const nombre = input.value.trim();
+  if (!nombre) { input.focus(); return; }
+
+  const existente = Object.keys(categoriasConocidasCache).find(c => c.toLowerCase() === nombre.toLowerCase())
+    || categoriasModalState.find(c => c.toLowerCase() === nombre.toLowerCase());
+
+  const valor = existente || nombre;
+  if (!categoriasModalState.includes(valor)) categoriasModalState.push(valor);
+  renderCategoriaChipsPicker();
+  input.value = '';
+  input.focus();
 }
 
 function parsearTallesTexto(str) {
@@ -1253,6 +1294,7 @@ async function openProdModal() {
   if (!p || !isAdmin()) return;
 
   await cargarColoresPersonalizados();
+  await cargarCategoriasConocidas();
 
   const seedTalles   = parsearTallesTexto(p?.talles || '');
   tallesModalState   = seedTalles.map(t => t.talle);
@@ -1290,6 +1332,12 @@ async function openProdModal() {
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400"> — podés elegir más de una</span>
           </label>
           <div class="selector-compra" id="categoria-chips-picker" style="margin:0"></div>
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.5rem;">
+            <input type="text" id="nueva-categoria-nombre" placeholder="Crear categoría nueva…" style="flex:1; min-width:120px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarCategoriaNuevaUI();}">
+            <button type="button" class="btn sm primary" onclick="agregarCategoriaNuevaUI()" style="flex-shrink:0;">
+              + Crear
+            </button>
+          </div>
         </div>
 
         <!-- SECCIÓN GESTIÓN DE COLORES -->
@@ -1625,6 +1673,7 @@ async function saveProd() {
 
 // Exponer funciones para los onclick del modal
 window.toggleCategoriaModalUI  = toggleCategoriaModal;
+window.agregarCategoriaNuevaUI = agregarCategoriaNueva;
 window.agregarTalleItem        = agregarTalleItem;
 window.quitarTalleItem         = quitarTalleItem;
 window.agregarTalleRapido      = agregarTalleRapido;

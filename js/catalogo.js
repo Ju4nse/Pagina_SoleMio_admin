@@ -36,6 +36,20 @@ function categoriasDeProducto(p) {
   return (p.categoria || '').split(',').map(c => c.trim()).filter(Boolean);
 }
 
+/* Categorías para ofrecer en el picker del modal: las fijas de arriba
+   más cualquier otra que un admin haya tipeado a mano en algún
+   producto — así una categoría "creada" queda disponible para elegir
+   en los demás productos sin necesidad de una tabla aparte, el mismo
+   criterio que ya usa el sidebar del catálogo (renderCategoriasSidebar)
+   para descubrir categorías dinámicamente. */
+function todasLasCategoriasConocidas() {
+  const mapa = { ...CATEGORIA_LABELS };
+  productos.forEach(p => {
+    categoriasDeProducto(p).forEach(c => { if (!mapa[c]) mapa[c] = c; });
+  });
+  return mapa;
+}
+
 function isAdmin()    { return currentRole === 'admin'; }
 function isGuest()    { return currentRole === 'guest'; }
 
@@ -528,10 +542,17 @@ function renderCategoriaChipsPicker() {
   const container = document.getElementById('categoria-chips-picker');
   if (!container) return;
 
-  container.innerHTML = Object.entries(CATEGORIA_LABELS).map(([valor, label]) => `
-    <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
-      onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
-  `).join('');
+  const conocidas = todasLasCategoriasConocidas();
+  // Si el admin recién tipeó una categoría nueva que todavía no está
+  // guardada en ningún producto, igual se muestra ya seleccionada.
+  categoriasModalState.forEach(c => { if (!conocidas[c]) conocidas[c] = c; });
+
+  container.innerHTML = Object.entries(conocidas)
+    .sort(([, a], [, b]) => a.localeCompare(b, 'es'))
+    .map(([valor, label]) => `
+      <button type="button" class="attr-tag selector-chip${categoriasModalState.includes(valor) ? ' selected' : ''}"
+        onclick="toggleCategoriaModalUI('${valor}')">${label}</button>
+    `).join('');
 }
 
 function toggleCategoriaModal(valor) {
@@ -539,6 +560,23 @@ function toggleCategoriaModal(valor) {
   if (idx >= 0) categoriasModalState.splice(idx, 1);
   else          categoriasModalState.push(valor);
   renderCategoriaChipsPicker();
+}
+
+function agregarCategoriaNueva() {
+  const input = document.getElementById('nueva-categoria-nombre');
+  if (!input) return;
+  const nombre = input.value.trim();
+  if (!nombre) { input.focus(); return; }
+
+  const conocidas = todasLasCategoriasConocidas();
+  const existente = Object.keys(conocidas).find(c => c.toLowerCase() === nombre.toLowerCase())
+    || categoriasModalState.find(c => c.toLowerCase() === nombre.toLowerCase());
+
+  const valor = existente || nombre;
+  if (!categoriasModalState.includes(valor)) categoriasModalState.push(valor);
+  renderCategoriaChipsPicker();
+  input.value = '';
+  input.focus();
 }
 
 function parsearTallesTexto(str) {
@@ -1165,6 +1203,12 @@ async function openProdModal(id) {
             <span style="font-size:.72rem;color:var(--text-3);font-weight:400"> — podés elegir más de una</span>
           </label>
           <div class="selector-compra" id="categoria-chips-picker" style="margin:0"></div>
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.5rem;">
+            <input type="text" id="nueva-categoria-nombre" placeholder="Crear categoría nueva…" style="flex:1; min-width:120px;" onkeydown="if(event.key==='Enter'){event.preventDefault();agregarCategoriaNuevaUI();}">
+            <button type="button" class="btn sm primary" onclick="agregarCategoriaNuevaUI()" style="flex-shrink:0;">
+              + Crear
+            </button>
+          </div>
         </div>
 
         <!-- SECCIÓN GESTIÓN DE COLORES -->
@@ -1653,6 +1697,7 @@ window.closeAccountModal    = closeAccountModal;
 window.cambiarPassword      = cambiarPassword;
 window.doLogout              = doLogout;
 window.toggleCategoriaModalUI  = toggleCategoriaModal;
+window.agregarCategoriaNuevaUI = agregarCategoriaNueva;
 window.agregarTalleItem        = agregarTalleItem;
 window.quitarTalleItem         = quitarTalleItem;
 window.agregarTalleRapido      = agregarTalleRapido;
