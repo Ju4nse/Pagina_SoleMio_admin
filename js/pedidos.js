@@ -639,6 +639,9 @@ let npVariantes            = [];   // producto_talles del producto seleccionado
 let npTalleSel             = null;
 let npColorSel             = null;
 let npBuscarTimer          = null;
+let npNombre               = ''; // se guarda acá (no solo en el input) porque el modal
+let npTelefono             = ''; // se re-renderiza entero al elegir producto/talle/color
+let npTermino              = ''; // ídem para la búsqueda de producto
 
 function generarUUID() {
   if (crypto?.randomUUID) return crypto.randomUUID();
@@ -669,7 +672,18 @@ function abrirNuevoPedido() {
   npVariantes            = [];
   npTalleSel             = null;
   npColorSel             = null;
+  npNombre               = '';
+  npTelefono             = '';
+  npTermino              = '';
   renderModalNuevoPedido();
+}
+
+function npActualizarNombre(v) {
+  npNombre = v;
+}
+
+function npActualizarTelefono(v) {
+  npTelefono = v;
 }
 
 function cerrarNuevoPedido() {
@@ -677,22 +691,33 @@ function cerrarNuevoPedido() {
 }
 
 function buscarProductoNuevoPedido(term) {
-  npProductoSeleccionado = null; // si estaba configurando uno, buscar de nuevo lo cancela
+  npTermino = term;
+
+  // Si estaba configurando un producto (panel de talle/color abierto),
+  // buscar de nuevo lo cancela — ahí sí hace falta un render completo
+  // porque ese panel desaparece. El resto del tiempo (tipeando sin
+  // nada seleccionado) solo se actualiza la listita de resultados,
+  // para no recrear el <input> en cada letra.
+  if (npProductoSeleccionado) {
+    npProductoSeleccionado = null;
+    renderModalNuevoPedido();
+  }
+
   clearTimeout(npBuscarTimer);
   npBuscarTimer = setTimeout(async () => {
     const q = term.trim();
-    if (!q) { npBusquedaResultados = []; renderModalNuevoPedido(); return; }
 
-    const safe = q.replace(/[,()]/g, ' ');
-    const { data, error } = await sb
-      .from('productos')
-      .select('id,nombre,marca,precio')
-      .eq('eliminado', false)
-      .or(`nombre.ilike.%${safe}%,marca.ilike.%${safe}%,id.ilike.%${safe}%`)
-      .limit(12);
+    // Sin texto (recién enfocado el campo): lista predeterminada de
+    // productos en vez de dejar el listado vacío.
+    let query = sb.from('productos').select('id,nombre,marca,precio').eq('eliminado', false);
+    if (q) {
+      const safe = q.replace(/[,()]/g, ' ');
+      query = query.or(`nombre.ilike.%${safe}%,marca.ilike.%${safe}%,id.ilike.%${safe}%`);
+    }
 
+    const { data, error } = await query.order('nombre', { ascending: true }).limit(12);
     if (!error) npBusquedaResultados = data || [];
-    renderModalNuevoPedido();
+    actualizarNPResultados();
   }, 300);
 }
 
@@ -702,6 +727,7 @@ async function seleccionarProductoNuevoPedido(id) {
   npVariantes            = [];
   npTalleSel             = null;
   npColorSel             = null;
+  npTermino              = '';
   renderModalNuevoPedido();
   if (!npProductoSeleccionado) return;
 
@@ -713,7 +739,24 @@ async function seleccionarProductoNuevoPedido(id) {
     .order('orden', { ascending: true });
 
   if (!error) npVariantes = (data || []).map(d => ({ talle: d.talle, color: d.color || '', stock: d.stock ?? 0, precio: d.precio ?? null }));
-  renderModalNuevoPedido();
+
+  // Productos viejos que todavía no tienen filas en producto_talles
+  // (se cargaron antes de que existiera esa tabla): mismo fallback al
+  // texto legado (productos.talles/color) que ya usa abrirPedido()
+  // para pedidos ya hechos — si no, acá no aparecía ningún talle/color.
+  if (!npVariantes.length && npProductoSeleccionado?.id === id) {
+    const { data: prod, error: errProd } = await sb
+      .from('productos')
+      .select('talles, color')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!errProd && prod) {
+      npVariantes = variantesFallbackDesdeTexto(prod).map(v => ({ ...v, precio: null }));
+    }
+  }
+
+  if (npProductoSeleccionado?.id === id) renderModalNuevoPedido();
 }
 
 /* Precio de la combinación elegida (con el mismo margen que el resto
@@ -775,8 +818,8 @@ function quitarItemNuevoPedido(idx) {
 }
 
 async function crearPedidoManual() {
-  const nombre   = document.getElementById('np-nombre')?.value.trim();
-  const telefono = document.getElementById('np-telefono')?.value.trim();
+  const nombre   = npNombre.trim();
+  const telefono = npTelefono.trim();
 
   if (!nombre) { alert('Ingresá el nombre del cliente.'); return; }
   if (!nuevoPedidoItems.length) { alert('Agregá al menos un producto.'); return; }
@@ -823,74 +866,113 @@ async function crearPedidoManual() {
   }
 }
 
+// Sub-render de la lista de resultados: se actualiza sola (ver
+// actualizarNPResultados()) para que buscar no tenga que reconstruir
+// el modal entero — así el <input> nunca se recrea y no pierde ni el
+// texto tipeado ni el foco/cursor mientras escribís.
+function renderNPResultadosHTML() {
+  return npBusquedaResultados.length ? `
+    <div class="np-resultados">
+      ${npBusquedaResultados.map(p => `
+        <button type="button" class="np-resultado-item" onclick="seleccionarProductoNuevoPedidoUI('${p.id}')">
+          <span>${p.nombre}${p.marca ? ` · ${p.marca}` : ''}</span>
+          <span class="np-resultado-precio">${fmtARS(Math.round((p.precio || 0) * 1.5))}</span>
+        </button>
+      `).join('')}
+    </div>` : '';
+}
+
+function actualizarNPResultados() {
+  const el = document.getElementById('np-resultados');
+  if (el) el.innerHTML = renderNPResultadosHTML();
+}
+
+// Contenido de adentro del modal: se reconstruye en cada cambio
+// (elegir producto, talle, color, agregar ítem...), pero SOLO el
+// contenido — ver renderModalNuevoPedido() para el porqué.
+function renderNPBodyHTML() {
+  const total = nuevoPedidoItems.reduce((acc, it) => acc + it.precioUnitario * it.cantidad, 0);
+
+  return `
+    <div class="modal-title">Nuevo pedido (venta presencial)</div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Nombre del cliente</label>
+        <input id="np-nombre" type="text" placeholder="Nombre y apellido" value="${npNombre}" oninput="npActualizarNombreUI(this.value)">
+      </div>
+      <div class="field">
+        <label>Teléfono (opcional)</label>
+        <input id="np-telefono" type="tel" placeholder="Opcional" value="${npTelefono}" oninput="npActualizarTelefonoUI(this.value)">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Buscar producto</label>
+      <input id="np-buscar" type="text" placeholder="Nombre, marca o código…" autocomplete="off"
+        value="${npTermino}"
+        oninput="buscarProductoNuevoPedidoUI(this.value)"
+        onfocus="buscarProductoNuevoPedidoUI(this.value)">
+    </div>
+
+    <div id="np-resultados">${renderNPResultadosHTML()}</div>
+
+    ${npProductoSeleccionado ? renderConfigNP() : ''}
+
+    <div class="pedido-items-edit" style="margin-top:1rem">
+      ${nuevoPedidoItems.length ? nuevoPedidoItems.map((it, idx) => `
+        <div class="pedido-item-edit">
+          <div class="pedido-item-edit-info">
+            <div class="pedido-item-edit-nombre">
+              <span class="pedido-item-edit-id">${it.productoId}</span>${it.nombre}
+            </div>
+            <div style="font-size:.75rem;color:var(--text-3);margin-top:.2rem">
+              ${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'} · x${it.cantidad}
+            </div>
+            <div class="pedido-item-edit-precio">${fmtARS(it.precioUnitario * it.cantidad)}</div>
+          </div>
+          <button type="button" class="btn-quitar-item" onclick="quitarItemNuevoPedidoUI(${idx})" title="Quitar">✕</button>
+        </div>
+      `).join('') : `<div class="np-vacio">Todavía no agregaste productos.</div>`}
+    </div>
+
+    <div class="carrito-total" style="margin-top:1rem">
+      <span>Total</span>
+      <strong>${fmtARS(total)}</strong>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn ghost" onclick="cerrarNuevoPedidoUI()">Cancelar</button>
+      <button class="btn primary" id="np-crear-btn" onclick="crearPedidoManualUI()">${ICON.check} Crear pedido</button>
+    </div>`;
+}
+
 function renderModalNuevoPedido() {
   const container = document.getElementById('modal-nuevo-pedido');
   if (!container) return;
 
-  const total = nuevoPedidoItems.reduce((acc, it) => acc + it.precioUnitario * it.cantidad, 0);
+  const modalExistente = container.querySelector('.modal');
 
-  container.innerHTML = `
-    <div class="modal-overlay" id="mnp" onclick="if(event.target.id==='mnp') cerrarNuevoPedidoUI()">
-      <div class="modal pedido-modal-grande">
-        <div class="modal-title">Nuevo pedido (venta presencial)</div>
+  if (!modalExistente) {
+    // Primera vez que se abre: crea el overlay y el cuadro del modal,
+    // que traen su animación de entrada (ver .modal-overlay/.modal en
+    // catalogo.css). Después de esto, esos dos elementos ya no se
+    // vuelven a recrear.
+    container.innerHTML = `
+      <div class="modal-overlay" id="mnp" onclick="if(event.target.id==='mnp') cerrarNuevoPedidoUI()">
+        <div class="modal pedido-modal-grande" id="np-modal-box">${renderNPBodyHTML()}</div>
+      </div>`;
+    return;
+  }
 
-        <div class="field-row">
-          <div class="field">
-            <label>Nombre del cliente</label>
-            <input id="np-nombre" type="text" placeholder="Nombre y apellido">
-          </div>
-          <div class="field">
-            <label>Teléfono (opcional)</label>
-            <input id="np-telefono" type="tel" placeholder="Opcional">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Buscar producto</label>
-          <input id="np-buscar" type="text" placeholder="Nombre, marca o código…" autocomplete="off"
-            oninput="buscarProductoNuevoPedidoUI(this.value)">
-        </div>
-
-        ${npBusquedaResultados.length ? `
-          <div class="np-resultados">
-            ${npBusquedaResultados.map(p => `
-              <button type="button" class="np-resultado-item" onclick="seleccionarProductoNuevoPedidoUI('${p.id}')">
-                <span>${p.nombre}${p.marca ? ` · ${p.marca}` : ''}</span>
-                <span class="np-resultado-precio">${fmtARS(Math.round((p.precio || 0) * 1.5))}</span>
-              </button>
-            `).join('')}
-          </div>` : ''}
-
-        ${npProductoSeleccionado ? renderConfigNP() : ''}
-
-        <div class="pedido-items-edit" style="margin-top:1rem">
-          ${nuevoPedidoItems.length ? nuevoPedidoItems.map((it, idx) => `
-            <div class="pedido-item-edit">
-              <div class="pedido-item-edit-info">
-                <div class="pedido-item-edit-nombre">
-                  <span class="pedido-item-edit-id">${it.productoId}</span>${it.nombre}
-                </div>
-                <div style="font-size:.75rem;color:var(--text-3);margin-top:.2rem">
-                  ${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'} · x${it.cantidad}
-                </div>
-                <div class="pedido-item-edit-precio">${fmtARS(it.precioUnitario * it.cantidad)}</div>
-              </div>
-              <button type="button" class="btn-quitar-item" onclick="quitarItemNuevoPedidoUI(${idx})" title="Quitar">✕</button>
-            </div>
-          `).join('') : `<div class="np-vacio">Todavía no agregaste productos.</div>`}
-        </div>
-
-        <div class="carrito-total" style="margin-top:1rem">
-          <span>Total</span>
-          <strong>${fmtARS(total)}</strong>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn ghost" onclick="cerrarNuevoPedidoUI()">Cancelar</button>
-          <button class="btn primary" id="np-crear-btn" onclick="crearPedidoManualUI()">${ICON.check} Crear pedido</button>
-        </div>
-      </div>
-    </div>`;
+  // Ya estaba abierto: solo se reemplaza el contenido de adentro, sin
+  // tocar el `.modal` en sí — si no, cada cambio (elegir talle, agregar
+  // un producto, etc.) reconstruye el cuadro entero, repite la
+  // animación de entrada como si fuera la primera vez que se abre, y
+  // resetea el scroll a cero. Se siente como si "recargara la página".
+  const scrollPrevio = modalExistente.scrollTop;
+  modalExistente.innerHTML = renderNPBodyHTML();
+  modalExistente.scrollTop = scrollPrevio;
 }
 
 function renderConfigNP() {
@@ -988,6 +1070,8 @@ window.copiarMensajeWhatsappUI = copiarMensajeWhatsapp;
 window.copiarCodigoPedidoUI    = copiarCodigoPedido;
 window.abrirNuevoPedidoUI            = abrirNuevoPedido;
 window.cerrarNuevoPedidoUI           = cerrarNuevoPedido;
+window.npActualizarNombreUI          = npActualizarNombre;
+window.npActualizarTelefonoUI        = npActualizarTelefono;
 window.buscarProductoNuevoPedidoUI   = buscarProductoNuevoPedido;
 window.seleccionarProductoNuevoPedidoUI = seleccionarProductoNuevoPedido;
 window.seleccionarTalleNPUI          = seleccionarTalleNP;

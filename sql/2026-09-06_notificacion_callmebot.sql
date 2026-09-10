@@ -1,4 +1,11 @@
 -- 2026-09-06_notificacion_callmebot.sql
+--
+-- ⚠️ REEMPLAZADO por sql/2026-09-10_notificacion_telegram.sql — el
+-- dueño pidió cambiar el aviso de WhatsApp por Telegram. Ese script
+-- redefine la misma función/trigger de abajo, así que no hace falta
+-- correr nada más para dar de baja CallMeBot. Este archivo queda solo
+-- como referencia histórica.
+--
 -- Avisa por WhatsApp al dueño (vía CallMeBot) cada vez que un cliente
 -- confirma un pedido nuevo. No hace falta backend propio: un trigger
 -- de Postgres llama directo a la API de CallMeBot usando pg_net
