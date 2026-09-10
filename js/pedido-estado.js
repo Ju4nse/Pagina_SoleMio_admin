@@ -56,11 +56,12 @@ function renderBuscador(mensaje) {
     <div class="carrito-page-aside" style="max-width:420px;margin:2rem auto">
       <h1 class="carrito-page-title" style="font-size:1.25rem;margin-top:0">Buscar un pedido</h1>
       ${mensaje ? `<p style="font-size:0.85rem;color:var(--text-2);margin-top:-0.5rem">${mensaje}</p>` : ''}
-      <form onsubmit="return buscarPedidoUI(event)">
+      <form onsubmit="return buscarPedidoUI(event)" novalidate>
         <div class="field">
           <label>Código del pedido</label>
           <input id="pe-codigo" type="text" required placeholder="El código que te dimos al confirmarlo">
         </div>
+        <div id="pe-error" class="carrito-error" style="display:none"></div>
         <button type="submit" class="btn primary carrito-btn-full">Ver pedido</button>
       </form>
     </div>`;
@@ -222,8 +223,15 @@ async function buscarPedido(id) {
 
 function buscarPedidoDesdeForm(event) {
   event.preventDefault();
-  const codigo = document.getElementById('pe-codigo')?.value.trim();
-  if (!codigo) return false;
+  const codigo  = document.getElementById('pe-codigo')?.value.trim();
+  const errorEl = document.getElementById('pe-error');
+
+  if (!codigo) {
+    if (errorEl) { errorEl.textContent = 'Ingresá el código del pedido.'; errorEl.style.display = 'block'; }
+    document.getElementById('pe-codigo')?.focus();
+    return false;
+  }
+
   history.replaceState(null, '', `pedido-estado.html?id=${encodeURIComponent(codigo)}`);
   buscarPedido(codigo);
   return false;

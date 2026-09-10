@@ -78,7 +78,13 @@ export function renderTopbar(activeKey, opts = {}) {
     </button>
     <div class="logo">
       <a href="landing.html" class="logo-link">
-        <span class="logo-word">SoleMio</span>
+        <img src="img/logo-wordmark.png" alt="SoleMio" class="logo-img"
+             onerror="this.style.display='none';document.getElementById('topbar-logo-fallback').style.display='inline-flex'">
+        <span id="topbar-logo-fallback" style="display:none;align-items:baseline;gap:0.5rem">
+          <span class="logo-flourish" aria-hidden="true">☙</span>
+          <span class="logo-word">SoleMio</span>
+          <span class="logo-flourish" aria-hidden="true">❧</span>
+        </span>
       </a>
     </div>
     ${marcasHtml}

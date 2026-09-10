@@ -215,7 +215,7 @@ function renderCarrito(items) {
           </ol>
         </div>
 
-        <form onsubmit="return enviarPedidoUI(event)">
+        <form onsubmit="return enviarPedidoUI(event)" novalidate>
           <div class="field">
             <label>Nombre y apellido</label>
             <input id="chk-nombre" type="text" required autocomplete="name">
@@ -284,10 +284,24 @@ async function enviarPedido(event) {
   const btn      = document.getElementById('chk-submit-btn');
   const items    = leerCarrito();
 
-  if (!nombre || !telefono || !items.length) return false;
+  if (errorEl) errorEl.style.display = 'none';
+
+  if (!nombre) {
+    if (errorEl) { errorEl.textContent = 'Ingresá tu nombre y apellido.'; errorEl.style.display = 'block'; }
+    document.getElementById('chk-nombre')?.focus();
+    return false;
+  }
+  if (!telefono) {
+    if (errorEl) { errorEl.textContent = 'Ingresá tu WhatsApp o teléfono.'; errorEl.style.display = 'block'; }
+    document.getElementById('chk-telefono')?.focus();
+    return false;
+  }
+  if (!items.length) {
+    if (errorEl) { errorEl.textContent = 'Tu carrito está vacío.'; errorEl.style.display = 'block'; }
+    return false;
+  }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
-  if (errorEl) errorEl.style.display = 'none';
 
   await cargarVariantesParaItems(items);
   const idxPendiente = items.findIndex(faltaSeleccion);

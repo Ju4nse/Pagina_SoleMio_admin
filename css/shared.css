@@ -74,6 +74,11 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  /* Saca el recuadro azul/gris que Chrome/Safari mobile flashean al
+     tocar cualquier link o botón — no aporta nada visualmente y no
+     combina con la paleta del sitio. Los estados :hover/:active
+     propios de cada componente siguen dando el feedback al tocar. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html { font-size: 15px; }
@@ -109,7 +114,13 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
   font-size: 1.6rem;
   font-weight: 500;
   letter-spacing: -0.005em;
-  color: var(--text);
+  color: var(--primary);
+}
+
+.logo-flourish {
+  font-size: 1rem;
+  color: var(--primary);
+  opacity: 0.55;
 }
 
 .logo-tag {
