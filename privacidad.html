@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Evita el "flash" de tema claro antes de aplicar el tema guardado
+  (function () {
+    try {
+      var t = localStorage.getItem('solemio-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoleMio — Política de privacidad</title>
+<meta name="description" content="Qué datos guarda SoleMio de los pedidos y de los mensajes de Instagram, para qué los usa y cómo pedir que se borren.">
+<link rel="canonical" href="https://solemiocatalogo.juansegundofrias.workers.dev/privacidad.html">
+<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/catalogo.css">
+<link rel="stylesheet" href="css/contacto.css">
+<link rel="stylesheet" href="css/legal.css">
+</head>
+<body>
+
+<!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
+<header class="topbar site-header-topbar" id="topbar-slot"></header>
+
+<section class="contact-hero">
+  <span class="eyebrow">Legal</span>
+  <h1>Política de privacidad</h1>
+  <p>Qué datos guardamos, para qué, y cómo pedir que los borremos.</p>
+</section>
+
+<section class="legal-content">
+
+  <h2>Quiénes somos</h2>
+  <p>
+    SoleMio es una tienda de lencería y corsetería de Tandil, Buenos Aires
+    (Tacuari 33). Este sitio y nuestra cuenta de Instagram
+    <a href="https://instagram.com/solemio.tandil" target="_blank" rel="noopener">@solemio.tandil</a>
+    los maneja el equipo de la tienda.
+  </p>
+
+  <h2>Pedidos desde el sitio</h2>
+  <p>
+    Cuando hacés un pedido guardamos tu nombre, tu WhatsApp, la nota que
+    quieras dejar y los productos que elegiste. Lo usamos solo para
+    coordinar ese pedido con vos. Más detalle en
+    <a href="terminos.html">Términos y datos</a>.
+  </p>
+
+  <h2>Mensajes por Instagram</h2>
+  <p>
+    Si nos escribís por mensaje directo a @solemio.tandil, guardamos esa
+    conversación en nuestro panel interno para poder responderte desde
+    la computadora: el texto de los mensajes, los adjuntos que mandes
+    (fotos, videos, respuestas a historias), la fecha y hora, y tu nombre
+    de usuario, nombre y foto de perfil de Instagram.
+  </p>
+  <p>
+    Esos datos los ve únicamente el equipo de SoleMio. Los usamos solo
+    para responder tus consultas y coordinar pedidos: no te mandamos
+    publicidad, no los vendemos ni se los pasamos a terceros. Instagram
+    (Meta) es quien nos envía los mensajes, y se rige por su propia
+    política de privacidad.
+  </p>
+
+  <h2>Dónde se guardan</h2>
+  <p>
+    La información se guarda en una base de datos privada (Supabase), a
+    la que solo acceden las cuentas de administración de la tienda.
+  </p>
+
+  <h2 id="borrar-datos">Cómo pedir que borremos tus datos</h2>
+  <p>
+    Podés pedir en cualquier momento que borremos tus pedidos y tus
+    conversaciones de Instagram guardadas. Escribinos por
+    <a href="https://wa.me/542494003595" target="_blank" rel="noopener">WhatsApp</a>
+    o por mensaje directo a
+    <a href="https://instagram.com/solemio.tandil" target="_blank" rel="noopener">@solemio.tandil</a>
+    diciendo "quiero que borren mis datos", y los eliminamos dentro de
+    los 30 días. Te avisamos por el mismo medio cuando esté hecho.
+  </p>
+
+  <p class="legal-updated">Última actualización: septiembre de 2026.</p>
+
+</section>
+
+<footer class="site-footer" id="footer-slot"></footer>
+
+<script type="module" src="js/terminos.js"></script>
+</body>
+</html>

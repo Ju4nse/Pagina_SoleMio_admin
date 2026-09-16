@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { href: 'landing.html',       label: 'Inicio',      key: 'inicio' },
   { href: 'catalogo.html',      label: 'Catálogo',    key: 'catalogo' },
   { href: 'pedidos.html',       label: 'Pedidos',     key: 'pedidos', adminOnly: true },
+  { href: 'mensajes.html',      label: 'Mensajes',    key: 'mensajes', adminOnly: true },
   { href: 'pedido-estado.html', label: 'Mis pedidos', key: 'mis-pedidos' },
   { href: 'contacto.html',      label: 'Contacto',    key: 'contacto' },
 ];

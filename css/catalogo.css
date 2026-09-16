@@ -1303,11 +1303,12 @@ select:focus { outline: none; border-color: var(--primary); }
   justify-content: center;
 }
 
-/* ── ALERTA DE PEDIDOS (admin) — campanita + badge en la topbar ──
-   Inyectada por pedidos-alertas.js, no vive en el HTML de cada
-   página. Mismo tamaño que .cart-badge pero en rojo: es una alerta
-   ("hay algo por revisar"), no un simple contador informativo. ── */
-#pedido-alert-btn { position: relative; }
+/* ── ALERTAS (admin) — campanita de pedidos + chat de Instagram,
+   con badge en la topbar. Inyectadas por pedidos-alertas.js, no viven
+   en el HTML de cada página. Mismo tamaño que .cart-badge pero en
+   rojo: es una alerta ("hay algo por revisar"), no un simple contador
+   informativo. ── */
+.alert-btn { position: relative; }
 
 .alert-badge {
   position: absolute;
@@ -1383,6 +1384,11 @@ select:focus { outline: none; border-color: var(--primary); }
 .pedido-alerta-icon {
   background: var(--red-bg);
   color: var(--red);
+}
+
+.ig-alerta-icon {
+  background: var(--pink-bg);
+  color: var(--pink);
 }
 
 @media (max-width: 480px) {

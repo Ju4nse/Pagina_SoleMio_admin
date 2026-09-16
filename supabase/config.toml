@@ -1,0 +1,21 @@
+# Config del CLI de Supabase — solo se usa para desplegar las Edge
+# Functions de Instagram (ver INSTAGRAM.md). La base de datos NO se
+# maneja desde acá: las migraciones siguen siendo los .sql de sql/,
+# pegados a mano en el SQL Editor.
+project_id = "pktwpktmxbfapwjsugrx"
+
+# verify_jwt = false en todas: ig-webhook la llama Meta (sin JWT),
+# ig-refresh el cron (con x-cron-secret), e ig-send / ig-sync validan
+# la sesión de admin adentro (requireAdmin en _shared/ig.ts), que
+# funciona igual con las claves JWT nuevas o las legacy.
+[functions.ig-webhook]
+verify_jwt = false
+
+[functions.ig-send]
+verify_jwt = false
+
+[functions.ig-sync]
+verify_jwt = false
+
+[functions.ig-refresh]
+verify_jwt = false
