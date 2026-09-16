@@ -317,3 +317,8 @@
   padding: 1rem;
   font-style: italic;
 }
+
+/* Escala 125% en compu (ver shared.css) */
+@media (min-width: 1024px) {
+  .pedido-modal-grande { max-width: 950px; }
+}

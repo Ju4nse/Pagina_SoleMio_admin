@@ -85,6 +85,12 @@
 
 html { font-size: 15px; }
 
+/* En compu todo se ve al 125% (15px → 18.75px) para aprovechar la pantalla.
+   Los anchos máximos en px se agrandan igual al final de catalogo.css. */
+@media (min-width: 1024px) {
+  html { font-size: 18.75px; }
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--bg);

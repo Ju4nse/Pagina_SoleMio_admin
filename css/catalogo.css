@@ -2031,3 +2031,39 @@ body.modal-abierto-lock { overflow: hidden; }
     gap: 0.3rem 1.25rem;
   }
 }
+
+/* ── ESCALA 125% EN COMPU ─────────────────────────────────────── */
+/* Acompaña el font-size de 18.75px de shared.css: los anchos en px
+   no escalan con rem, así que se agrandan a mano en la misma proporción. */
+@media (min-width: 1024px) {
+  .shell,
+  .prod-modal-grande { max-width: 1350px; }
+  .footer-inner,
+  .footer-bottom     { max-width: 1450px; }
+  .catalogo-layout   { grid-template-columns: 212px 1fr; }
+  /* Tarjetas más grandes: con el ancho de arriba entran 4 por fila
+     (antes 5 más chicas) */
+  .prod-grid         { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+
+/* La columna de categorías empuja la grilla a la derecha. En pantallas
+   bien anchas sobra margen a los costados del .shell, así que la columna
+   sale hacia ese margen izquierdo (como el logo en la topbar) y los
+   productos ocupan todo el ancho, centrados en la página. */
+@media (min-width: 1860px) {
+  /* min-height: la columna ya no ocupa lugar, que una búsqueda sin
+     resultados no deje al footer subir y pisarla */
+  .catalogo-layout   { display: block; position: relative; min-height: 28rem; }
+  /* Tope de ancho para que las 4 tarjetas no queden gigantes (~280px c/u);
+     centrado, así la columna de categorías sigue pegada al borde izquierdo */
+  .catalogo-layout   { max-width: 1176px; margin: 0 auto; }
+  .catalogo-sidebar  {
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: 212px;
+    margin-right: 2rem;
+  }
+  /* Con todo el ancho entrarían 5 — siempre 4 por fila, más grandes */
+  .prod-grid         { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
