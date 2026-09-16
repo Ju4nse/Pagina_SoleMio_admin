@@ -720,11 +720,12 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 .prod-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-price);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 1.15rem;
   color: var(--primary);
   margin-bottom: 0.6rem;
-  letter-spacing: -0.01em;
 }
 
 .prod-badges {
@@ -1644,7 +1645,9 @@ body.modal-abierto-lock { overflow: hidden; }
 }
 
 .carrito-total strong {
-  font-family: var(--font-serif);
+  font-family: var(--font-price);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 1.2rem;
   color: var(--primary);
 }

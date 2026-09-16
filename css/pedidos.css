@@ -51,7 +51,9 @@
 }
 
 .pedido-row-monto {
-  font-family: var(--font-serif);
+  font-family: var(--font-price);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 1rem;
   color: var(--primary);
   min-width: 90px;

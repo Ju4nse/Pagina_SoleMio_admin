@@ -219,10 +219,11 @@
 }
 
 .view-price {
-  font-family: var(--font-serif);
+  font-family: var(--font-price);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
   font-size: 1.9rem;
   color: var(--primary);
-  letter-spacing: -0.01em;
   margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border);

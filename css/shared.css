@@ -9,6 +9,8 @@
 :root {
   --font-serif: 'Bodoni Moda', serif;
   --font-sans:  'DM Sans', sans-serif;
+  /* Precios: sans y no Bodoni — en Bodoni el 1/4 y el 3/8 se confunden en el celular */
+  --font-price: var(--font-sans);
 }
 
 /* ── TOKENS: MODO CLARO ──────────────────────────────────────── */
