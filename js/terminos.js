@@ -1,5 +1,7 @@
 /* ================================================================
-   terminos.js — Página de términos/datos (mismo patrón que contacto.js)
+   terminos.js — Páginas legales: terminos.html y privacidad.html
+   (las dos usan este mismo JS — no tienen lógica propia, solo
+   topbar/footer/rol. Mismo patrón que contacto.js)
    ================================================================ */
 import { initTheme, toggleTheme } from './theme.js';
 import { sb, esAdmin, irAlCatalogo } from './supabase-client.js';

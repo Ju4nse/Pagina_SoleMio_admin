@@ -10,3 +10,7 @@
 .agents/
 .mcp.json
 skills-lock.json
+
+# Supabase CLI (estado local del link/deploy)
+supabase/.temp/
+supabase/.branches/

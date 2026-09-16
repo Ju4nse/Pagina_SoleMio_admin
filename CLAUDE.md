@@ -12,7 +12,9 @@ There is no `package.json`, no test suite, and no linter configured. "Running" t
 python3 -m http.server 8765   # from repo root, then open http://localhost:8765/catalogo.html
 ```
 
-Deployment is `wrangler.jsonc` (`assets.directory: "."`) — Cloudflare serves the repo's static files directly, with `404.html` as the not-found page. There's no CI; changes go live on push/deploy as-is.
+Deployment is `wrangler.jsonc` (`assets.directory: "."`) — Cloudflare serves the repo's static files directly, with `404.html` as the not-found page. There's no CI; changes go live on push/deploy as-is. Because the whole repo root is the asset directory, `.assetsignore` is what keeps `sql/`, `supabase/`, `*.md`, `compras.json`, etc. from being publicly downloadable — any new non-public file/folder at the root must be added there.
+
+The only server-side code is the Instagram inbox's **Supabase Edge Functions** in `supabase/functions/` (Deno/TypeScript, deployed by hand with `npx supabase@latest functions deploy`, not by the Cloudflare deploy). Everything else is static. Setup steps (Meta app, secrets, webhook) live in `INSTAGRAM.md`.
 
 ## Repository layout
 
@@ -21,6 +23,7 @@ Deployment is `wrangler.jsonc` (`assets.directory: "."`) — Cloudflare serves t
 - `css/` — one stylesheet per page, plus shared stylesheets.
 - `sql/` — hand-run migrations, **not applied automatically**. Dated filenames, run in order, once each, by pasting into the Supabase SQL Editor. There is no migration tool tracking what's been applied — see "Database" below.
 - `img/` — static images (logo, hero photo).
+- `supabase/functions/` — Edge Functions for the Instagram DM inbox (`ig-webhook`, `ig-send`, `ig-sync`, `ig-refresh`, shared code in `_shared/ig.ts`). `supabase/config.toml` only exists for the CLI deploy; the DB is still managed via `sql/`.
 
 Each page is a self-contained triplet: `foo.html` + `js/foo.js` + `css/foo.css`, all loaded independently — there's no SPA router and no shared page shell beyond the modules below.
 
@@ -31,7 +34,7 @@ Each page is a self-contained triplet: `foo.html` + `js/foo.js` + `css/foo.css`,
 - `js/topbar.js` — renders the entire top bar (`renderTopbar(activeKey, opts)`) into `<header id="topbar-slot">`. `opts.search` and `opts.marcas` are catalog-only extras; every other page just gets logo/nav/cart/settings. Theme toggle, "Mi cuenta", and "Cerrar sesión" all live together in one `.settings-menu` dropdown (gear icon) — same on mobile and desktop, not duplicated per breakpoint. On mobile, page nav links collapse into a hamburger dropdown instead of showing inline.
 - `js/footer.js` — renders the shared footer (`renderFooter()`) into `<footer id="footer-slot">`.
 - `js/carrito.js` — cart **state** (localStorage-backed) plus the cart **drawer** (slide-in panel, opened from the topbar cart icon without navigating away) and the "toast" notification shown when something is added. `js/carrito-page.js` is the separate full-page cart view (`carrito.html`) built on top of the same state functions — don't confuse the two files.
-- `js/pedidos-alertas.js` — admin-only: a bell icon + live count in the topbar, and a toast when a new `pedido` comes in, wired via a Supabase realtime subscription. No-ops entirely for guests.
+- `js/pedidos-alertas.js` — admin-only topbar alerts, despite the name: a bell (pedidos en espera) and a chat icon (unread Instagram messages), each with a live count and a toast on new rows, via Supabase realtime. No-ops entirely for guests. The export stays `initAlertasPedidos(rol)` so the ~9 pages calling it don't change; `mensajes.js` calls `setConversacionAbiertaIG(id)` to suppress toasts for the conversation already on screen.
 
 When adding a new page, copy the init pattern from an existing simple one (`js/no-encontrado.js` is the shortest example): detect role, call `renderTopbar`/`renderFooter`/`initAlertasPedidos`, then page-specific logic.
 
@@ -40,7 +43,7 @@ When adding a new page, copy the init pattern from an existing simple one (`js/n
 There's no per-route middleware — each page's JS decides for itself what a "guest" vs "admin" can see, using two different patterns:
 
 - **Guest-accessible pages** (`catalogo.html`, `producto.html`, `carrito.html`, `pedido-estado.html`, `landing.html`, `contacto.html`): never redirect. They check for a real Supabase session first (`sb.auth.getSession()` + `esAdmin(email)`); if that fails, they fall back to a `sessionStorage.getItem('solemio-role') === 'guest'` flag set by `login.html`/`irAlCatalogo()`. Checking the real session *before* the guest flag matters — otherwise an admin who once browsed as guest in the same tab stays stuck as guest after logging in.
-- **Admin-only pages** (`pedidos.html`): redirect straight to `login.html` if the session isn't an admin. No guest fallback.
+- **Admin-only pages** (`pedidos.html`, `mensajes.html`): redirect straight to `login.html` if the session isn't an admin. No guest fallback.
 - `esAdmin(email)` is a live query against the `admins` table — being an admin isn't a claim/role on the Supabase Auth user, it's membership in that table.
 
 Guests never see stock counts, in/out-of-stock filters, or the "eliminado" (soft-deleted) state — see `productos.disponible`/`productos.eliminado` under "Database" below.
@@ -56,6 +59,7 @@ Guests never see stock counts, in/out-of-stock filters, or the "eliminado" (soft
 - Stock is one row per `(producto_id, talle, color)` in `producto_talles`, with `color = ''` as the sentinel for "this product has no color variants" — not two independent talle/color dimensions. Availability must be checked per exact combination. `producto_talles.orden` controls display order (admin-draggable); `producto_talles.precio` is an optional per-variant price override (falls back to `productos.precio` when null).
 - Product visibility for guests is `productos.disponible` (boolean, independently editable — a product can be shown with zero stock, e.g. "available to order," or hidden despite having stock). This **replaced** an older `stock`-derived visibility and an even older `oculto` column; both `stock`/`oculto` still exist as real columns (stock is still the physical quantity, used by the admin-only stock filter) but `oculto` is unused dead data now — don't resurrect it. `productos.eliminado` is a separate, harder soft-delete: an eliminado product is filtered out of *every* query (admin included), used for "delete" instead of an actual `DELETE`, specifically to keep old orders' snapshots meaningful.
 - `pedido_items` snapshots `producto_nombre` and `precio_unitario` at order time — order history stays correct even if the product is later edited, re-priced, or soft-deleted.
+- Instagram inbox (`sql/2026-09-16_instagram_inbox.sql`): `ig_conversaciones` / `ig_mensajes` are written **only** by the Edge Functions (service role) through `ig_registrar_mensaje(...)`, which is idempotent on Meta's `mid` and also dedupes a panel-sent reply against its webhook echo. Admins only `select` and reset `no_leidos`. The Instagram access token lives in `ig_config` (RLS on, no policies, revoked from anon/authenticated) because it expires every 60 days and `ig-refresh` (weekly pg_cron) rewrites it; `ig_estado_token()` exposes only its age to admins. Other secrets are Edge Function secrets, never in the repo. Everything shown from Instagram is third-party content — escape it (`esc()`/`urlSegura()` in `mensajes.js`).
 - Prices: `productos.precio` (and `producto_talles.precio`) are the **base/cost** price. The customer-facing price everywhere in the frontend is that value `* 1.5` — computed in JS at render time, not stored.
 
 ## Notable non-obvious behavior

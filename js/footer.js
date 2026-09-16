@@ -24,6 +24,7 @@ const PAGINAS = [
   { href: 'landing.html',       label: 'Inicio' },
   { href: 'catalogo.html',      label: 'Catálogo' },
   { href: 'pedidos.html',       label: 'Pedidos', adminOnly: true },
+  { href: 'mensajes.html',      label: 'Mensajes', adminOnly: true },
   { href: 'pedido-estado.html', label: 'Mis pedidos' },
   { href: 'contacto.html',      label: 'Contacto' },
 ];
@@ -79,6 +80,7 @@ export function renderFooter() {
     <div class="footer-bottom">
       © <span id="footer-year"></span> SoleMio. Todos los derechos reservados.
       · <a href="terminos.html">Términos</a>
+      · <a href="privacidad.html">Privacidad</a>
     </div>`;
 
   const yearEl = document.getElementById('footer-year');

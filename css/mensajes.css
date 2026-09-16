@@ -1,0 +1,368 @@
+/* ================================================================
+   mensajes.css — Bandeja de mensajes de Instagram (mensajes.html)
+   Dos paneles en desktop (lista | hilo); en mobile uno solo a la vez,
+   según .ig-inbox.hilo-abierto (ver abrirConversacion en mensajes.js).
+   ================================================================ */
+
+.ig-inbox [hidden],
+.ig-aviso[hidden] { display: none !important; }
+
+/* ── AVISOS (token, errores de envío, resultado de sincronizar) ── */
+.ig-aviso {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-md);
+  background: var(--surface2);
+  color: var(--text-2);
+}
+.ig-aviso.alerta { background: var(--primary-soft); color: var(--primary-dark); border-color: transparent; }
+.ig-aviso.error  { background: var(--red-bg);   color: var(--red);   border-color: transparent; }
+.ig-aviso.ok     { background: var(--green-bg); color: var(--green); border-color: transparent; }
+.ig-aviso code   { font-size: 0.78rem; }
+
+/* ── CONTENEDOR ─────────────────────────────────────────────── */
+.ig-inbox {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  height: calc(100vh - 12rem);
+  min-height: 460px;
+  margin-bottom: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ── LISTA ──────────────────────────────────────────────────── */
+.ig-lista-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.ig-lista-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.6rem;
+}
+
+.ig-titulo {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.35rem;
+}
+
+.ig-lista-head .btn svg { width: 13px; height: 13px; }
+
+.ig-buscar {
+  flex: 0 0 auto;
+  margin: 0 1rem 0.6rem;
+  min-width: 0;
+}
+
+.ig-lista {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ig-lista .empty { padding: 2.5rem 1.25rem; line-height: 1.5; }
+
+.ig-conv {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+  transition: background 0.15s ease;
+}
+.ig-conv:hover  { background: var(--surface2); }
+.ig-conv.activa { background: var(--primary-soft); }
+
+.ig-conv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.ig-conv-top,
+.ig-conv-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ig-conv-nombre {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ig-conv-hora {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.ig-conv-preview {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ig-conv.no-leida .ig-conv-nombre,
+.ig-conv.no-leida .ig-conv-preview { font-weight: 600; color: var(--text); }
+
+.ig-conv-badge {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── AVATAR (inicial de fondo, foto encima si carga) ─────────── */
+.ig-avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ig-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ig-avatar-sm { width: 34px; height: 34px; font-size: 0.9rem; }
+
+/* ── HILO ───────────────────────────────────────────────────── */
+.ig-hilo-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.ig-hilo-vacio {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-3);
+  font-size: 0.875rem;
+}
+.ig-hilo-vacio svg { width: 40px; height: 40px; stroke: var(--text-3); }
+
+.ig-hilo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ig-hilo-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ig-volver { display: none; }
+.ig-volver svg { width: 16px; height: 16px; stroke: currentColor; }
+
+.ig-hilo-quien { flex: 1; min-width: 0; }
+
+.ig-hilo-nombre {
+  font-size: 0.92rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ig-hilo-user {
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+.ig-mensajes {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--bg);
+}
+
+.ig-dia {
+  align-self: center;
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.7rem;
+  color: var(--text-3);
+  text-transform: capitalize;
+}
+
+.ig-msg {
+  max-width: min(75%, 480px);
+  padding: 0.5rem 0.75rem 0.35rem;
+  border-radius: 14px;
+  font-size: 0.87rem;
+  line-height: 1.4;
+}
+
+.ig-msg.entrante {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.ig-msg.saliente {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--primary-fg);
+  border-bottom-right-radius: 4px;
+}
+
+.ig-msg.eliminado { opacity: 0.6; }
+
+.ig-msg-texto {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ig-msg-meta {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.ig-adj { margin-bottom: 0.35rem; }
+
+.ig-adj-etiqueta {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  margin-bottom: 0.25rem;
+}
+
+.ig-adj img,
+.ig-adj video {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+}
+
+.ig-adj audio { max-width: 100%; }
+
+.ig-adj-link,
+.ig-adj-vencido {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* ── VENTANA DE 24 H + COMPOSER ─────────────────────────────── */
+.ig-ventana {
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  border-top: 1px solid var(--border);
+}
+.ig-ventana.cerrada {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  line-height: 1.45;
+}
+.ig-ventana a { color: inherit; font-weight: 500; }
+
+.ig-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem 0.85rem;
+}
+
+.ig-composer textarea {
+  flex: 1;
+  resize: none;
+  min-height: 38px;
+  max-height: 160px;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  font-size: 0.87rem;
+  line-height: 1.4;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius);
+}
+.ig-composer textarea:focus { outline: none; border-color: var(--primary); }
+.ig-composer textarea:disabled,
+.ig-composer .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── MOBILE: un panel a la vez ───────────────────────────────── */
+@media (max-width: 760px) {
+  .ig-inbox {
+    grid-template-columns: 1fr;
+    height: calc(100dvh - 9rem);
+    min-height: 420px;
+    margin-bottom: 1rem;
+  }
+
+  .ig-lista-panel { border-right: none; }
+  .ig-hilo-panel  { display: none; }
+
+  .ig-inbox.hilo-abierto .ig-lista-panel { display: none; }
+  .ig-inbox.hilo-abierto .ig-hilo-panel  { display: flex; }
+
+  .ig-volver { display: inline-flex; }
+  .ig-hilo-head .btn { padding: 0.35rem 0.55rem; }
+
+  .ig-msg { max-width: 85%; }
+
+  /* 16px evita que iOS haga zoom al enfocar el textarea */
+  .ig-composer textarea { font-size: 16px; }
+}

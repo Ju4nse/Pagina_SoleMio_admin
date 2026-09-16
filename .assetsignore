@@ -1,0 +1,16 @@
+# Archivos que Cloudflare NO debe publicar. wrangler.jsonc sirve la raíz
+# del repo tal cual (assets.directory: "."), así que sin esto cualquiera
+# podía descargar /sql/, /CLAUDE.md, /compras.json, etc.
+.git
+.gitignore
+.assetsignore
+.wrangler
+wrangler.jsonc
+*.md
+compras.json
+sql/
+supabase/
+.claude/
+.agents/
+.mcp.json
+skills-lock.json
