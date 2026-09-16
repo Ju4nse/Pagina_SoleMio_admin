@@ -9,6 +9,7 @@ import { initCarritoUI, agregarAlCarrito, combinarVariantesConTexto } from './ca
 import { renderTopbar }       from './topbar.js';
 import { renderFooter }       from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
+import { subirFotoProducto }  from './subir-foto.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -1249,6 +1250,35 @@ function agregarFotoItem() {
   renderListaFotosModal();
 }
 
+/* Sube a Supabase Storage las fotos elegidas y las agrega a la galería
+   (se guardan en producto_fotos recién al apretar Guardar, como las URLs). */
+async function subirFotosArchivo(input) {
+  const archivos = [...(input.files || [])];
+  input.value = '';   // para poder volver a elegir el mismo archivo
+  if (!archivos.length) return;
+
+  const boton  = document.getElementById('btn-subir-foto');
+  const estado = document.getElementById('subir-foto-estado');
+  if (boton) boton.disabled = true;
+
+  const marca   = document.getElementById('p-marca')?.value.trim();
+  const errores = [];
+  for (const [i, file] of archivos.entries()) {
+    if (estado) estado.textContent = `Subiendo ${i + 1} de ${archivos.length}…`;
+    try {
+      fotosModalState.push(await subirFotoProducto(file, marca));
+      renderListaFotosModal();
+    } catch (err) {
+      console.error('[SUBIR FOTO]', err);
+      errores.push(`${file.name}: ${err.message || err}`);
+    }
+  }
+
+  if (boton) boton.disabled = false;
+  if (estado) estado.textContent = errores.length ? '' : 'Listo — acordate de Guardar';
+  if (errores.length) alert('No se pudieron subir algunas fotos:\n' + errores.join('\n'));
+}
+
 function quitarFotoItem(idx) {
   if (idx >= 0 && idx < fotosModalState.length) {
     fotosModalState.splice(idx, 1);
@@ -1455,6 +1485,15 @@ async function openProdModal() {
             <button type="button" class="btn sm primary" onclick="agregarFotoItem()" style="flex-shrink:0;">
               + Agregar
             </button>
+          </div>
+          <div style="display:flex; gap:0.4rem; align-items:center; margin-top:0.4rem;">
+            <input type="file" id="nueva-foto-archivo" accept="image/*" multiple hidden
+              onchange="subirFotosArchivoUI(this)">
+            <button type="button" id="btn-subir-foto" class="btn sm" style="flex-shrink:0;"
+              onclick="document.getElementById('nueva-foto-archivo').click()">
+              Subir foto desde la compu/celu
+            </button>
+            <span id="subir-foto-estado" style="font-size:0.74rem; color:var(--text-2);"></span>
           </div>
         </div>
 
@@ -1695,6 +1734,7 @@ window.irAPreviewFotoUI         = irAPreviewFoto;
 window.usarCuentagotasUI        = usarCuentagotas;
 window.aplicarCuentagotasUI     = aplicarCuentagotas;
 window.agregarFotoItem         = agregarFotoItem;
+window.subirFotosArchivoUI     = subirFotosArchivo;
 window.quitarFotoItem          = quitarFotoItem;
 window.moverFotoItem           = moverFotoItem;
 window.cambiarHexColorUI       = cambiarHexColor;
