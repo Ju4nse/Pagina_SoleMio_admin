@@ -28,7 +28,13 @@ export async function esAdmin(email) {
     .select('email')
     .eq('email', email)
     .maybeSingle();
-  return !error && !!data;
+  const admin = !error && !!data;
+  // Marca este navegador para que Google Analytics no cuente las visitas
+  // del admin (lo lee el snippet de gtag en el <head> de cada página).
+  if (admin) {
+    try { localStorage.setItem('solemio-no-analytics', '1'); } catch (e) {}
+  }
+  return admin;
 }
 
 /* Navega al catálogo: si ya hay una sesión de admin válida, entra como

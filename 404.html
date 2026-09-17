@@ -2,6 +2,21 @@
 <html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) — no se carga en navegadores de admin
+     (marcados con localStorage 'solemio-no-analytics' por esAdmin()) -->
+<script>
+  (function () {
+    try { if (localStorage.getItem('solemio-no-analytics') === '1') return; } catch (e) {}
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=G-388BR5RWM5';
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', 'G-388BR5RWM5');
+  })();
+</script>
 <script>
   // Evita el "flash" de tema claro antes de aplicar el tema guardado
   (function () {
