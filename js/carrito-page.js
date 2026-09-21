@@ -11,6 +11,7 @@ import {
   leerCarrito, quitarItem, cambiarCantidad, totalCarrito,
   enviarPedidoSupabase, actualizarBadge, fmtARS,
   actualizarAtributoItem, variantesFallbackDesdeTexto, combinarVariantesConTexto,
+  actualizarPreciosCarrito,
 } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
@@ -46,7 +47,7 @@ async function cargarVariantesParaItems(items) {
       .filter(t => t.producto_id === id)
       .map(t => ({ talle: t.talle, color: t.color || '', precio: t.precio ?? null }));
     const prod = prodMap.get(id);
-    precioBaseCache[id] = prod?.precio || 0;
+    precioBaseCache[id] = prod?.precio || null; // sin producto: no se sabe el precio (no 0)
     variantesCache[id] = variantesDB.length
       ? combinarVariantesConTexto(variantesDB, prod || {})
       : (prod ? variantesFallbackDesdeTexto(prod) : []);
@@ -62,7 +63,7 @@ function precioUnitarioDeItem(it) {
   const variantes = variantesCache[it.productoId] || [];
   const match = variantes.find(v => v.talle === (it.talle || '') && v.color === (it.color || ''));
   const base = (match && match.precio != null) ? match.precio : precioBaseCache[it.productoId];
-  return base != null ? Math.round(base * 1.5) : null;
+  return base ? Math.round(base * 1.5) : null;
 }
 
 function tallesDelItem(it) {
@@ -283,7 +284,7 @@ async function enviarPedido(event) {
   const nota     = document.getElementById('chk-nota')?.value.trim();
   const errorEl  = document.getElementById('chk-error');
   const btn      = document.getElementById('chk-submit-btn');
-  const items    = leerCarrito();
+  let   items    = leerCarrito();
 
   if (errorEl) errorEl.style.display = 'none';
 
@@ -305,6 +306,7 @@ async function enviarPedido(event) {
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
 
   await cargarVariantesParaItems(items);
+  if (actualizarPreciosCarrito(precioUnitarioDeItem)) items = leerCarrito();
   const idxPendiente = items.findIndex(faltaSeleccion);
   if (idxPendiente >= 0) {
     render(); // recrea el DOM del carrito con los selectores de talle/color visibles
@@ -380,7 +382,12 @@ async function init() {
 
   // Carga las variantes talle/color de los productos del carrito (para
   // los ítems agregados sin elegirlas) y re-renderiza cuando llegan.
-  cargarVariantesParaItems(leerCarrito()).then(render);
+  // De paso actualiza los precios: el carrito guarda el precio del
+  // momento en que se agregó cada producto, que puede haber cambiado.
+  cargarVariantesParaItems(leerCarrito()).then(() => {
+    actualizarPreciosCarrito(precioUnitarioDeItem);
+    render();
+  });
 
   rolActual = await detectarRol();
   const app = document.getElementById('app');

@@ -95,6 +95,21 @@ export function actualizarAtributoItem(idx, cambios) {
   guardarCarrito(items);
 }
 
+/* Pone el precio actual a cada línea del carrito (precioDe(item) → precio,
+   o null si no se sabe). Sin fusionar líneas, a diferencia de
+   actualizarAtributoItem: las agregadas sin talle/color quedan separadas.
+   Devuelve true si cambió algún precio. */
+export function actualizarPreciosCarrito(precioDe) {
+  const items = leerCarrito();
+  let cambio = false;
+  items.forEach(it => {
+    const precio = precioDe(it);
+    if (precio != null && precio !== it.precioUnitario) { it.precioUnitario = precio; cambio = true; }
+  });
+  if (cambio) guardarCarrito(items);
+  return cambio;
+}
+
 /* ================================================================
    VARIANTES DE PRODUCTO (talle/color) — helpers compartidos por
    producto.js (selector en la página de detalle) y carrito-page.js
