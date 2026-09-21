@@ -20,10 +20,22 @@
                     "absorbe" el stretch del flex de #app y .shell se
                     encoge a su contenido en vez de ir hasta max-width
                     (por eso se veían menos columnas en la grilla) */
-  max-width: 1080px;
+  max-width: var(--shell-max);
   margin: 0 auto;
   padding: 0 1.5rem;
   flex: 1 0 auto;
+}
+
+/* Cuánto sobresalen el logo y los íconos de la topbar afuera del
+   margen del contenido: hasta 6rem, pero nunca más que el espacio que
+   de verdad queda a los costados (margen de la página + padding del
+   contenedor, dejando ~1rem de aire). Sin este tope, en notebooks de
+   1024–1440px el engranaje quedaba fuera de la pantalla y el logo
+   cortado a la izquierda. --shell-max es el max-width del contenedor
+   de la topbar (.shell acá, header.site-header-topbar en site.css). */
+:root { --shell-max: 1080px; }
+.topbar {
+  --topbar-sangria: min(6rem, max(0px, (100vw - var(--shell-max)) / 2) + 0.5rem);
 }
 
 /* ── TOPBAR ──────────────────────────────────────────────────── */
@@ -70,7 +82,7 @@
      catálogo — sigue siendo el primer ítem normal del flex (no
      absolute), así el siguiente elemento (Marcas) se acomoda solo
      después de su ancho real sin números mágicos. */
-  margin-left: -6rem;
+  margin-left: calc(-1 * var(--topbar-sangria));
 }
 
 .logo-link {
@@ -319,7 +331,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-right: -6rem;
+  margin-right: calc(-1 * var(--topbar-sangria));
 }
 
 /* ── MENÚ DE OPCIONES (tema / cuenta / salir) — mismo desplegable en
@@ -1710,9 +1722,25 @@ body.modal-abierto-lock { overflow: hidden; }
 /* ── SELECTOR DE COMPRA (página de producto) ─────────────────── */
 .selector-compra { margin: 1rem 0; }
 
+/* Vive acá (no en producto.css) porque catalogo.html no carga
+   producto.css y el modal de editar producto también usa estos chips. */
+.attr-tag {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.22rem 0.7rem;
+  border-radius: 99px;
+}
+
+#categoria-chips-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .selector-chip {
   cursor: pointer;
-  background: var(--surface);
   transition: var(--trans);
 }
 
@@ -2036,7 +2064,7 @@ body.modal-abierto-lock { overflow: hidden; }
 /* Acompaña el font-size de 18.75px de shared.css: los anchos en px
    no escalan con rem, así que se agrandan a mano en la misma proporción. */
 @media (min-width: 1024px) {
-  .shell,
+  :root              { --shell-max: 1350px; }
   .prod-modal-grande { max-width: 1350px; }
   .footer-inner,
   .footer-bottom     { max-width: 1450px; }

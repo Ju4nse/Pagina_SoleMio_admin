@@ -14,11 +14,6 @@ import { ICON } from './theme.js';
 const CARRITO_KEY      = 'solemio-carrito';
 const MIS_PEDIDOS_KEY  = 'solemio-mis-pedidos';
 
-/* Cuánto se le avisa al cliente que puede tardar la revisión manual
-   del pedido. Un solo lugar para cambiarlo — lo usan carrito-page.js
-   (explicación + confirmación) y pedido-estado.js (estado "espera"). */
-export const TIEMPO_REVISION_HORAS = 24;
-
 export function fmtARS(n) {
   return '$ ' + Math.round(n || 0).toLocaleString('es-AR');
 }
@@ -290,7 +285,7 @@ function renderDrawerBody() {
       </div>
       <div class="carrito-drawer-botones">
         <button type="button" class="btn ghost" onclick="cerrarCarritoDrawerUI()">Seguir comprando</button>
-        <a class="btn primary" href="carrito.html">Ir al pedido</a>
+        <a class="btn primary" href="carrito.html">Comprar</a>
       </div>
     </div>`;
 }

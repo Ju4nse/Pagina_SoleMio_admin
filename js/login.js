@@ -100,7 +100,17 @@ async function doLogin() {
 
   resetearIntentos();
   sessionStorage.setItem('solemio-role', 'admin');
-  window.location.href = 'catalogo.html';
+  window.location.href = destinoAdmin();
+}
+
+/* A dónde ir después de entrar como admin: normalmente el catálogo,
+   pero si se llegó acá desde el link de un pedido (aviso de Telegram →
+   pedidos.html?id=... sin sesión), se vuelve a ese pedido. Solo se
+   acepta ese formato exacto, para que ?volver= no sirva para mandar a
+   nadie a otra página o sitio. */
+function destinoAdmin() {
+  const volver = new URLSearchParams(location.search).get('volver') || '';
+  return /^pedidos\.html(\?id=[0-9a-f-]{36})?$/i.test(volver) ? volver : 'catalogo.html';
 }
 
 async function doGuestLogin() {
@@ -122,7 +132,7 @@ async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user && await esAdmin(session.user.email)) {
     sessionStorage.setItem('solemio-role', 'admin');
-    window.location.href = 'catalogo.html';
+    window.location.href = destinoAdmin();
   }
 }
 

@@ -15,7 +15,7 @@ import { initAlertasPedidos } from './pedidos-alertas.js';
    ================================================================ */
 let pedidos              = [];   // [{...pedido, items:[...]}]
 let pedidoAbiertoId      = null;
-let itemsEdicion         = {};   // item.id -> {disponible, talle, color, cantidad} (borrador mientras el modal está abierto)
+let itemsEdicion         = {};   // item.id -> {disponible, talle, colores, cantidad} (borrador mientras el modal está abierto)
 let variantesPorProducto = {};   // producto_id -> [{talle, color, stock}] (para elegir una combinación real)
 let verArchivados        = false; // false: solo pedidos activos. true: solo los archivados.
 
@@ -46,8 +46,39 @@ function talleFinal(it)    { return it.talle_final    ?? (it.talle    || ''); }
 function colorFinal(it)    { return it.color_final    ?? (it.color    || ''); }
 function cantidadFinal(it) { return it.cantidad_final ?? it.cantidad; }
 
+/* Colores que se le ofrecen al cliente en vez del que pidió: varios
+   (colores_opciones) o uno solo (color_final, como antes de poder
+   elegir varios). null si se mantiene el color pedido. */
+function coloresOfrecidos(it) {
+  if (it.colores_opciones?.length) return it.colores_opciones;
+  if (it.color_final != null && it.color_final !== (it.color || '')) return [it.color_final];
+  return null;
+}
+
+// Con varios colores ofrecidos todavía no hay uno decidido: solo se
+// muestra el talle (salvo que el color pedido esté entre las opciones).
 function attrsItem(it) {
-  return [talleFinal(it), colorFinal(it)].filter(Boolean).join(' · ');
+  const opciones = it.colores_opciones?.length ? it.colores_opciones : null;
+  const color = opciones ? (opciones.includes(it.color) ? it.color : '') : colorFinal(it);
+  return [talleFinal(it), color].filter(Boolean).join(' · ');
+}
+
+/* Lo que se guarda en la DB a partir de los colores tildados en el
+   modal: 2 o más → colores_opciones; uno solo → color_final (null si
+   es el mismo que pidió el cliente). */
+function coloresAGuardar(it, colores) {
+  const sel = (colores || []).filter(Boolean);
+  if (sel.length > 1) return { color_final: null, colores_opciones: sel };
+  const unico = sel[0] ?? (it.color || '');
+  return { color_final: unico !== (it.color || '') ? unico : null, colores_opciones: null };
+}
+
+function mismosColores(a, b) {
+  return JSON.stringify(a || null) === JSON.stringify(b || null);
+}
+
+function escAttr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 function pedidoAbierto() {
@@ -100,9 +131,7 @@ function mensajeWhatsapp(p) {
       if (talleFinal(it) !== (it.talle || '')) {
         msg += `  (cambiamos el talle: pediste "${it.talle || 'sin especificar'}", te confirmamos "${talleFinal(it)}")\n`;
       }
-      if (colorFinal(it) !== (it.color || '')) {
-        msg += `  (cambiamos el color: pediste "${it.color || 'sin especificar'}", te confirmamos "${colorFinal(it)}")\n`;
-      }
+      msg += notaColoresWhatsapp(it);
       if (cant !== it.cantidad) {
         msg += `  (ajustamos la cantidad: pediste ${it.cantidad}, quedan confirmadas ${cant})\n`;
       }
@@ -115,12 +144,37 @@ function mensajeWhatsapp(p) {
     noDisponibles.forEach(it => {
       const attrs = attrsItem(it);
       msg += `- ${it.producto_nombre}${attrs ? ` (${attrs})` : ''} x${cantidadFinal(it)}\n`;
+      msg += notaColoresWhatsapp(it);
     });
     msg += '\n';
   }
 
   msg += `Total a pagar: ${fmtARS(p.monto_final)}\n\n¿Coordinamos el pago y la entrega?`;
   return msg;
+}
+
+/* Ej.:
+     Vos elegiste NEGRO, no está disponible. Tenemos disponible en talle 95 estos colores:
+     - BLANCO
+     - NUDE
+   Si el color pedido está entre las opciones, solo se suman las demás. */
+function notaColoresWhatsapp(it) {
+  const opciones = coloresOfrecidos(it);
+  if (!opciones) return '';
+  const talle    = talleFinal(it);
+  const enTalle  = talle ? ` en talle ${talle}` : '';
+  const lista    = cs => cs.map(c => `  - ${c}\n`).join('');
+
+  if (it.color && opciones.includes(it.color)) {
+    const otros = opciones.filter(c => c !== it.color);
+    return otros.length ? `  También lo tenemos${enTalle} en:\n${lista(otros)}` : '';
+  }
+
+  const varios = opciones.length > 1;
+  const pediste = it.color ? `Vos elegiste ${it.color}, no está disponible. ` : '';
+  return `  ${pediste}Tenemos disponible${enTalle} ${varios ? 'estos colores' : 'este color'}:\n`
+    + lista(opciones)
+    + (varios ? '  Decinos cuál preferís.\n' : '');
 }
 
 function linkWhatsapp(p) {
@@ -261,7 +315,7 @@ async function abrirPedido(id) {
     itemsEdicion[it.id] = {
       disponible: it.disponible,
       talle:      talleFinal(it),
-      color:      colorFinal(it),
+      colores:    it.colores_opciones?.length ? [...it.colores_opciones] : [colorFinal(it)].filter(Boolean),
       cantidad:   cantidadFinal(it),
     };
   });
@@ -339,6 +393,7 @@ function variantesFallbackDesdeTexto(producto) {
 
 function cerrarPedido() {
   pedidoAbiertoId = null;
+  limpiarIdDeLaUrl();
   document.getElementById('modal-pedido').innerHTML = '';
 }
 
@@ -375,19 +430,23 @@ function renderModalPedido() {
           ${p.items.map(it => renderItemEdit(it)).join('')}
         </div>
 
-        <div class="carrito-total" style="margin-top:1rem">
-          <span>Monto confirmado</span>
-          <strong>${fmtARS(totalConfirmado)}</strong>
-        </div>
+        <!-- Pie fijo abajo del modal: el total y "Guardar" siempre a
+             la vista aunque el pedido tenga muchos productos. -->
+        <div class="pedido-modal-pie">
+          <div class="carrito-total">
+            <span>Monto confirmado</span>
+            <strong>${fmtARS(totalConfirmado)}</strong>
+          </div>
 
-        <div class="modal-footer" style="flex-wrap:wrap;gap:.5rem">
-          <button class="btn ghost" onclick="cerrarPedidoUI()">Cerrar</button>
-          <button class="btn primary" onclick="guardarPedidoUI()">${ICON.check} Guardar cambios</button>
-          ${p.estado !== 'espera' ? `
-            <button class="btn ghost" onclick="copiarMensajeWhatsappUI()">Copiar mensaje</button>
-            <a class="btn" target="_blank" rel="noopener" href="${linkWhatsapp(p)}">Reenviar por WhatsApp</a>
-          ` : ''}
-          <button class="btn ghost" onclick="archivarPedidoUI(${!p.archivado})">${p.archivado ? 'Desarchivar' : 'Archivar'}</button>
+          <div class="modal-footer">
+            <button class="btn ghost" onclick="cerrarPedidoUI()">Cerrar</button>
+            <button class="btn primary" onclick="guardarPedidoUI()">${ICON.check} Guardar cambios</button>
+            ${p.estado !== 'espera' ? `
+              <button class="btn ghost" onclick="copiarMensajeWhatsappUI()">Copiar mensaje</button>
+              <a class="btn" target="_blank" rel="noopener" href="${linkWhatsapp(p)}">Reenviar por WhatsApp</a>
+            ` : ''}
+            <button class="btn ghost" onclick="archivarPedidoUI(${!p.archivado})">${p.archivado ? 'Desarchivar' : 'Archivar'}</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -401,13 +460,15 @@ function renderItemEdit(it) {
   const productoId  = it.producto_id;
   const talles      = tallesDeVariantes(productoId);
   const colores     = coloresParaTalle(productoId, e.talle);
-  const stockActual = stockDeVariante(productoId, e.talle, e.color);
+  const sel         = e.colores || [];
+  // Con varios colores tildados el stock va en cada chip, no acá abajo
+  const stockActual = sel.length > 1 ? null : stockDeVariante(productoId, e.talle, sel[0] || '');
   const cantMax     = it.cantidad; // el admin nunca puede subir la cantidad pedida por el cliente
   const cantidad    = Math.min(cantMax, Math.max(1, parseInt(e.cantidad, 10) || 1));
   const subtotal    = it.precio_unitario * cantidad;
 
   const talleCambio = e.talle !== (it.talle || '');
-  const colorCambio = e.color !== (it.color || '');
+  const colorCambio = !(sel.length === 1 && sel[0] === (it.color || '')) && !(sel.length === 0 && !it.color);
   const cantCambio  = cantidad !== it.cantidad;
 
   return `
@@ -427,13 +488,18 @@ function renderItemEdit(it) {
             ${talleCambio ? `<span class="pedido-item-edit-cambio" title="Talle pedido originalmente">pidió: ${it.talle || '—'}</span>` : ''}
           </div>
 
-          <div class="pedido-item-edit-campo">
+          <div class="pedido-item-edit-campo pedido-item-edit-colores-campo">
             ${colores.length ? `
-              <select onchange="cambiarColorItemUI(${it.id}, this.value)">
-                ${colores.map(c => `<option value="${c}" ${e.color === c ? 'selected' : ''}>${c}</option>`).join('')}
-              </select>`
-              : (e.color ? `<span class="pedido-item-edit-attr-fijo">${e.color}</span>` : '')}
-            ${colorCambio ? `<span class="pedido-item-edit-cambio" title="Color pedido originalmente">pidió: ${it.color || '—'}</span>` : ''}
+              <div class="pedido-item-edit-colores" title="Podés marcar varios colores para ofrecerle al cliente">
+                ${colores.map(c => {
+                  const st = stockDeVariante(productoId, e.talle, c);
+                  return `<button type="button" class="pedido-color-chip ${sel.includes(c) ? 'activo' : ''}"
+                    data-color="${escAttr(c)}" onclick="toggleColorItemUI(${it.id}, this.dataset.color)">
+                    ${c}${st !== null ? ` <span class="pedido-color-chip-stock">(${st})</span>` : ''}</button>`;
+                }).join('')}
+              </div>`
+              : (sel[0] ? `<span class="pedido-item-edit-attr-fijo">${sel[0]}</span>` : '')}
+            ${colorCambio ? `<span class="pedido-item-edit-cambio" title="Color pedido originalmente">pidió: ${it.color || '—'}${sel.length > 1 ? ` · se le ofrecen ${sel.length} colores` : ''}</span>` : ''}
           </div>
 
           <div class="pedido-item-edit-campo pedido-item-edit-cant-wrap">
@@ -466,15 +532,30 @@ function cambiarTalleItem(itemId, talle) {
 
   e.talle = talle;
   const coloresValidos = coloresParaTalle(it.producto_id, talle);
-  if (e.color && !coloresValidos.includes(e.color)) e.color = coloresValidos[0] || '';
+  if (coloresValidos.length) {
+    e.colores = (e.colores || []).filter(c => coloresValidos.includes(c));
+    if (!e.colores.length) e.colores = [coloresValidos[0]];
+  }
 
   renderModalPedido();
 }
 
-function cambiarColorItem(itemId, color) {
+/* Tilda/destilda un color. Siempre queda al menos uno: con uno solo es
+   el color que se confirma; con varios, son las opciones que se le
+   ofrecen al cliente para que elija (ver notaColoresWhatsapp). */
+function toggleColorItem(itemId, color) {
   const e = itemsEdicion[itemId];
   if (!e) return;
-  e.color = color;
+  const sel = e.colores || [];
+  if (sel.includes(color)) {
+    if (sel.length === 1) return;
+    e.colores = sel.filter(c => c !== color);
+  } else {
+    const it = pedidoAbierto()?.items.find(x => x.id === itemId);
+    // se mantiene el orden de la lista de colores, no el de los clics
+    const orden = it ? coloresParaTalle(it.producto_id, e.talle) : [];
+    e.colores = [...sel, color].sort((a, b) => orden.indexOf(a) - orden.indexOf(b));
+  }
   renderModalPedido();
 }
 
@@ -557,17 +638,18 @@ async function guardarPedido() {
       const cantidad = Math.min(it.cantidad, Math.max(1, parseInt(e.cantidad, 10) || 1));
 
       const talleFinalNuevo    = e.talle !== (it.talle || '') ? e.talle : null;
-      const colorFinalNuevo    = e.color !== (it.color || '') ? e.color : null;
+      const colores            = coloresAGuardar(it, e.colores);
       const cantidadFinalNuevo = cantidad !== it.cantidad     ? cantidad : null;
 
-      if (talleFinalNuevo !== null || colorFinalNuevo !== null || cantidadFinalNuevo !== null) {
+      if (talleFinalNuevo !== null || colores.color_final !== null || colores.colores_opciones || cantidadFinalNuevo !== null) {
         huboModificacion = true;
       }
 
       const cambios = {};
       if (e.disponible      !== it.disponible)            cambios.disponible      = e.disponible ?? null;
       if (talleFinalNuevo    !== (it.talle_final    ?? null)) cambios.talle_final    = talleFinalNuevo;
-      if (colorFinalNuevo    !== (it.color_final    ?? null)) cambios.color_final    = colorFinalNuevo;
+      if (colores.color_final !== (it.color_final   ?? null)) cambios.color_final    = colores.color_final;
+      if (!mismosColores(colores.colores_opciones, it.colores_opciones)) cambios.colores_opciones = colores.colores_opciones;
       if (cantidadFinalNuevo !== (it.cantidad_final ?? null)) cambios.cantidad_final = cantidadFinalNuevo;
 
       if (!Object.keys(cambios).length) continue; // sin cambios, no pegarle a la DB
@@ -611,7 +693,7 @@ async function guardarPedido() {
       const cantidad = Math.min(it.cantidad, Math.max(1, parseInt(e.cantidad, 10) || 1));
       it.disponible      = e.disponible ?? null;
       it.talle_final     = e.talle  !== (it.talle || '') ? e.talle  : null;
-      it.color_final     = e.color  !== (it.color || '') ? e.color  : null;
+      Object.assign(it, coloresAGuardar(it, e.colores));
       it.cantidad_final  = cantidad !== it.cantidad       ? cantidad : null;
     });
     Object.assign(p, patch);
@@ -936,14 +1018,16 @@ function renderNPBodyHTML() {
       `).join('') : `<div class="np-vacio">Todavía no agregaste productos.</div>`}
     </div>
 
-    <div class="carrito-total" style="margin-top:1rem">
-      <span>Total</span>
-      <strong>${fmtARS(total)}</strong>
-    </div>
+    <div class="pedido-modal-pie">
+      <div class="carrito-total">
+        <span>Total</span>
+        <strong>${fmtARS(total)}</strong>
+      </div>
 
-    <div class="modal-footer">
-      <button class="btn ghost" onclick="cerrarNuevoPedidoUI()">Cancelar</button>
-      <button class="btn primary" id="np-crear-btn" onclick="crearPedidoManualUI()">${ICON.check} Crear pedido</button>
+      <div class="modal-footer">
+        <button class="btn ghost" onclick="cerrarNuevoPedidoUI()">Cancelar</button>
+        <button class="btn primary" id="np-crear-btn" onclick="crearPedidoManualUI()">${ICON.check} Crear pedido</button>
+      </div>
     </div>`;
 }
 
@@ -1035,6 +1119,36 @@ async function startApp() {
   if (badge) { badge.textContent = 'Admin'; badge.className = 'role-badge admin'; }
 
   await cargarPedidos();
+  abrirPedidoDeLaUrl();
+}
+
+/* pedidos.html?id=<uuid> (el link del aviso de Telegram) abre directo
+   el modal de ese pedido. Si está archivado, se pasa a esa vista para
+   que al cerrar el modal se lo vea en la lista. */
+function abrirPedidoDeLaUrl() {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return;
+  const p = pedidos.find(x => x.id === id);
+  if (!p) { alert('No se encontró ese pedido.'); limpiarIdDeLaUrl(); return; }
+  if (!!p.archivado !== verArchivados) toggleArchivados();
+  abrirPedido(id);
+}
+
+// Saca el ?id= al cerrar el modal: si no, recargar la página lo volvería a abrir.
+function limpiarIdDeLaUrl() {
+  if (new URLSearchParams(location.search).has('id')) {
+    history.replaceState(null, '', location.pathname);
+  }
+}
+
+// Sin sesión de admin → login, y después de entrar vuelve a este pedido
+// (ver destinoAdmin en login.js). Se arma con "pedidos.html" fijo y no
+// con location.pathname: Cloudflare puede servir la página como /pedidos.
+function irAlLogin() {
+  const id = new URLSearchParams(location.search).get('id');
+  window.location.href = id
+    ? 'login.html?volver=' + encodeURIComponent('pedidos.html?id=' + id)
+    : 'login.html';
 }
 
 async function init() {
@@ -1049,7 +1163,7 @@ async function init() {
     return;
   }
 
-  window.location.href = 'login.html';
+  irAlLogin();
 }
 
 // ── Exponer funciones globales para los onclick del HTML ──────
@@ -1064,7 +1178,7 @@ window.archivarPedidoUI = archivarPedido;
 window.toggleArchivadosUI = toggleArchivados;
 window.guardarPedidoUI = guardarPedido;
 window.cambiarTalleItemUI    = cambiarTalleItem;
-window.cambiarColorItemUI    = cambiarColorItem;
+window.toggleColorItemUI     = toggleColorItem;
 window.cambiarCantidadItemUI = cambiarCantidadItem;
 window.copiarMensajeWhatsappUI = copiarMensajeWhatsapp;
 window.copiarCodigoPedidoUI    = copiarCodigoPedido;

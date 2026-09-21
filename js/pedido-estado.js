@@ -6,7 +6,7 @@
    ================================================================ */
 import { sb, esAdmin } from './supabase-client.js';
 import { initTheme, toggleTheme } from './theme.js';
-import { leerMisPedidosLocal, initCarritoUI, TIEMPO_REVISION_HORAS } from './carrito.js';
+import { leerMisPedidosLocal, initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
@@ -21,7 +21,7 @@ const ESTADO_LABEL = {
 };
 
 const ESTADO_DESC = {
-  espera:     `Todavía estamos revisando la disponibilidad real de cada producto (puede demorar hasta ${TIEMPO_REVISION_HORAS} horas hábiles). Te contactaremos por WhatsApp apenas lo confirmemos.`,
+  espera:     'Todavía estamos revisando la disponibilidad real de cada producto, por lo que puede demorar un poco. Te contactaremos por WhatsApp apenas lo confirmemos.',
   revisado:   'Revisamos tu pedido: puede que hayamos ajustado el talle, color o cantidad de algún producto, o que alguno no tenga stock — revisá el detalle de cada uno más abajo.',
   confirmado: 'Confirmamos todos los productos de tu pedido tal como los pediste.',
   cancelado:  'Lamentablemente no pudimos confirmar disponibilidad de ningún producto de este pedido.',
@@ -41,7 +41,14 @@ function talleFinal(it)    { return it.talle_final    ?? (it.talle || ''); }
 function colorFinal(it)    { return it.color_final    ?? (it.color || ''); }
 function cantidadFinal(it) { return it.cantidad_final ?? it.cantidad; }
 function attrsPedidas(it)  { return [it.talle, it.color].filter(Boolean).join(' · '); }
-function attrsFinales(it)  { return [talleFinal(it), colorFinal(it)].filter(Boolean).join(' · '); }
+// Con varios colores ofrecidos (colores_opciones) todavía no hay uno
+// confirmado: se muestra solo el talle y las opciones van aparte.
+function attrsFinales(it) {
+  const color = it.colores_opciones?.length
+    ? (it.colores_opciones.includes(it.color) ? it.color : '')
+    : colorFinal(it);
+  return [talleFinal(it), color].filter(Boolean).join(' · ');
+}
 
 function getIdDeUrl() {
   return new URLSearchParams(location.search).get('id');
@@ -170,7 +177,8 @@ function renderItemEstado(it) {
   const cantConfirmada = cantidadFinal(it);
 
   const talleCambio = talleFinal(it) !== (it.talle || '');
-  const colorCambio = colorFinal(it) !== (it.color || '');
+  const opciones    = it.colores_opciones?.length ? it.colores_opciones : null;
+  const colorCambio = !!opciones || colorFinal(it) !== (it.color || '');
   const cantCambio  = cantConfirmada !== cantPedida;
   const huboCambios = talleCambio || colorCambio || cantCambio;
 
@@ -190,6 +198,12 @@ function renderItemEstado(it) {
         ${huboCambios ? `
           <div style="font-size:.78rem;color:var(--primary-dark);margin-top:.15rem">
             Confirmamos: ${finalAttrs || 'sin detalle'} · x${cantConfirmada}
+          </div>` : ''}
+        ${opciones ? `
+          <div style="font-size:.78rem;color:var(--primary-dark);margin-top:.15rem">
+            ${opciones.includes(it.color)
+              ? `También lo tenemos en: ${opciones.filter(c => c !== it.color).join(', ')}`
+              : `${it.color ? `El color ${it.color} no está disponible. ` : ''}Lo tenemos${talleFinal(it) ? ` en talle ${talleFinal(it)}` : ''} en: ${opciones.join(', ')} — decinos por WhatsApp cuál preferís.`}
           </div>` : ''}
         <div class="pedido-item-edit-precio">${fmtARS(it.precio_unitario * cantConfirmada)}</div>
       </div>

@@ -9,7 +9,7 @@ import { sb, esAdmin } from './supabase-client.js';
 import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
 import {
   leerCarrito, quitarItem, cambiarCantidad, totalCarrito,
-  enviarPedidoSupabase, actualizarBadge, fmtARS, TIEMPO_REVISION_HORAS,
+  enviarPedidoSupabase, actualizarBadge, fmtARS,
   actualizarAtributoItem, variantesFallbackDesdeTexto, combinarVariantesConTexto,
 } from './carrito.js';
 import { renderTopbar } from './topbar.js';
@@ -209,19 +209,20 @@ function renderCarrito(items) {
           <h2>Cómo continúa tu pedido</h2>
           <ol>
             <li>Al confirmar, tu pedido queda registrado como pendiente de revisión. Esto no representa un cargo ni una compra confirmada.</li>
-            <li>Nuestro equipo verifica manualmente la disponibilidad real de cada talle y color solicitado — la revisión puede demorar hasta ${TIEMPO_REVISION_HORAS} horas hábiles.</li>
+            <li>Nuestro equipo verifica manualmente la disponibilidad real de cada talle y color solicitado, por lo que la revisión puede demorar un poco.</li>
             <li>Te contactamos por WhatsApp para confirmar los productos disponibles y el monto final a abonar.</li>
             <li>Una vez confirmado, coordinamos el medio de pago y la modalidad de entrega o retiro.</li>
           </ol>
         </div>
 
         <form onsubmit="return enviarPedidoUI(event)" novalidate>
+          <p class="campos-obligatorios-nota">Los campos marcados con <span class="campo-obligatorio">*</span> son obligatorios.</p>
           <div class="field">
-            <label>Nombre y apellido</label>
+            <label>Nombre <span class="campo-obligatorio">*</span></label>
             <input id="chk-nombre" type="text" required autocomplete="name">
           </div>
           <div class="field">
-            <label>WhatsApp / teléfono</label>
+            <label>WhatsApp / teléfono <span class="campo-obligatorio">*</span></label>
             <input id="chk-telefono" type="tel" required autocomplete="tel" placeholder="Ej: 2494 123456">
           </div>
           <div class="field">
@@ -245,8 +246,8 @@ function renderListo() {
   return `
     <div class="carrito-listo">
       <div class="carrito-listo-icon">✓</div>
-      <p>Recibimos tu pedido correctamente. La revisión puede demorar hasta
-        ${TIEMPO_REVISION_HORAS} horas hábiles; nos vamos a contactar por
+      <p>Recibimos tu pedido correctamente. La revisión puede demorar
+        un poco; nos vamos a contactar por
         WhatsApp para confirmar la disponibilidad y el monto final a abonar.</p>
 
       ${linkEstado ? `
@@ -287,7 +288,7 @@ async function enviarPedido(event) {
   if (errorEl) errorEl.style.display = 'none';
 
   if (!nombre) {
-    if (errorEl) { errorEl.textContent = 'Ingresá tu nombre y apellido.'; errorEl.style.display = 'block'; }
+    if (errorEl) { errorEl.textContent = 'Ingresá tu nombre.'; errorEl.style.display = 'block'; }
     document.getElementById('chk-nombre')?.focus();
     return false;
   }

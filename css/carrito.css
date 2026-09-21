@@ -104,3 +104,10 @@
   .carrito-item-selector,
   .carrito-item-selector-cargando { padding-left: 0; }
 }
+
+.campo-obligatorio { color: var(--accent, #b0405a); }
+.campos-obligatorios-nota {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin: 0 0 0.75rem;
+}

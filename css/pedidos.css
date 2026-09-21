@@ -78,9 +78,32 @@
 }
 
 /* ── MODAL DE DETALLE ────────────────────────────────────────── */
+/* Modal amplio (y a pantalla completa en celu, ver abajo): se edita
+   producto por producto, así que conviene ver varios a la vez. Un solo
+   scroll (el del modal) — la lista de ítems no scrollea aparte. */
 .pedido-modal-grande {
-  max-width: 760px;
+  max-width: 1000px;
   width: 100%;
+  max-height: 94vh;
+  padding-bottom: 0; /* el padding de abajo lo pone .pedido-modal-pie */
+}
+
+/* Total + botones pegados abajo del modal mientras se scrollea */
+.pedido-modal-pie {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--surface);
+  margin: 1rem -1.5rem 0;
+  padding: 0.9rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.pedido-modal-pie .modal-footer {
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+  padding-top: 0;
+  border-top: none;
 }
 
 .pedido-detalle-cliente {
@@ -100,6 +123,7 @@
 
 .pedido-pago-toggle {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.6rem;
@@ -120,9 +144,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 0.3rem;
 }
 
 .pedido-item-edit {
@@ -168,6 +189,38 @@
 .pedido-item-edit-variantes select {
   font-size: 0.82rem;
   padding: 0.35rem 0.5rem;
+}
+
+/* Colores: se pueden tildar varios (opciones para ofrecerle al cliente) */
+.pedido-item-edit-colores-campo { flex: 1 1 260px; min-width: 0; }
+
+.pedido-item-edit-colores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pedido-color-chip {
+  font-size: 0.78rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  color: var(--text-2);
+  transition: var(--trans);
+}
+
+.pedido-color-chip:hover { border-color: var(--primary); }
+
+.pedido-color-chip.activo {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-color: var(--primary);
+}
+
+.pedido-color-chip-stock {
+  font-size: 0.68rem;
+  color: var(--text-3);
 }
 
 .pedido-item-edit-attr-fijo {
@@ -318,7 +371,65 @@
   font-style: italic;
 }
 
+/* ── CELULAR ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Lista: nombre y datos arriba a lo ancho, estado + monto abajo */
+  .pedido-row {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.85rem 0.95rem;
+  }
+  .pedido-row > :first-child { flex: 1 1 100%; min-width: 0; }
+  .pedido-row-right {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .pedido-row-monto { margin-left: auto; min-width: 0; }
+
+  /* Toolbar: búsqueda a lo ancho, filtros de a dos por fila */
+  #app .toolbar .search-wrap { flex: 1 1 100%; }
+  #app .toolbar select { flex: 1 1 calc(50% - 0.25rem); min-width: 0; }
+  #app .toolbar .btn { flex: 1 1 calc(50% - 0.25rem); justify-content: center; }
+
+  /* Modales de pedido a pantalla completa */
+  #modal-pedido .modal-overlay,
+  #modal-nuevo-pedido .modal-overlay { padding: 0; }
+  .pedido-modal-grande {
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    padding: 1.1rem 1rem 0;
+  }
+  .pedido-modal-pie {
+    margin: 1rem -1rem 0;
+    padding: 0.75rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  }
+  .pedido-modal-pie .modal-footer .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* Ítem: los botones Disponible / Sin stock van abajo, grandes */
+  .pedido-item-edit {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+  .pedido-item-edit-toggle { width: 100%; }
+  .pedido-color-chip { padding: 0.45rem 0.8rem; }
+  .pedido-item-edit-toggle .toggle-disp {
+    flex: 1;
+    padding: 0.55rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* 16px en los campos: si no, iPhone hace zoom al tocarlos */
+  .pedido-modal-grande select,
+  .pedido-modal-grande input { font-size: 16px; }
+}
+
 /* Escala 125% en compu (ver shared.css) */
 @media (min-width: 1024px) {
-  .pedido-modal-grande { max-width: 950px; }
+  .pedido-modal-grande { max-width: 1300px; }
 }

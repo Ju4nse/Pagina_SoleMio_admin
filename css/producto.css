@@ -248,15 +248,6 @@
   flex-basis: 100%;
 }
 
-.attr-tag {
-  font-size: 0.78rem;
-  color: var(--text-2);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 0.22rem 0.7rem;
-  border-radius: 99px;
-}
-
 /* circulito de color */
 .color-tag {
   display: inline-flex;
