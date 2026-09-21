@@ -28,7 +28,9 @@
 /* ── PRODUCTO (foto + info) ─────────────────────────────────── */
 .product-box {
   display: grid;
-  grid-template-columns: minmax(340px, 480px) 1fr;
+  /* minmax(0, …): sin eso la columna de info no se achica y en tablets
+     empujaba los botones fuera de la pantalla */
+  grid-template-columns: minmax(340px, 480px) minmax(0, 1fr);
   gap: 3rem;
   align-items: start;
   animation: fadein 0.2s ease;
@@ -276,6 +278,7 @@
 /* ── ACCIONES ────────────────────────────────────────────────── */
 .product-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.5rem;
 }
@@ -326,6 +329,12 @@
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
+/* Tablet: foto e info mitad y mitad (con la foto fija de 340px mínimo
+   no quedaba lugar para los botones) */
+@media (max-width: 960px) {
+  .product-box { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; }
+}
+
 @media (max-width: 720px) {
   .product-box {
     grid-template-columns: 1fr;

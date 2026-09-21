@@ -140,6 +140,8 @@ export function renderTopbar(activeKey, opts = {}) {
         </div>
       </div>
     </div>`;
+
+  observarTopbar(slot);
 }
 
 function irACuenta() {
@@ -148,6 +150,87 @@ function irACuenta() {
   } else {
     location.href = 'catalogo.html?account=1';
   }
+}
+
+/* ── BARRA QUE NO ENTRA (tablets y notebooks chicas) ─────────────
+   Entre 641px y ~1440px, según la página y el rol, el contenido de la
+   barra (Marcas + buscador + 5 links + badge Admin + 3 íconos) puede no
+   entrar: los íconos se salían de la pantalla y toda la página quedaba
+   con scroll horizontal. En vez de un corte fijo por ancho (que cambia
+   con cada combinación), se mide: si no entra, los links pasan a la
+   hamburguesa (.nav-colapsada); si aun así no entra, se oculta el badge
+   "Admin" (.sin-badge), y como último paso se achican los espacios y el
+   buscador (.ajustada). En celu (≤640px) manda el layout propio de
+   catalogo.css y esto no hace nada. */
+function ajustarTopbar() {
+  const bar = document.getElementById('topbar-slot');
+  if (!bar?.classList.contains('topbar')) return;
+  const icons = bar.querySelector('.topbar-icons');
+  const logo  = bar.querySelector('.logo');
+
+  const NIVELES = ['nav-colapsada', 'sin-badge', 'ajustada'];
+  bar.classList.remove(...NIVELES);
+
+  // Celu: el logo va centrado en la pantalla con position:absolute, así
+  // que no "ve" a los íconos — en pantallas de 320–360px le quedaban
+  // encima. Si entra a tamaño completo sin pisar nada, sigue centrado en
+  // la pantalla; si no, se centra en el hueco entre la hamburguesa y los
+  // íconos (queda un poco corrido, pero usa todo el lugar libre en vez de
+  // achicarse de más).
+  const hamb = bar.querySelector('.hamburger-btn');
+  if (logo) { logo.style.left = logo.style.transform = logo.style.width = ''; bar.style.removeProperty('--logo-max'); }
+  if (window.matchMedia('(max-width: 640px)').matches && icons && hamb && logo) {
+    const br = bar.getBoundingClientRect(), hr = hamb.getBoundingClientRect(), ir = icons.getBoundingClientRect();
+    const img   = logo.querySelector('.logo-img');
+    const ideal = img?.naturalWidth ? 28 * img.naturalWidth / img.naturalHeight : 170;
+    const lado  = Math.max(hr.width, ir.width) + 8;
+    const simetrico = br.width - 2 * lado;
+    if (simetrico >= ideal) {
+      bar.style.setProperty('--logo-max', `${simetrico}px`);
+    } else {
+      const ancho = ir.left - hr.right - 16;
+      logo.style.left      = `${hr.right - br.left + 8}px`;
+      logo.style.width     = `${ancho}px`;
+      logo.style.transform = 'none';
+      bar.style.setProperty('--logo-max', `${ancho}px`);
+    }
+  }
+
+  if (!window.matchMedia('(max-width: 640px)').matches && icons) {
+    const W = document.documentElement.clientWidth;
+    const entra = () => icons.getBoundingClientRect().right <= W - 2
+      && (!logo || logo.getBoundingClientRect().left >= 0);
+    // Se van sumando de a una hasta que entre
+    for (const nivel of NIVELES) {
+      if (entra()) break;
+      bar.classList.add(nivel);
+    }
+  }
+  if (!bar.classList.contains('nav-colapsada')) cerrarMobileNav();
+}
+
+let ajustePendiente = false;
+function pedirAjusteTopbar() {
+  if (ajustePendiente) return;
+  ajustePendiente = true;
+  requestAnimationFrame(() => { ajustePendiente = false; ajustarTopbar(); });
+}
+
+// Se re-mide al cambiar el ancho de la ventana, cuando cambia lo que hay
+// en los íconos (el badge "Admin" se completa después del render) y
+// cuando terminan de cargar las fuentes (cambian el ancho de los textos).
+function observarTopbar(slot) {
+  ajustarTopbar();
+  if (typeof ResizeObserver === 'function') {
+    const ro = new ResizeObserver(pedirAjusteTopbar);
+    ro.observe(document.documentElement);
+    const icons = slot.querySelector('.topbar-icons');
+    if (icons) ro.observe(icons);
+  } else {
+    window.addEventListener('resize', pedirAjusteTopbar);
+  }
+  document.fonts?.ready.then(pedirAjusteTopbar);
+  slot.querySelector('.logo-img')?.addEventListener('load', pedirAjusteTopbar);
 }
 
 /* ── MENÚ MOBILE (hamburguesa) — junta Inicio/Catálogo/Mis pedidos/
