@@ -197,29 +197,32 @@
 .pedido-item-edit-colores {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+}
+
+.pedido-color-check {
+  display: inline-flex;
+  align-items: center;
   gap: 0.35rem;
-}
-
-.pedido-color-chip {
-  font-size: 0.78rem;
-  padding: 0.32rem 0.7rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border-md);
-  background: var(--surface);
+  font-size: 0.8rem;
   color: var(--text-2);
-  transition: var(--trans);
+  padding: 0.2rem 0.5rem 0.2rem 0.1rem;
+  cursor: pointer;
+  user-select: none;
 }
 
-.pedido-color-chip:hover { border-color: var(--primary); }
-
-.pedido-color-chip.activo {
-  background: var(--primary-soft);
-  color: var(--primary-dark);
-  border-color: var(--primary);
+.pedido-color-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
-.pedido-color-chip-stock {
-  font-size: 0.68rem;
+.pedido-color-check:has(input:checked) { color: var(--text); }
+
+.pedido-color-check-stock {
+  font-size: 0.7rem;
   color: var(--text-3);
 }
 
@@ -417,7 +420,8 @@
     padding: 0.85rem;
   }
   .pedido-item-edit-toggle { width: 100%; }
-  .pedido-color-chip { padding: 0.45rem 0.8rem; }
+  .pedido-color-check { padding: 0.4rem 0.6rem 0.4rem 0.1rem; }
+  .pedido-color-check input { width: 20px; height: 20px; }
   .pedido-item-edit-toggle .toggle-disp {
     flex: 1;
     padding: 0.55rem 0.6rem;

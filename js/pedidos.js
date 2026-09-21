@@ -406,9 +406,7 @@ function renderModalPedido() {
     return acc + (e?.disponible === true ? it.precio_unitario * (parseInt(e.cantidad, 10) || 0) : 0);
   }, 0);
 
-  document.getElementById('modal-pedido').innerHTML = `
-    <div class="modal-overlay" id="mpe" onclick="if(event.target.id==='mpe') cerrarPedidoUI()">
-      <div class="modal pedido-modal-grande">
+  const cuerpo = `
         <div class="modal-title">Pedido de ${p.cliente_nombre}</div>
 
         <div class="pedido-detalle-cliente">
@@ -448,8 +446,26 @@ function renderModalPedido() {
             <button class="btn ghost" onclick="archivarPedidoUI(${!p.archivado})">${p.archivado ? 'Desarchivar' : 'Archivar'}</button>
           </div>
         </div>
-      </div>
-    </div>`;
+`;
+
+  const container      = document.getElementById('modal-pedido');
+  const modalExistente = container.querySelector('.modal');
+
+  // Mismo criterio que renderModalNuevoPedido: el overlay y el cuadro se
+  // crean una sola vez (con su animación de entrada). Después, cada cambio
+  // (color, talle, cantidad, disponible…) reemplaza solo el contenido y
+  // conserva el scroll — si no, se ve como si la página se recargara.
+  if (!modalExistente) {
+    container.innerHTML = `
+      <div class="modal-overlay" id="mpe" onclick="if(event.target.id==='mpe') cerrarPedidoUI()">
+        <div class="modal pedido-modal-grande">${cuerpo}</div>
+      </div>`;
+    return;
+  }
+
+  const scrollPrevio = modalExistente.scrollTop;
+  modalExistente.innerHTML = cuerpo;
+  modalExistente.scrollTop = scrollPrevio;
 }
 
 /* Fila editable de un ítem: el admin puede cambiar talle/color/cantidad
@@ -493,9 +509,10 @@ function renderItemEdit(it) {
               <div class="pedido-item-edit-colores" title="Podés marcar varios colores para ofrecerle al cliente">
                 ${colores.map(c => {
                   const st = stockDeVariante(productoId, e.talle, c);
-                  return `<button type="button" class="pedido-color-chip ${sel.includes(c) ? 'activo' : ''}"
-                    data-color="${escAttr(c)}" onclick="toggleColorItemUI(${it.id}, this.dataset.color)">
-                    ${c}${st !== null ? ` <span class="pedido-color-chip-stock">(${st})</span>` : ''}</button>`;
+                  return `<label class="pedido-color-check">
+                    <input type="checkbox" ${sel.includes(c) ? 'checked' : ''}
+                      data-color="${escAttr(c)}" onchange="toggleColorItemUI(${it.id}, this.dataset.color)">
+                    ${c}${st !== null ? ` <span class="pedido-color-check-stock">(${st})</span>` : ''}</label>`;
                 }).join('')}
               </div>`
               : (sel[0] ? `<span class="pedido-item-edit-attr-fijo">${sel[0]}</span>` : '')}
@@ -548,7 +565,9 @@ function toggleColorItem(itemId, color) {
   if (!e) return;
   const sel = e.colores || [];
   if (sel.includes(color)) {
-    if (sel.length === 1) return;
+    // El último no se destilda (siempre queda al menos uno); se vuelve a
+    // dibujar igual para que la casilla recién tocada aparezca marcada.
+    if (sel.length === 1) { renderModalPedido(); return; }
     e.colores = sel.filter(c => c !== color);
   } else {
     const it = pedidoAbierto()?.items.find(x => x.id === itemId);
