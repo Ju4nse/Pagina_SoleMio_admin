@@ -65,6 +65,7 @@
 .badge-estado-revisado    { background: var(--surface2);     color: var(--text-2); }
 .badge-estado-confirmado  { background: var(--green-bg);     color: var(--green); }
 .badge-estado-cancelado   { background: var(--red-bg);       color: var(--red); }
+.badge-estado-completado  { background: var(--green);        color: var(--surface); } /* revisado/confirmado + pagado */
 
 /* ── PAGO (solo admin) ───────────────────────────────────────── */
 .badge-pago-si { background: var(--green-bg); color: var(--green); }

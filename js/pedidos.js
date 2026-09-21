@@ -9,6 +9,7 @@ import { initCarritoUI } from './carrito.js';
 import { renderTopbar }  from './topbar.js';
 import { renderFooter }  from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
+import { esc }          from './html.js';
 
 /* ================================================================
    STATE
@@ -24,7 +25,16 @@ const ESTADO_LABEL = {
   revisado:    'Revisado',
   confirmado:  'Confirmado',
   cancelado:   'Cancelado',
+  completado:  'Completado',
 };
+
+/* "Completado" no es un estado guardado en la DB: es un pedido ya
+   revisado/confirmado que además está marcado como pagado. Solo lo ve el
+   admin (el pago es de uso interno) — el cliente sigue viendo el estado
+   real en pedido-estado.html. */
+function estadoVisible(p) {
+  return p.pagado && (p.estado === 'revisado' || p.estado === 'confirmado') ? 'completado' : p.estado;
+}
 
 /* ================================================================
    HELPERS
@@ -77,9 +87,7 @@ function mismosColores(a, b) {
   return JSON.stringify(a || null) === JSON.stringify(b || null);
 }
 
-function escAttr(v) {
-  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-}
+
 
 function pedidoAbierto() {
   return pedidos.find(x => x.id === pedidoAbiertoId);
@@ -249,7 +257,7 @@ function renderPedidos() {
     const qOk = !q
       || p.cliente_nombre.toLowerCase().includes(q)
       || p.cliente_telefono.toLowerCase().includes(q);
-    const estadoOk = !filtroEstado || p.estado === filtroEstado;
+    const estadoOk = !filtroEstado || estadoVisible(p) === filtroEstado;
     return qOk && estadoOk;
   });
 
@@ -278,13 +286,13 @@ function renderPedidos() {
   cont.innerHTML = lista.map(p => `
     <article class="pedido-row" onclick="abrirPedidoUI('${p.id}')">
       <div class="pedido-row-main">
-        <div class="pedido-row-cliente">${p.cliente_nombre}</div>
+        <div class="pedido-row-cliente">${esc(p.cliente_nombre)}</div>
         <div class="pedido-row-meta">
-          ${p.cliente_telefono} · ${fmtFecha(p.created_at)} · ${p.items.length} ítem${p.items.length !== 1 ? 's' : ''} · <span class="pedido-row-codigo">#${p.id.slice(0, 8)}</span>
+          ${esc(p.cliente_telefono)} · ${fmtFecha(p.created_at)} · ${p.items.length} ítem${p.items.length !== 1 ? 's' : ''} · <span class="pedido-row-codigo">#${p.id.slice(0, 8)}</span>
         </div>
       </div>
       <div class="pedido-row-right">
-        <span class="badge badge-estado-${p.estado}">${ESTADO_LABEL[p.estado] || p.estado}</span>
+        <span class="badge badge-estado-${estadoVisible(p)}">${ESTADO_LABEL[estadoVisible(p)] || p.estado}</span>
         <span class="badge ${p.pagado ? 'badge-pago-si' : 'badge-pago-no'}">${p.pagado ? 'Pagado' : 'Sin pagar'}</span>
         <span class="pedido-row-monto">${fmtARS(p.monto_final ?? p.monto_estimado)}</span>
       </div>
@@ -407,16 +415,16 @@ function renderModalPedido() {
   }, 0);
 
   const cuerpo = `
-        <div class="modal-title">Pedido de ${p.cliente_nombre}</div>
+        <div class="modal-title">Pedido de ${esc(p.cliente_nombre)}</div>
 
         <div class="pedido-detalle-cliente">
-          <div><strong>${p.cliente_nombre}</strong> · ${p.cliente_telefono}</div>
+          <div><strong>${esc(p.cliente_nombre)}</strong> · ${esc(p.cliente_telefono)}</div>
           <div style="font-size:.78rem;color:var(--text-3);margin-top:.15rem">${fmtFecha(p.created_at)}</div>
           <div class="pedido-codigo-row">
             <span>Código: <span class="pedido-row-codigo">${p.id}</span></span>
             <button type="button" class="btn ghost sm" onclick="copiarCodigoPedidoUI()">Copiar</button>
           </div>
-          ${p.nota ? `<div class="pedido-nota">"${p.nota}"</div>` : ''}
+          ${p.nota ? `<div class="pedido-nota">"${esc(p.nota)}"</div>` : ''}
           <div class="pedido-pago-toggle">
             <span>Pago (uso interno, no lo ve el cliente):</span>
             <button type="button" class="toggle-disp toggle-si ${p.pagado ? 'activo' : ''}" onclick="marcarPagadoUI(true)">Pagado</button>
@@ -491,17 +499,17 @@ function renderItemEdit(it) {
     <div class="pedido-item-edit">
       <div class="pedido-item-edit-info">
         <div class="pedido-item-edit-nombre">
-          <span class="pedido-item-edit-id">${it.producto_id || '—'}</span>${it.producto_nombre}
+          <span class="pedido-item-edit-id">${esc(it.producto_id || '—')}</span>${esc(it.producto_nombre)}
         </div>
 
         <div class="pedido-item-edit-variantes">
           <div class="pedido-item-edit-campo">
             ${talles.length ? `
               <select onchange="cambiarTalleItemUI(${it.id}, this.value)">
-                ${talles.map(t => `<option value="${t}" ${e.talle === t ? 'selected' : ''}>${t}</option>`).join('')}
+                ${talles.map(t => `<option value="${esc(t)}" ${e.talle === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}
               </select>`
-              : (e.talle ? `<span class="pedido-item-edit-attr-fijo">${e.talle}</span>` : '')}
-            ${talleCambio ? `<span class="pedido-item-edit-cambio" title="Talle pedido originalmente">pidió: ${it.talle || '—'}</span>` : ''}
+              : (e.talle ? `<span class="pedido-item-edit-attr-fijo">${esc(e.talle)}</span>` : '')}
+            ${talleCambio ? `<span class="pedido-item-edit-cambio" title="Talle pedido originalmente">pidió: ${esc(it.talle || '—')}</span>` : ''}
           </div>
 
           <div class="pedido-item-edit-campo pedido-item-edit-colores-campo">
@@ -511,12 +519,12 @@ function renderItemEdit(it) {
                   const st = stockDeVariante(productoId, e.talle, c);
                   return `<label class="pedido-color-check">
                     <input type="checkbox" ${sel.includes(c) ? 'checked' : ''}
-                      data-color="${escAttr(c)}" onchange="toggleColorItemUI(${it.id}, this.dataset.color)">
-                    ${c}${st !== null ? ` <span class="pedido-color-check-stock">(${st})</span>` : ''}</label>`;
+                      data-color="${esc(c)}" onchange="toggleColorItemUI(${it.id}, this.dataset.color)">
+                    ${esc(c)}${st !== null ? ` <span class="pedido-color-check-stock">(${st})</span>` : ''}</label>`;
                 }).join('')}
               </div>`
-              : (sel[0] ? `<span class="pedido-item-edit-attr-fijo">${sel[0]}</span>` : '')}
-            ${colorCambio ? `<span class="pedido-item-edit-cambio" title="Color pedido originalmente">pidió: ${it.color || '—'}${sel.length > 1 ? ` · se le ofrecen ${sel.length} colores` : ''}</span>` : ''}
+              : (sel[0] ? `<span class="pedido-item-edit-attr-fijo">${esc(sel[0])}</span>` : '')}
+            ${colorCambio ? `<span class="pedido-item-edit-cambio" title="Color pedido originalmente">pidió: ${esc(it.color || '—')}${sel.length > 1 ? ` · se le ofrecen ${sel.length} colores` : ''}</span>` : ''}
           </div>
 
           <div class="pedido-item-edit-campo pedido-item-edit-cant-wrap">

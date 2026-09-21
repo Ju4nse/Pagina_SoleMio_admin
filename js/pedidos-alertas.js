@@ -16,6 +16,7 @@
        del sitio (no hace falta tener pedidos.html abierto).
    ================================================================ */
 import { sb } from './supabase-client.js';
+import { esc } from './html.js';
 
 let suscripto = false;
 let alertaSeq = 0;
@@ -108,7 +109,7 @@ function mostrarAlertaPedidoNuevo(pedido) {
     <div class="carrito-toast-icon pedido-alerta-icon">🔔</div>
     <div class="carrito-toast-body">
       <div class="carrito-toast-titulo">Nuevo pedido</div>
-      <div class="carrito-toast-nombre">${pedido?.cliente_nombre || 'Cliente'}</div>
+      <div class="carrito-toast-nombre">${esc(pedido?.cliente_nombre || 'Cliente')}</div>
     </div>
     <a class="btn sm primary" href="pedidos.html">Ver</a>
     <button type="button" class="carrito-toast-cerrar" onclick="cerrarAlertaPedidoUI('${id}')" aria-label="Cerrar">✕</button>`;

@@ -10,6 +10,7 @@ import { leerMisPedidosLocal, initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
+import { esc } from './html.js';
 
 let rolActual = 'guest';
 
@@ -102,7 +103,7 @@ async function renderMisPedidos() {
       <h1 class="carrito-page-title">Mis pedidos</h1>
       <div class="pedidos-lista">
         ${resultados.map(p => `
-          <article class="pedido-row" onclick="location.href='pedido-estado.html?id=${p.id}'">
+          <article class="pedido-row" data-id="${esc(p.id)}" onclick="location.href='pedido-estado.html?id=' + encodeURIComponent(this.dataset.id)">
             <div class="pedido-row-main">
               <div class="pedido-row-cliente">Pedido del ${fmtFecha(p.created_at)}</div>
               <div class="pedido-row-meta">${p.estado ? '' : 'No encontramos este pedido'}</div>
@@ -117,7 +118,7 @@ async function renderMisPedidos() {
 
       <p style="font-size:0.8rem;color:var(--text-3);text-align:center;margin-top:1.5rem">
         ¿Tenés el código de un pedido hecho desde otro dispositivo?
-        <a href="#" onclick="mostrarBuscadorUI(event)">Buscalo acá</a>.
+        <a href="#" onclick="mostrarBuscadorUI(event)" style="color:var(--primary)">Buscalo acá</a>.
       </p>
     </div>`;
 }
@@ -146,7 +147,7 @@ function renderPedido(p, items) {
       <h1 class="carrito-page-title">Tu pedido</h1>
 
       <div class="pedido-detalle-cliente" style="margin-bottom:1.25rem">
-        <div><strong>${p.cliente_nombre}</strong></div>
+        <div><strong>${esc(p.cliente_nombre)}</strong></div>
         <div style="font-size:.78rem;color:var(--text-3);margin-top:.15rem">Hecho el ${fmtFecha(p.created_at)}</div>
       </div>
 
@@ -166,7 +167,7 @@ function renderPedido(p, items) {
         <strong>${fmtARS(p.estado === 'espera' ? p.monto_estimado : p.monto_final)}</strong>
       </div>
 
-      ${p.nota ? `<div class="pedido-nota" style="margin-top:.75rem">Tu nota: "${p.nota}"</div>` : ''}
+      ${p.nota ? `<div class="pedido-nota" style="margin-top:.75rem">Tu nota: "${esc(p.nota)}"</div>` : ''}
     </div>`;
 }
 
@@ -191,19 +192,19 @@ function renderItemEstado(it) {
   return `
     <div class="pedido-item-edit" style="align-items:center">
       <div class="pedido-item-edit-info">
-        <div class="pedido-item-edit-nombre">${it.producto_nombre}</div>
+        <div class="pedido-item-edit-nombre">${esc(it.producto_nombre)}</div>
         <div style="font-size:.78rem;color:var(--text-3);margin-top:.25rem">
-          Pediste: ${pedidoAttrs || 'sin detalle'} · x${cantPedida}
+          Pediste: ${esc(pedidoAttrs || 'sin detalle')} · x${cantPedida}
         </div>
         ${huboCambios ? `
           <div style="font-size:.78rem;color:var(--primary-dark);margin-top:.15rem">
-            Confirmamos: ${finalAttrs || 'sin detalle'} · x${cantConfirmada}
+            Confirmamos: ${esc(finalAttrs || 'sin detalle')} · x${cantConfirmada}
           </div>` : ''}
         ${opciones ? `
           <div style="font-size:.78rem;color:var(--primary-dark);margin-top:.15rem">
             ${opciones.includes(it.color)
-              ? `También lo tenemos en: ${opciones.filter(c => c !== it.color).join(', ')}`
-              : `${it.color ? `El color ${it.color} no está disponible. ` : ''}Lo tenemos${talleFinal(it) ? ` en talle ${talleFinal(it)}` : ''} en: ${opciones.join(', ')} — decinos por WhatsApp cuál preferís.`}
+              ? `También lo tenemos en: ${esc(opciones.filter(c => c !== it.color).join(', '))}`
+              : `${it.color ? `El color ${esc(it.color)} no está disponible. ` : ''}Lo tenemos${talleFinal(it) ? ` en talle ${esc(talleFinal(it))}` : ''} en: ${esc(opciones.join(', '))} — decinos por WhatsApp cuál preferís.`}
           </div>` : ''}
         <div class="pedido-item-edit-precio">${fmtARS(it.precio_unitario * cantConfirmada)}</div>
       </div>
