@@ -1,18 +1,17 @@
 /* ================================================================
    landing.css — Estilos exclusivos del recibidor
    El título en Bodoni grande es lo que se recuerda de la página; todo
-   lo demás queda quieto. La foto del hero viene sobre fondo blanco,
-   igual que la página, así que va sin marco: la figura queda "suelta".
+   lo demás queda quieto. La foto del hero es el local real.
    ================================================================ */
 
 /* ── HERO ────────────────────────────────────────────────────── */
 .hero {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 4rem;
+  padding: 3rem 1.5rem 4rem;
 }
 
 .hero-inner {
+  max-width: 1160px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 3rem;
@@ -49,7 +48,6 @@
 .hero-btn { padding: 0.75rem 1.6rem; min-height: 48px; font-size: 1rem; }
 
 .hero-visual {
-  position: relative;
   display: flex;
   justify-content: center;
 }
@@ -59,29 +57,12 @@
   width: 100%;
   max-width: 460px;
   height: auto;
-  aspect-ratio: 683 / 1024;
-  object-fit: cover;
-}
-
-/* En modo oscuro el blanco de la foto no se funde con la página:
-   ahí sí va recortada con bordes suaves, como una foto. */
-[data-theme="dark"] .hero-visual img { border-radius: var(--radius-lg); }
-
-.hero-logo-fallback {
-  width: 80%;
-  aspect-ratio: auto !important;
-  object-fit: contain !important;
-  margin: 20% auto;
+  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 860px) {
-  .hero { padding-bottom: 3rem; }
-  .hero-inner { grid-template-columns: 1fr; gap: 2rem; }
-  .hero-visual img {
-    max-width: none;
-    aspect-ratio: 4 / 5;
-    object-position: center 30%;
-  }
+  .hero { padding-top: 2rem; padding-bottom: 3rem; }
+  .hero-inner { grid-template-columns: 1fr; gap: 2.75rem; }
 }
 
 /* ── CÓMO TE ATENDEMOS ───────────────────────────────────────── */

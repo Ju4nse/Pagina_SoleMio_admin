@@ -35,6 +35,9 @@
    ahí con ?account=1.
    ================================================================ */
 
+// ancho / alto de img/logo-wordmark.png (1706 × 287)
+const LOGO_PROPORCION = 1706 / 287;
+
 const NAV_ITEMS = [
   { href: './',                 label: 'Inicio',      key: 'inicio' },
   { href: 'catalogo.html',      label: 'Catálogo',    key: 'catalogo' },
@@ -78,13 +81,9 @@ export function renderTopbar(activeKey, opts = {}) {
     </button>
     <div class="logo">
       <a href="./" class="logo-link">
-        <img src="img/logo-wordmark.png" alt="SoleMio" class="logo-img"
-             onerror="this.style.display='none';document.getElementById('topbar-logo-fallback').style.display='inline-flex'">
-        <span id="topbar-logo-fallback" style="display:none;align-items:baseline;gap:0.5rem">
-          <span class="logo-flourish" aria-hidden="true">☙</span>
-          <span class="logo-word">SoleMio</span>
-          <span class="logo-flourish" aria-hidden="true">❧</span>
-        </span>
+        <!-- El logo es una máscara (no un <img>): toma el color de
+             --brand, así cambia solo con la paleta y el modo oscuro. -->
+        <span class="logo-img" role="img" aria-label="SoleMio"></span>
       </a>
     </div>
     ${marcasHtml}
@@ -182,8 +181,7 @@ function ajustarTopbar() {
   if (logo) { logo.style.left = logo.style.transform = logo.style.width = ''; bar.style.removeProperty('--logo-max'); }
   if (window.matchMedia('(max-width: 640px)').matches && icons && hamb && logo) {
     const br = bar.getBoundingClientRect(), hr = hamb.getBoundingClientRect(), ir = icons.getBoundingClientRect();
-    const img   = logo.querySelector('.logo-img');
-    const ideal = img?.naturalWidth ? 28 * img.naturalWidth / img.naturalHeight : 170;
+    const ideal = 28 * LOGO_PROPORCION; // ancho del logo a 28px de alto
     const lado  = Math.max(hr.width, ir.width) + 8;
     const simetrico = br.width - 2 * lado;
     if (simetrico >= ideal) {
@@ -231,7 +229,6 @@ function observarTopbar(slot) {
     window.addEventListener('resize', pedirAjusteTopbar);
   }
   document.fonts?.ready.then(pedirAjusteTopbar);
-  slot.querySelector('.logo-img')?.addEventListener('load', pedirAjusteTopbar);
 }
 
 /* ── MENÚ MOBILE (hamburguesa) — junta Inicio/Catálogo/Mis pedidos/

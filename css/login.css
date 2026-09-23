@@ -55,18 +55,14 @@
   margin-bottom: .5rem;
 }
 
+/* Máscara con el color de la marca (ver .logo-img en catalogo.css) */
 .login-logo-img {
-  max-width: 230px;
-  max-height: 100px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  filter: none;
-}
-
-[data-theme="dark"] .login-logo-img {
-  /* Invertir logos oscuros para que se vean en modo noche */
-  filter: brightness(0) invert(1);
+  display: block;
+  width: min(230px, 100%);
+  aspect-ratio: 1746 / 513;
+  background: var(--brand);
+  -webkit-mask: url("../img/logo-wordmark-extendido.png") center / contain no-repeat;
+          mask: url("../img/logo-wordmark-extendido.png") center / contain no-repeat;
 }
 
 /* ── OJO PARA VER CONTRASEÑA ─────────────────────────────────── */

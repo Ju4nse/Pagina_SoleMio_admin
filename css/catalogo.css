@@ -44,7 +44,6 @@
   align-items: center;
   gap: 1.5rem;
   padding: 1.6rem 0;
-  border-bottom: 1px solid var(--border);
   margin-bottom: 2rem;
   position: sticky;
   top: 0;
@@ -65,6 +64,23 @@
    en un ::before propio (no directo en .topbar) para que el recorte
    sea solo de ESE pseudo-elemento: así no corta cosas que sobresalen
    de la caja del topbar, como el panel desplegable de "Marcas". */
+/* Línea de abajo del color del logo, de lado a lado de la pantalla
+   aunque la barra viva en un contenedor angosto: mismo truco que el
+   fondo de ::before (sombra extendida + recorte), que a diferencia de
+   un elemento de 100vw no genera scroll horizontal. */
+.topbar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand);
+  box-shadow: 0 0 0 100vmax var(--brand);
+  clip-path: inset(0 -100vmax);
+  pointer-events: none;
+}
+
 .topbar::before {
   content: '';
   position: absolute;
@@ -246,7 +262,7 @@
 }
 
 /* Mismo look en todas las páginas del sitio: minúscula normal y una
-   rayita avellana debajo de la página en la que estás. */
+   rayita violeta debajo de la página en la que estás. */
 .topbar-nav a {
   font-size: 0.93rem;
   font-weight: 400;
@@ -311,11 +327,15 @@
   stroke-linejoin: round;
 }
 
+/* Logo como máscara: la forma sale del PNG y el color de --brand, así
+   sigue a la paleta y al modo oscuro sin tener un archivo por color. */
 .logo-img {
-  height: 28px;
-  width: auto;
-  object-fit: contain;
   display: block;
+  height: 28px;
+  aspect-ratio: 1706 / 287;
+  background: var(--brand);
+  -webkit-mask: url("../img/logo-wordmark.png") center / contain no-repeat;
+          mask: url("../img/logo-wordmark.png") center / contain no-repeat;
 }
 
 /* Rol/carrito/tema/cuenta/salir: quedan en el flujo normal (último
@@ -546,7 +566,7 @@
   }
   #marcas-panel-mobile .marcas-item.active {
     background: var(--primary-soft);
-    color: var(--primary);
+    color: var(--primary-dark);
   }
 
   /* Arranca cerrada — se abre con toggleCategoriaSidebarUI() (ver
@@ -566,7 +586,7 @@
   }
   .categoria-item.active {
     background: var(--primary-soft);
-    color: var(--primary);
+    color: var(--primary-dark);
   }
   .categoria-count { color: inherit; opacity: 0.65; }
 
@@ -695,7 +715,7 @@ select:focus { outline: none; border-color: var(--primary); }
   color: inherit;
 }
 
-/* Al pasar el cursor: un marco fino avellana (el color del logo)
+/* Al pasar el cursor: un marco fino violeta (el color del logo)
    alrededor de toda la tarjeta y la foto que se acerca apenas. El
    marco es un ::before que sobresale hacia el espacio entre tarjetas,
    así aparece sin mover nada de lugar. Solo con mouse
@@ -756,7 +776,7 @@ select:focus { outline: none; border-color: var(--primary); }
   padding: 0.15rem 0.6rem;
   border-radius: var(--radius-pill);
   background: var(--surface);
-  color: var(--primary);
+  color: var(--purpura);
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 0.85rem;
@@ -849,7 +869,7 @@ select:focus { outline: none; border-color: var(--primary); }
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid rgba(43, 35, 32, 0.2);
+  border: 1px solid rgba(36, 20, 70, 0.2);
   flex-shrink: 0;
 }
 [data-theme="dark"] .prod-dot { border-color: rgba(255, 255, 255, 0.28); }
@@ -914,7 +934,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(30, 22, 18, 0.5);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1176,7 +1196,7 @@ select:focus { outline: none; border-color: var(--primary); }
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 0.85rem;
-  color: var(--primary);
+  color: var(--primary-dark);
   background: var(--primary-soft);
   padding: 0.2rem 0.55rem;
   border-radius: var(--radius-pill);
@@ -1239,7 +1259,7 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .btn-chip:hover {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--primary-dark);
   background: var(--primary-soft);
 }
 
@@ -1600,7 +1620,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .carrito-drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(30, 22, 18, 0.5);
+  background: var(--overlay);
   z-index: 300;
   opacity: 0;
   pointer-events: none;
@@ -1902,7 +1922,7 @@ body.modal-abierto-lock { overflow: hidden; }
 
 .selector-chip.selected {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--primary-dark);
   background: var(--primary-soft);
 }
 
@@ -2004,13 +2024,23 @@ body.modal-abierto-lock { overflow: hidden; }
 [data-role="guest"] .catalogo-layout .toolbar { display: none; }
 
 /* ── FOOTER COMPARTIDO (footer.js) ──────────────────────────────
-   Fondo en --primary-soft ("Natural", el tinte nude de la paleta):
-   con la página en blanco, es lo que marca el final del sitio. ── */
+   Fondo violeta profundo (--pie-fondo) con texto blanco. En vez de
+   pisar cada regla de abajo, se redefinen los tokens de texto solo
+   dentro del pie: todo lo que usa --text/--text-2/--brand acá adentro
+   sale en blanco. ─────────────────────────────────────────────── */
 .site-footer {
-  background: var(--primary-soft);
+  --text:      #FFFFFF;
+  --text-2:    rgba(255, 255, 255, 0.85);
+  --text-3:    rgba(255, 255, 255, 0.75);
+  --brand:     #FFFFFF;
+  --primary:   #FFFFFF;
+  --border-md: rgba(255, 255, 255, 0.25);
+  background: var(--pie-fondo);
   color: var(--text);
   margin-top: 5rem;
 }
+
+.site-footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* Grilla (no flex-wrap): en anchos intermedios las 4 columnas pasan a
    2×2 parejas, en vez de dejar "Atención" sola en una segunda fila. */
@@ -2165,7 +2195,7 @@ body.modal-abierto-lock { overflow: hidden; }
     max-width: var(--logo-max, 50%); /* lo calcula ajustarTopbar() en topbar.js */
   }
   .logo-link { max-width: 100%; }
-  .logo-img  { height: auto; max-height: 28px; max-width: 100%; }
+  .logo-img  { height: 28px; max-width: 100%; }
 
   .topbar-search { grid-area: search; width: 100%; }
 

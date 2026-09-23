@@ -1,7 +1,7 @@
 /* ================================================================
    shared.css — Tokens, reset y componentes base
    Estilo: boutique de lencería — fondo blanco (las fotos de producto
-   vienen sobre blanco y así se funden con la página), el avellana del
+   vienen sobre blanco y así se funden con la página), el violeta del
    logo como color de marca, Bodoni para títulos y DM Sans para leer.
    Usado por todas las páginas del sitio.
    ================================================================ */
@@ -15,30 +15,41 @@
 }
 
 /* ── TOKENS: MODO CLARO ──────────────────────────────────────────
-   Los nombres de la paleta salen de los colores que ya usa el
-   catálogo: Blanco (fondo), Natural (franjas y fondos suaves),
-   Avellana (el bronce del logo) y Negro (texto, cálido, no #000).
+   Paleta en tonos pastel de la familia del logo original de Instagram
+   (violeta, malva y lavanda), más suaves y empolvados que el violeta
+   eléctrico del logo, con un ciruela oscuro para el texto.
 
-   --brand es el avellana exacto del logo: solo para el logo y los
-   adornos. Con texto blanco encima no llega al contraste mínimo de
-   lectura (3.4:1), así que todo lo que es texto o botón usa
-   --primary, un avellana más tostado que sí llega (5.4:1). ──────── */
+   --brand es un violeta lavanda para el logo, los adornos y el marco al
+   pasar el cursor (solo cosas grandes: 3.9:1 alcanza para gráficos).
+   --primary es el violeta de links y textos destacados (4.8:1 sobre
+   blanco; sobre lavanda usar --primary-dark). Los botones principales
+   son lavanda (--boton) con texto ciruela. --purpura es un malva para detalles en itálica
+   (bajadas, la marca en la ficha, "Nuevo"). Todos los pares de texto
+   pasan 4.5:1, también en modo oscuro: revisarlo si se cambian. ──── */
 :root {
   --bg:        #FFFFFF;
   --surface:   #FFFFFF;
-  --surface2:  #F7F1EB;
-  --border:    rgba(70, 50, 35, 0.11);
-  --border-md: rgba(70, 50, 35, 0.22);
-  --text:      #2B2320;
-  --text-2:    #5E534C;
-  --text-3:    #72655D;
-  --accent:    #2B2320;
+  --surface2:  #F8F5FD;
+  --border:    rgba(70, 50, 120, 0.10);
+  --border-md: rgba(70, 50, 120, 0.20);
+  --text:      #2E2540;
+  --text-2:    #5F5575;
+  --text-3:    #6C6282;
+  --accent:    #2E2540;
   --accent-fg: #FFFFFF;
-  --brand:        #A97C58;
-  --primary:      #86603F;
-  --primary-dark: #6E4E33;
-  --primary-soft: #F4EAE1;
+  --brand:        #8A70D6;
+  --primary:      #7862C8;
+  --primary-dark: #5A45A8;
+  --primary-soft: #F1ECFB;
   --primary-fg:   #FFFFFF;
+  --purpura:      #8C4F96;
+  /* botón principal: lavanda con texto ciruela (7:1) — más claro que
+     un violeta con texto blanco, que ya no se leería bien */
+  --boton:        #BBAAF0;
+  --boton-hover:  #A996EA;
+  --boton-fg:     #2E2540;
+  /* pie de página: violeta profundo con texto blanco (7.4:1) */
+  --pie-fondo:    #5A45A8;
   --green:     #2D6A4F;
   --green-bg:  #DDF1E3;
   --red:       #9B2335;
@@ -51,27 +62,35 @@
   --radius:    4px;
   --radius-lg: 6px;
   --radius-pill: 999px;
-  --shadow-pop: 0 18px 40px -12px rgba(43, 35, 32, 0.22);
+  --shadow-pop: 0 18px 40px -12px rgba(60, 40, 100, 0.20);
+  --overlay:   rgba(40, 28, 64, 0.45);
   --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── TOKENS: MODO OSCURO ─────────────────────────────────────── */
+/* ── TOKENS: MODO OSCURO ─────────────────────────────────────────
+   Fondo negro neutro (no berenjena): los violetas y lavandas quedan
+   solo en botones, links y detalles. ────────────────────────────── */
 [data-theme="dark"] {
-  --bg:        #16120F;
-  --surface:   #1E1915;
-  --surface2:  #28211C;
-  --border:    rgba(235, 215, 195, 0.10);
-  --border-md: rgba(235, 215, 195, 0.20);
-  --text:      #F3EDE6;
-  --text-2:    #BDAFA2;
-  --text-3:    #9A8C7F;
-  --accent:    #F3EDE6;
-  --accent-fg: #16120F;
-  --brand:        #D2A67E;
-  --primary:      #D9AE86;
-  --primary-dark: #E6C19E;
-  --primary-soft: #33271E;
-  --primary-fg:   #16120F;
+  --bg:        #0E0E0F;
+  --surface:   #171718;
+  --surface2:  #202022;
+  --border:    rgba(255, 255, 255, 0.10);
+  --border-md: rgba(255, 255, 255, 0.19);
+  --text:      #F2F0F5;
+  --text-2:    #BDB8C4;
+  --text-3:    #9A95A1;
+  --accent:    #F2F0F5;
+  --accent-fg: #0E0E0F;
+  --brand:        #B8A6F0;
+  --primary:      #C6B8F5;
+  --primary-dark: #D9CEF9;
+  --primary-soft: #26232C;
+  --primary-fg:   #0E0E0F;
+  --purpura:      #DDB6EA;
+  --boton:        #C6B8F5;
+  --boton-hover:  #D9CEF9;
+  --boton-fg:     #0E0E0F;
+  --pie-fondo:    #231D35;
   --green:     #7FCBA4;
   --green-bg:  #1B3528;
   --red:       #F29A9A;
@@ -81,6 +100,7 @@
   --pink:      #EBA0BA;
   --pink-bg:   #3A1F29;
   --shadow-pop: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
+  --overlay:   rgba(0, 0, 0, 0.6);
 }
 
 /* ── RESET ───────────────────────────────────────────────────── */
@@ -121,7 +141,7 @@ select,
 textarea  { font-family: inherit; font-size: max(16px, 1rem); } /* <16px hace que el iPhone haga zoom al tocar el campo */
 
 /* Foco visible solo al navegar con teclado (no al tocar/clickear) —
-   el outline por defecto del navegador se pierde contra el avellana. */
+   el outline por defecto del navegador no se distingue en la paleta. */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -154,7 +174,7 @@ textarea  { font-family: inherit; font-size: max(16px, 1rem); } /* <16px hace qu
 }
 
 /* ── BAJADA / ANTETÍTULO ──────────────────────────────────────
-   Itálica de Bodoni en avellana, como el "Lencería y Corsetería"
+   Itálica de Bodoni en púrpura, como el "Lencería y Corsetería"
    debajo del logo — en vez de las mayúsculas espaciadas de antes. ── */
 .eyebrow {
   display: inline-block;
@@ -162,7 +182,7 @@ textarea  { font-family: inherit; font-size: max(16px, 1rem); } /* <16px hace qu
   font-style: italic;
   font-size: 1.05rem;
   font-weight: 400;
-  color: var(--primary);
+  color: var(--purpura);
 }
 
 /* ── ADORNO DE LA MARCA ─────────────────────────────────────────
@@ -260,14 +280,14 @@ textarea  { font-family: inherit; font-size: max(16px, 1rem); } /* <16px hace qu
 }
 
 .btn.primary {
-  background: var(--primary);
-  color: var(--primary-fg);
-  border-color: var(--primary);
+  background: var(--boton);
+  color: var(--boton-fg);
+  border-color: var(--boton);
 }
 .btn.primary:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
-  color: var(--primary-fg);
+  background: var(--boton-hover);
+  border-color: var(--boton-hover);
+  color: var(--boton-fg);
 }
 
 .btn.ghost {
