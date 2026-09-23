@@ -382,6 +382,16 @@
 }
 
 
+/* Título de la página (también es el <h1> que lee Google) */
+.catalogo-titulo {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin: 0 0 1.25rem;
+}
+
 /* ── CATÁLOGO: SIDEBAR DE CATEGORÍA + GRILLA ────────────────────── */
 .catalogo-layout {
   display: grid;
@@ -390,7 +400,7 @@
   align-items: start;
 }
 
-.catalogo-sidebar { margin-top: 2.6rem; }
+.catalogo-sidebar { margin-top: 0; } /* arriba de todo, a la par de las fotos (el título ya está arriba) */
 
 .sidebar-title {
   font-family: var(--font-serif);

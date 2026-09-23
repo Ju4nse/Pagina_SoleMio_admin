@@ -195,7 +195,7 @@ Los datos reales ya están puestos en `landing.html` y `contacto.html`:
 
 | Dato | Valor |
 |---|---|
-| WhatsApp | `+54 2494 00-3595` (link: `wa.me/542494003595`) |
+| WhatsApp | `+54 9 249 400-3595` (link: `wa.me/5492494003595`) |
 | Instagram | [@solemio.tandil](https://www.instagram.com/solemio.tandil/) |
 | Dirección | Tacuari 33, Tandil, Buenos Aires |
 | Horarios | Lunes a sábados: 10 a 13 hs y 17 a 20:30 hs |

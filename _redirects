@@ -1,0 +1,6 @@
+# Redirecciones de Cloudflare (Workers static assets).
+# La página de inicio vive en "/" (index.html); las direcciones viejas de
+# la landing redirigen ahí de forma permanente, así Google y los links
+# guardados terminan en una sola URL.
+/landing.html  /  301
+/landing       /  301

@@ -36,7 +36,7 @@
    ================================================================ */
 
 const NAV_ITEMS = [
-  { href: 'landing.html',       label: 'Inicio',      key: 'inicio' },
+  { href: './',                 label: 'Inicio',      key: 'inicio' },
   { href: 'catalogo.html',      label: 'Catálogo',    key: 'catalogo' },
   { href: 'pedidos.html',       label: 'Pedidos',     key: 'pedidos', adminOnly: true },
   { href: 'pedido-estado.html', label: 'Mis pedidos', key: 'mis-pedidos' },
@@ -77,7 +77,7 @@ export function renderTopbar(activeKey, opts = {}) {
       </svg>
     </button>
     <div class="logo">
-      <a href="landing.html" class="logo-link">
+      <a href="./" class="logo-link">
         <img src="img/logo-wordmark.png" alt="SoleMio" class="logo-img"
              onerror="this.style.display='none';document.getElementById('topbar-logo-fallback').style.display='inline-flex'">
         <span id="topbar-logo-fallback" style="display:none;align-items:baseline;gap:0.5rem">
@@ -145,7 +145,8 @@ export function renderTopbar(activeKey, opts = {}) {
 }
 
 function irACuenta() {
-  if (/catalogo\.html$/.test(location.pathname) && typeof window.openAccountModal === 'function') {
+  // Con o sin ".html": en Cloudflare la página se sirve como /catalogo
+  if (/\/catalogo(\.html)?$/.test(location.pathname) && typeof window.openAccountModal === 'function') {
     window.openAccountModal();
   } else {
     location.href = 'catalogo.html?account=1';

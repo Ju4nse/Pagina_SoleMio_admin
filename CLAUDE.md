@@ -12,7 +12,14 @@ There is no `package.json`, no test suite, and no linter configured. "Running" t
 python3 -m http.server 8765   # from repo root, then open http://localhost:8765/catalogo.html
 ```
 
-Deployment is `wrangler.jsonc` (`assets.directory: "."`) — Cloudflare serves the repo's static files directly, with `404.html` as the not-found page. There's no CI; changes go live on push/deploy as-is.
+Deployment is `wrangler.jsonc` (`assets.directory: "."`) — Cloudflare serves the repo's static files directly, with `404.html` as the not-found page. There's no CI; changes go live on push/deploy as-is. Live domain: `https://solemiotandil.com.ar`.
+
+- Because the whole repo root is published, **anything not listed in `.assetsignore` is public** (it keeps `.git`, `sql/`, `tools/`, `CLAUDE.md`… off the site). Add new non-site files/folders there.
+- Cloudflare's default HTML handling serves `/catalogo.html` as a 307 to `/catalogo`. Canonicals, `og:url` and `sitemap.xml` therefore use the extensionless form (`/catalogo`, `/producto?id=…`, `/` for home). Internal links keep `.html` so the site also works under `python -m http.server` locally.
+- `_redirects` (301 `/landing.html` → `/`) and `_headers` (cache rules) are Cloudflare config files — don't add them to `.assetsignore` or they stop applying.
+- The home page is `index.html`. `landing.html` is only a redirect stub kept for old links.
+- **Worker** (`worker/index.js`, `main` in `wrangler.jsonc`): runs only for `/producto` and `/producto.html` (`assets.run_worker_first`); everything else is served straight from static assets. It fetches the product from Supabase and rewrites the `<head>` (title, description, og/twitter tags, canonical, Product JSON-LD) so link previews in WhatsApp/Instagram — whose crawlers don't run JS — show the product. It must never break the page: on any error it returns the static HTML untouched. Title/description/JSON-LD come from `datosSEOProducto()` in `js/producto-datos.js`, shared with `producto.js`, which re-applies them client-side (and is what you see under `python -m http.server`, where the Worker doesn't run). To test the Worker locally, run `npx wrangler dev` with a config **outside** the repo pointing at it — run from the repo root it rebuilds in a loop because `.wrangler/` is inside the watched assets directory.
+- `sitemap.xml` is generated: run `python tools/generar_sitemap.py` after adding/removing products and commit the result (it lists every product a guest can see).
 
 ## Repository layout
 
@@ -32,7 +39,8 @@ Each page is a self-contained triplet: `foo.html` + `js/foo.js` + `css/foo.css`,
 - `js/footer.js` — renders the shared footer (`renderFooter()`) into `<footer id="footer-slot">`.
 - `js/carrito.js` — cart **state** (localStorage-backed) plus the cart **drawer** (slide-in panel, opened from the topbar cart icon without navigating away) and the "toast" notification shown when something is added. `js/carrito-page.js` is the separate full-page cart view (`carrito.html`) built on top of the same state functions — don't confuse the two files.
 - `js/pedidos-alertas.js` — admin-only: a bell icon + live count in the topbar, and a toast when a new `pedido` comes in, wired via a Supabase realtime subscription. No-ops entirely for guests.
-- `js/tarjeta-producto.js` — the one product card used everywhere (catalog grid, "Más de <marca>" on `producto.html`, landing destacados). It **must always show the product ID and the "Agregar al carrito" button** (owner requirement: customers quote the ID over WhatsApp). Admin passes `opts.acciones` to swap the add button for Editar/Disponible/Eliminar. The card is an `<article>` with a stretched link (`.prod-link::after`), not an `<a>` wrapping buttons.
+- `js/tarjeta-producto.js` — the one product card used everywhere (catalog grid, "Más de <marca>" on `producto.html`, home page destacados). It **must always show the product ID and the "Agregar al carrito" button** (owner requirement: customers quote the ID over WhatsApp). Admin passes `opts.acciones` to swap the add button for Editar/Disponible/Eliminar. The card is an `<article>` with a stretched link (`.prod-link::after`), not an `<a>` wrapping buttons.
+- `js/producto-datos.js` — pure (no browser/Supabase deps, also bundled into the Worker): `resolverImagen`, `precioCliente` (the `* 1.5`), `resumenTalles`, `datosSEOProducto`. Keep it dependency-free except `texto.js`.
 - `js/texto.js` — display-only formatting: `nombreLegible()` turns supplier ALL-CAPS product names into sentence case (keeping the brand capitalized), `marcaLegible()` does the same for brands. Never write these back to the DB.
 
 ## Visual tokens (css/shared.css)
@@ -47,7 +55,7 @@ When adding a new page, copy the init pattern from an existing simple one (`js/n
 
 There's no per-route middleware — each page's JS decides for itself what a "guest" vs "admin" can see, using two different patterns:
 
-- **Guest-accessible pages** (`catalogo.html`, `producto.html`, `carrito.html`, `pedido-estado.html`, `landing.html`, `contacto.html`): never redirect. They check for a real Supabase session first (`sb.auth.getSession()` + `esAdmin(email)`); if that fails, they fall back to a `sessionStorage.getItem('solemio-role') === 'guest'` flag set by `login.html`/`irAlCatalogo()`. Checking the real session *before* the guest flag matters — otherwise an admin who once browsed as guest in the same tab stays stuck as guest after logging in.
+- **Guest-accessible pages** (`catalogo.html`, `producto.html`, `carrito.html`, `pedido-estado.html`, `index.html` (home), `contacto.html`): never redirect. They check for a real Supabase session first (`sb.auth.getSession()` + `esAdmin(email)`); if that fails, they fall back to a `sessionStorage.getItem('solemio-role') === 'guest'` flag set by `login.html`/`irAlCatalogo()`. Checking the real session *before* the guest flag matters — otherwise an admin who once browsed as guest in the same tab stays stuck as guest after logging in.
 - **Admin-only pages** (`pedidos.html`): redirect straight to `login.html` if the session isn't an admin. No guest fallback.
 - `esAdmin(email)` is a live query against the `admins` table — being an admin isn't a claim/role on the Supabase Auth user, it's membership in that table.
 

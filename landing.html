@@ -1,142 +1,17 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<!-- Google tag (gtag.js) — no se carga en navegadores de admin
-     (marcados con localStorage 'solemio-no-analytics' por esAdmin()) -->
-<script>
-  (function () {
-    try { if (localStorage.getItem('solemio-no-analytics') === '1') return; } catch (e) {}
-    var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://www.googletagmanager.com/gtag/js?id=G-388BR5RWM5';
-    document.head.appendChild(s);
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function () { dataLayer.push(arguments); };
-    gtag('js', new Date());
-    gtag('config', 'G-388BR5RWM5');
-  })();
-</script>
-<script>
-  // Evita el "flash" de tema claro antes de aplicar el tema guardado
-  (function () {
-    try {
-      var t = localStorage.getItem('solemio-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', t);
-    } catch (e) {}
-  })();
-</script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SoleMio — Lencería</title>
-<meta name="description" content="SoleMio — Lencería en Tandil. Mirá el catálogo completo y encontrá tu talle.">
-<link rel="canonical" href="https://solemiotandil.com.ar/landing.html">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="SoleMio">
-<meta property="og:title" content="SoleMio — Lencería en Tandil">
-<meta property="og:description" content="Lencería y corsetería en Tandil. Mirá el catálogo completo y encontrá tu talle.">
-<meta property="og:url" content="https://solemiotandil.com.ar/landing.html">
-<meta property="og:image" content="https://solemiotandil.com.ar/img/hero.webp">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="SoleMio — Lencería en Tandil">
-<meta name="twitter:description" content="Lencería y corsetería en Tandil. Mirá el catálogo completo y encontrá tu talle.">
-<meta name="twitter:image" content="https://solemiotandil.com.ar/img/hero.webp">
-<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
-<link rel="preload" as="image" href="img/hero.webp">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/shared.css">
-<link rel="stylesheet" href="css/site.css">
-<link rel="stylesheet" href="css/catalogo.css">
-<link rel="stylesheet" href="css/landing.css">
+<!-- La página de inicio ahora vive en "/" (index.html). Esta dirección
+     queda solo para no romper links viejos: en Cloudflare la redirige
+     _redirects con un 301; esto es el respaldo (y lo que se ve en local). -->
+<meta http-equiv="refresh" content="0; url=./">
+<link rel="canonical" href="https://solemiotandil.com.ar/">
+<meta name="robots" content="noindex, follow">
+<title>SoleMio</title>
+<script>window.location.replace('./' + location.search + location.hash);</script>
 </head>
 <body>
-
-<!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
-<header class="topbar site-header-topbar" id="topbar-slot"></header>
-
-<!-- HERO -->
-<main id="contenido">
-<section class="hero">
-  <div class="hero-inner">
-    <div class="hero-copy">
-      <p class="eyebrow">Lencería y corsetería en Tandil</p>
-      <h1>Tu talle, tu marca, al mejor precio</h1>
-      <p class="hero-sub">
-        Corpiños, bombachas, fajas y pijamas de distintas marcas, con
-        precios que te cierran. Mirá el catálogo y consultanos por WhatsApp.
-      </p>
-      <div class="hero-actions">
-        <button type="button" class="btn primary hero-btn" onclick="verCatalogo()">Ver catálogo</button>
-        <a class="btn hero-btn" href="https://wa.me/542494003595" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-          </svg>
-          Consultar por WhatsApp
-        </a>
-      </div>
-    </div>
-    <div class="hero-visual">
-      <img src="img/hero.webp" alt="Bombacha blanca de algodón con moño" fetchpriority="high" width="683" height="1024"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-      <img src="img/logo-wordmark-extendido.png" alt="SoleMio" class="hero-logo-fallback" style="display:none">
-    </div>
-  </div>
-</section>
-
-<!-- CÓMO TE ATENDEMOS -->
-<section class="essence">
-  <div class="essence-inner">
-    <div class="ornamento centrado" aria-hidden="true"><span class="ornamento-hoja"></span></div>
-    <p class="essence-text">
-      En SoleMio te ayudamos a encontrar el talle que realmente te queda
-      bien, con atención personalizada y una amplia variedad de productos.
-      El catálogo se actualiza día a día.
-    </p>
-    <blockquote class="essence-quote">
-      “Buscamos que cada clienta encuentre lo que necesita, acompañando con la calidad que necesita.”
-    </blockquote>
-    <dl class="essence-stats">
-      <div>
-        <dt>Atención personalizada</dt>
-        <dd>Te asesoramos en cada visita</dd>
-      </div>
-      <div>
-        <dt>Multimarca</dt>
-        <dd>Compará calidad y precio en un solo lugar</dd>
-      </div>
-    </dl>
-  </div>
-</section>
-
-<!-- DESTACADOS -->
-<section class="destacados">
-  <div class="destacados-inner">
-    <div class="destacados-hd">
-      <h2 class="destacados-title">Destacados</h2>
-      <a href="catalogo.html" onclick="verCatalogo();return false;" class="destacados-link">Ver todo el catálogo</a>
-    </div>
-    <div id="destacados-grid" class="prod-grid destacados-grid">
-      <div class="empty">Cargando destacados…</div>
-    </div>
-  </div>
-</section>
-
-<!-- VISITA -->
-<section class="visit-cta">
-  <div class="visit-cta-inner">
-    <h2>Te esperamos en Tacuari 33</h2>
-    <p>Atendemos con turno, así tenemos tiempo para vos. Escribinos por WhatsApp y coordinamos el día y la hora.</p>
-    <div class="visit-cta-actions">
-      <a class="btn primary" href="https://wa.me/542494003595" target="_blank" rel="noopener">Escribir por WhatsApp</a>
-      <a class="btn" href="https://www.google.com/maps/search/?api=1&amp;query=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina" target="_blank" rel="noopener">Cómo llegar</a>
-    </div>
-  </div>
-</section>
-</main>
-
-<footer class="site-footer" id="footer-slot"></footer>
-
-<script type="module" src="js/landing.js"></script>
+  <p>Redirigiendo al <a href="./">inicio de SoleMio</a>…</p>
 </body>
 </html>

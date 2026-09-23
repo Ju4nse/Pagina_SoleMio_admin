@@ -1,0 +1,18 @@
+# Archivos del repo que NO son parte del sitio: wrangler publica la
+# carpeta entera (assets.directory = "."), así que todo lo que no esté
+# acá queda accesible en solemiotandil.com.ar/<ruta>.
+.git
+.github
+.claude
+.agents
+.gitignore
+.assetsignore
+CLAUDE.md
+README.md
+wrangler.jsonc
+skills-lock.json
+sql
+tools
+worker
+node_modules
+.wrangler

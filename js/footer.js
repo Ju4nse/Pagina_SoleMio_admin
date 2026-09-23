@@ -10,7 +10,7 @@
    ya se linkea en todas las páginas de la app).
    ================================================================ */
 
-const WHATSAPP  = 'https://wa.me/542494003595';
+const WHATSAPP  = 'https://wa.me/5492494003595';
 const INSTAGRAM = 'https://instagram.com/solemio.tandil';
 const DIRECCION = 'Tacuari 33, Tandil, Buenos Aires';
 const MAPS_URL  = 'https://www.google.com/maps/search/?api=1&query=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina';
@@ -21,7 +21,7 @@ const ATENCION  = ['Solo con reserva previa', 'Coordiná tu horario por WhatsApp
    links para invitados vía CSS ([data-role="guest"] .admin-only-link
    en catalogo.css) — no hace falta que footer.js sepa el rol. */
 const PAGINAS = [
-  { href: 'landing.html',       label: 'Inicio' },
+  { href: './',                 label: 'Inicio' },
   { href: 'catalogo.html',      label: 'Catálogo' },
   { href: 'pedidos.html',       label: 'Pedidos', adminOnly: true },
   { href: 'pedido-estado.html', label: 'Mis pedidos' },

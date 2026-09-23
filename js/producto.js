@@ -11,6 +11,7 @@ import { renderFooter }       from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
 import { subirFotoProducto }  from './subir-foto.js';
 import { renderTarjetaProducto, nombreLegible, marcaLegible } from './tarjeta-producto.js';
+import { datosSEOProducto, resolverImagen } from './producto-datos.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -47,10 +48,6 @@ function fmtARS(n) {
   return '$\u202F' + Math.round(n).toLocaleString('es-AR');
 }
 
-function resolverImagen(p) {
-  return p.imagen_custom || p.imagen_scraper || p.imagen || '';
-}
-
 function getProductoId() {
   return new URLSearchParams(location.search).get('id');
 }
@@ -80,40 +77,63 @@ function applyRole() {
 
 
 /* ================================================================
-   SEO — el <title> y las meta tags del HTML son un fallback genérico
-   (ver producto.html): acá se pisan con los datos reales apenas se
-   conoce el producto. Ayuda a la pestaña del navegador y a Google
-   (que sí ejecuta JS al indexar), pero NO a crawlers que no corren JS
-   como el que arma la vista previa de un link en WhatsApp — para eso
-   haría falta armar la página en el servidor, que este sitio (100%
-   estático) no hace.
+   SEO — Los datos (título, descripción, canonical, datos para Google)
+   salen de datosSEOProducto() en producto-datos.js. En el sitio
+   publicado el Worker de Cloudflare ya los pone en el HTML antes de
+   mandarlo (así los ve también la vista previa de WhatsApp, que no
+   ejecuta JS); acá se vuelven a aplicar igual, para la versión local y
+   para cuando se navega sin recargar.
    ================================================================ */
-function actualizarMetaSEO(p) {
-  const nombre = p.marca ? `${p.nombre} — ${p.marca}` : p.nombre;
-  document.title = `${nombre} | SoleMio`;
 
-  const descripcion = `${nombre} — SoleMio, lencería y corsetería en Tandil.`;
-  const imagen = resolverImagen(p);
+/* Etiqueta <link>/<meta> del <head>: la actualiza si ya existe, si no la crea */
+function tagHead(selector, crear) {
+  let el = document.head.querySelector(selector);
+  if (!el) { el = crear(); document.head.appendChild(el); }
+  return el;
+}
+
+function actualizarMetaSEO(p) {
+  const seo = datosSEOProducto(p);
+  document.title = seo.titulo;
 
   const setMeta = (selector, contenido) => {
     const el = document.querySelector(selector);
     if (el) el.setAttribute('content', contenido);
   };
-  setMeta('meta[name="description"]', descripcion);
-  setMeta('meta[property="og:title"]', nombre);
-  setMeta('meta[property="og:description"]', descripcion);
-  setMeta('meta[name="twitter:title"]', nombre);
-  setMeta('meta[name="twitter:description"]', descripcion);
-  if (imagen) {
-    setMeta('meta[property="og:image"]', imagen);
-    setMeta('meta[name="twitter:image"]', imagen);
+  setMeta('meta[name="description"]', seo.descripcion);
+  setMeta('meta[property="og:title"]', seo.nombre);
+  setMeta('meta[property="og:description"]', seo.descripcion);
+  setMeta('meta[name="twitter:title"]', seo.nombre);
+  setMeta('meta[name="twitter:description"]', seo.descripcion);
+  setMeta('meta[property="og:url"]', seo.url);
+  if (seo.imagen) {
+    setMeta('meta[property="og:image"]', seo.imagen);
+    setMeta('meta[name="twitter:image"]', seo.imagen);
   }
+
+  // Por si antes se había marcado "no encontrado" (noindex) en esta carga
+  document.head.querySelector('meta[name="robots"]')?.remove();
+
+  // Cada ficha es su propia página para Google: /producto?id=<código>
+  // (la dirección que sirve Cloudflare sin redirigir).
+  tagHead('link[rel="canonical"]', () => Object.assign(document.createElement('link'), { rel: 'canonical' })).href = seo.url;
+
+  tagHead('script#datos-producto', () => {
+    const el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = 'datos-producto';
+    return el;
+  }).textContent = JSON.stringify(seo.jsonLd);
 }
 
 /* ================================================================
    RENDER
    ================================================================ */
 function renderNoEncontrado() {
+  // Sin esto Google indexaría "Producto no encontrado" como una página
+  // más (la respuesta es 200, porque el producto se busca con JS).
+  tagHead('meta[name="robots"]', () => Object.assign(document.createElement('meta'), { name: 'robots' }))
+    .setAttribute('content', 'noindex');
   document.getElementById('producto-content').innerHTML = `
     <div class="empty">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -121,7 +141,7 @@ function renderNoEncontrado() {
       </svg>
       Producto no encontrado
       <div style="margin-top:1rem">
-        <a class="btn ghost" href="catalogo.html">← Volver al catálogo</a>
+        <a class="btn ghost" href="catalogo.html">Volver al catálogo</a>
       </div>
     </div>`;
 }
@@ -201,6 +221,14 @@ function renderProducto(p, prev, next, similares) {
    de siempre (imagen_custom/imagen_scraper/imagen), para no perder
    nada en productos que todavía no tienen galería cargada.
    ================================================================ */
+/* Texto alternativo de las fotos: el nombre del producto (así aparecen
+   en Google Imágenes y los lectores de pantalla dicen qué se ve). */
+function altFotoProducto(i) {
+  if (!productoActual) return '';
+  const nombre = nombreLegible(productoActual.nombre, productoActual.marca).replace(/"/g, '&quot;');
+  return fotosProducto.length > 1 ? `${nombre}, foto ${i + 1} de ${fotosProducto.length}` : nombre;
+}
+
 function renderGaleria() {
   if (!fotosProducto.length) {
     return `<div class="view-img-ph">${ICON.shoe}</div>`;
@@ -213,7 +241,7 @@ function renderGaleria() {
     <div class="product-photo-wrap">
       <div class="product-photo" onclick="abrirZoomUI()" title="Ver más grande"
            ontouchstart="onGaleriaTouchStartUI(event)" ontouchend="onGaleriaTouchEndUI(event)">
-        <img src="${url}" alt=""
+        <img src="${url}" alt="${altFotoProducto(indiceFotoActual)}"
              onerror="this.closest('.product-photo-wrap').style.display='none'; document.getElementById('galeria-fallback').style.display='flex'">
       </div>
       ${multiple ? `
@@ -286,7 +314,7 @@ function renderZoomModal() {
         <button type="button" class="zoom-flecha zoom-flecha-izq" onclick="moverGaleriaUI(-1)" aria-label="Foto anterior">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>` : ''}
-      <img src="${url}" class="zoom-img" alt=""
+      <img src="${url}" class="zoom-img" alt="${altFotoProducto(indiceFotoActual)}"
            ontouchstart="onGaleriaTouchStartUI(event)" ontouchend="onGaleriaTouchEndUI(event)">
       ${multiple ? `
         <button type="button" class="zoom-flecha zoom-flecha-der" onclick="moverGaleriaUI(1)" aria-label="Foto siguiente">

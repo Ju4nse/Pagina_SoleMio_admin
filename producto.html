@@ -27,13 +27,11 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- El título/descripción de acá abajo son un fallback genérico: el
-     contenido real de esta página lo arma producto.js con lo que trae
-     de Supabase, y ahí mismo actualiza <title> y esta descripción con
-     los datos del producto una vez que cargan (ver actualizarMetaSEO
-     en producto.js). Los crawlers que no ejecutan JS (como el de
-     WhatsApp al armar la vista previa de un link) van a ver esta
-     versión genérica igual, no la del producto puntual. -->
+<!-- Título/descripción/og genéricos: en el sitio publicado el Worker
+     (worker/index.js) los reemplaza con los datos del producto antes de
+     mandar la página, así la vista previa de WhatsApp/Instagram (que no
+     ejecuta JS) muestra el producto. En local, y como respaldo si el
+     Worker no encuentra el producto, producto.js los actualiza al cargar. -->
 <title>SoleMio — Producto</title>
 <meta name="description" content="Mirá el detalle de este producto de SoleMio — lencería y corsetería en Tandil.">
 <meta property="og:type" content="website">

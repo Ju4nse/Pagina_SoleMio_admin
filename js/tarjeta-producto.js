@@ -16,8 +16,9 @@ import { ICON, hexDeColor } from './theme.js';
 import { agregarAlCarrito } from './carrito.js';
 import { esc } from './html.js';
 import { nombreLegible, marcaLegible } from './texto.js';
+import { resolverImagen, resumenTalles, precioCliente } from './producto-datos.js';
 
-export { nombreLegible, marcaLegible };
+export { nombreLegible, marcaLegible, resolverImagen, resumenTalles };
 
 const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -25,39 +26,8 @@ export function esProductoNuevo(p) {
   return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
 }
 
-export function resolverImagen(p) {
-  return p.imagen_custom || p.imagen_scraper || p.imagen || '';
-}
-
 function fmtARS(n) {
   return '$ ' + Math.round(n).toLocaleString('es-AR');
-}
-
-const ORDEN_LETRAS = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL', '5XL'];
-
-/* "100, 105, 110, 85, 90, 95" → "Talles 85 al 110". Con letras
-   (S, M, L…) usa el mismo orden de siempre; si hay mezcla o un talle
-   raro, muestra los primeros tres. */
-export function resumenTalles(talles) {
-  const lista = String(talles || '').split(',').map(t => t.trim()).filter(Boolean);
-  if (!lista.length) return '';
-  if (lista.length === 1) return `Talle ${lista[0]}`;
-
-  const numeros = lista.map(Number);
-  if (numeros.every(n => Number.isFinite(n))) {
-    return `Talles ${Math.min(...numeros)} al ${Math.max(...numeros)}`;
-  }
-
-  const posiciones = lista.map(t => ORDEN_LETRAS.indexOf(t.toUpperCase()));
-  if (posiciones.every(i => i >= 0)) {
-    const orden = [...lista].sort((a, b) =>
-      ORDEN_LETRAS.indexOf(a.toUpperCase()) - ORDEN_LETRAS.indexOf(b.toUpperCase()));
-    return lista.length <= 3
-      ? `Talles ${orden.join(', ')}`
-      : `Talles ${orden[0]} al ${orden[orden.length - 1]}`;
-  }
-
-  return `Talles ${lista.slice(0, 3).join(', ')}${lista.length > 3 ? '…' : ''}`;
 }
 
 /* Puntitos del color real de cada variante (hasta 5, después "+N").
@@ -95,7 +65,7 @@ export function agregarRapido(id) {
   agregarAlCarrito({
     productoId:     p.id,
     nombre:         p.nombre,
-    precioUnitario: Math.round((p.precio || 0) * 1.5),
+    precioUnitario: precioCliente(p),
     imagen:         resolverImagen(p),
     talle:          '',
     color:          '',
@@ -122,7 +92,7 @@ export function renderTarjetaProducto(p, opts = {}) {
     <article class="prod-card${p.disponible === false ? ' no-disponible' : ''}">
       <div class="prod-media">
         ${img
-          ? `<img class="prod-thumb" src="${esc(img)}" alt="" loading="lazy"
+          ? `<img class="prod-thumb" src="${esc(img)}" alt="${esc(nombre)}" loading="lazy"
                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : ''}
         <div class="prod-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
@@ -135,7 +105,7 @@ export function renderTarjetaProducto(p, opts = {}) {
         </div>
         <h3 class="prod-name"><a class="prod-link" href="${href}">${esc(nombre)}</a></h3>
         ${dots || talles ? `<div class="prod-variantes">${dots}${talles ? `<span>${esc(talles)}</span>` : ''}</div>` : ''}
-        <div class="prod-price">${fmtARS((p.precio || 0) * 1.5)}</div>
+        <div class="prod-price">${fmtARS(precioCliente(p))}</div>
         ${opts.badges ? `<div class="prod-badges">${opts.badges}</div>` : ''}
         ${opts.acciones != null
           ? opts.acciones

@@ -1,0 +1,14 @@
+# Caché del navegador (Cloudflare Workers static assets).
+# Imágenes: cambian muy poco, 30 días.
+# CSS/JS: sin versión en el nombre, así que caché corta (10 min) y
+# después se revalida en segundo plano: un cambio publicado llega a
+# todos en minutos y nadie queda con un JS viejo mezclado con un CSS nuevo
+# por mucho tiempo.
+/img/*
+  Cache-Control: public, max-age=2592000
+
+/css/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+
+/js/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400

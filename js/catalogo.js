@@ -120,10 +120,15 @@ async function cargarProductos() {
   let desde = 0;
 
   while (true) {
-    const { data, error } = await sb
+    let consulta = sb
       .from('productos')
       .select('*')
-      .eq('eliminado', false)
+      .eq('eliminado', false);
+    // Las clientas solo ven los disponibles (renderCatalogo igual los
+    // filtra): pedir solo esos baja la descarga a ~1/4 en el celular.
+    if (isGuest()) consulta = consulta.eq('disponible', true);
+
+    const { data, error } = await consulta
       .order('id', {ascending: true})
       .range(desde, desde + PAGINA - 1);
 
