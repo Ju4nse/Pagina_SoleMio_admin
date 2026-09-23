@@ -685,6 +685,29 @@ select:focus { outline: none; border-color: var(--primary); }
   color: inherit;
 }
 
+/* Al pasar el cursor: un marco fino avellana (el color del logo)
+   alrededor de toda la tarjeta y la foto que se acerca apenas. El
+   marco es un ::before que sobresale hacia el espacio entre tarjetas,
+   así aparece sin mover nada de lugar. Solo con mouse
+   (hover:hover): en el celular un toque no lo deja "pegado". */
+.prod-card::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.prod-thumb { transition: transform 0.4s ease; }
+
+@media (hover: hover) {
+  .prod-card:hover::before { opacity: 1; }
+  .prod-card:hover .prod-thumb { transform: scale(1.03); }
+}
+
 .prod-media {
   position: relative;
   aspect-ratio: 3 / 4;
