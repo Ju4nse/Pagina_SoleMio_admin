@@ -6,9 +6,21 @@
 
 .carrito-page-title {
   font-family: var(--font-serif);
-  font-size: 1.6rem;
-  font-weight: 500;
-  margin: 0.5rem 0 1.5rem;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin: 0.5rem 0 1.75rem;
+}
+
+/* "Mis pedidos" arriba del detalle de un pedido: vuelve a la lista */
+.volver-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 0.93rem;
+  color: var(--primary);
+  text-underline-offset: 3px;
 }
 
 .carrito-page-grid {
@@ -34,9 +46,9 @@
   flex-direction: column;
   gap: 1.25rem;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-md);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: 1.5rem;
 }
 
 .carrito-explica {
@@ -47,7 +59,7 @@
 
 .carrito-explica h2 {
   font-family: var(--font-serif);
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   margin: 0 0 0.6rem;
 }
@@ -55,7 +67,7 @@
 .carrito-explica ol {
   margin: 0;
   padding-left: 1.1rem;
-  font-size: 0.8rem;
+  font-size: 0.93rem;
   color: var(--text-2);
   line-height: 1.6;
 }
@@ -95,7 +107,7 @@
 .carrito-item-selector .attr-group:last-child { margin-bottom: 0; }
 
 .carrito-item-selector-cargando {
-  font-size: 0.75rem;
+  font-size: 0.87rem;
   color: var(--text-3);
   font-style: italic;
 }
@@ -105,9 +117,9 @@
   .carrito-item-selector-cargando { padding-left: 0; }
 }
 
-.campo-obligatorio { color: var(--accent, #b0405a); }
+.campo-obligatorio { color: var(--red); }
 .campos-obligatorios-nota {
-  font-size: 0.75rem;
+  font-size: 0.87rem;
   color: var(--text-2);
   margin: 0 0 0.75rem;
 }

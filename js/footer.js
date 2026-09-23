@@ -36,7 +36,7 @@ export function renderFooter() {
     <div class="footer-inner">
       <div class="footer-brand">
         <span class="footer-logo">SoleMio</span>
-        <p class="footer-tagline">Lencería &amp; corsetería en Tandil</p>
+        <p class="footer-tagline">Lencería y corsetería en Tandil</p>
       </div>
 
       <div class="footer-col">
@@ -78,7 +78,7 @@ export function renderFooter() {
 
     <div class="footer-bottom">
       © <span id="footer-year"></span> SoleMio. Todos los derechos reservados.
-      · <a href="terminos.html">Términos</a>
+      <a href="terminos.html">Términos y condiciones</a>
     </div>`;
 
   const yearEl = document.getElementById('footer-year');

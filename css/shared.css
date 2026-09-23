@@ -1,7 +1,8 @@
 /* ================================================================
    shared.css — Tokens, reset y componentes base
-   Estilo: boutique editorial — fino, aireado, tipografía serif para
-   títulos, acentos cálidos, líneas delgadas en vez de bloques.
+   Estilo: boutique de lencería — fondo blanco (las fotos de producto
+   vienen sobre blanco y así se funden con la página), el avellana del
+   logo como color de marca, Bodoni para títulos y DM Sans para leer.
    Usado por todas las páginas del sitio.
    ================================================================ */
 
@@ -13,60 +14,73 @@
   --font-price: var(--font-sans);
 }
 
-/* ── TOKENS: MODO CLARO ──────────────────────────────────────── */
+/* ── TOKENS: MODO CLARO ──────────────────────────────────────────
+   Los nombres de la paleta salen de los colores que ya usa el
+   catálogo: Blanco (fondo), Natural (franjas y fondos suaves),
+   Avellana (el bronce del logo) y Negro (texto, cálido, no #000).
+
+   --brand es el avellana exacto del logo: solo para el logo y los
+   adornos. Con texto blanco encima no llega al contraste mínimo de
+   lectura (3.4:1), así que todo lo que es texto o botón usa
+   --primary, un avellana más tostado que sí llega (5.4:1). ──────── */
 :root {
-  --bg:        #FAF7F4;
+  --bg:        #FFFFFF;
   --surface:   #FFFFFF;
-  --surface2:  #F3ECE5;
-  --border:    rgba(70, 55, 40, 0.10);
-  --border-md: rgba(70, 55, 40, 0.20);
-  --text:      #211D1A;
-  --text-2:    #6E6259;
-  --text-3:    #A99C8F;
-  --accent:    #211D1A;
-  --accent-fg: #FAF7F4;
-  --primary:      #A97C58;
-  --primary-dark: #8A6244;
-  --primary-soft: #F1E3D4;
+  --surface2:  #F7F1EB;
+  --border:    rgba(70, 50, 35, 0.11);
+  --border-md: rgba(70, 50, 35, 0.22);
+  --text:      #2B2320;
+  --text-2:    #5E534C;
+  --text-3:    #72655D;
+  --accent:    #2B2320;
+  --accent-fg: #FFFFFF;
+  --brand:        #A97C58;
+  --primary:      #86603F;
+  --primary-dark: #6E4E33;
+  --primary-soft: #F4EAE1;
   --primary-fg:   #FFFFFF;
   --green:     #2D6A4F;
-  --green-bg:  #D8F3DC;
+  --green-bg:  #DDF1E3;
   --red:       #9B2335;
-  --red-bg:    #FDECEA;
+  --red-bg:    #FBE9E8;
   --blue:      #1B4F8C;
-  --blue-bg:   #DDEEFF;
-  --pink:      #B5476B;
+  --blue-bg:   #E1EDFA;
+  --pink:      #A63D60;
   --pink-bg:   #FBE4EC;
-  --radius:    2px;
-  --radius-lg: 3px;
+  --radius-sm: 3px;
+  --radius:    4px;
+  --radius-lg: 6px;
   --radius-pill: 999px;
-  --trans:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-pop: 0 18px 40px -12px rgba(43, 35, 32, 0.22);
+  --trans:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── TOKENS: MODO OSCURO ─────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg:        #17140F;
-  --surface:   #201C17;
-  --surface2:  #29241D;
-  --border:    rgba(230, 210, 190, 0.09);
-  --border-md: rgba(230, 210, 190, 0.16);
-  --text:      #F2ECE4;
-  --text-2:    #A79A8C;
-  --text-3:    #6B6155;
-  --accent:    #F2ECE4;
-  --accent-fg: #17140F;
-  --primary:      #D6A87C;
-  --primary-dark: #C79466;
-  --primary-soft: #362A1E;
-  --primary-fg:   #17140F;
-  --green:     #74C69D;
-  --green-bg:  #1B3D2B;
-  --red:       #F08080;
-  --red-bg:    #3A1A1A;
-  --blue:      #80B4EE;
-  --blue-bg:   #1A2E44;
-  --pink:      #E893B0;
-  --pink-bg:   #3A1F28;
+  --bg:        #16120F;
+  --surface:   #1E1915;
+  --surface2:  #28211C;
+  --border:    rgba(235, 215, 195, 0.10);
+  --border-md: rgba(235, 215, 195, 0.20);
+  --text:      #F3EDE6;
+  --text-2:    #BDAFA2;
+  --text-3:    #9A8C7F;
+  --accent:    #F3EDE6;
+  --accent-fg: #16120F;
+  --brand:        #D2A67E;
+  --primary:      #D9AE86;
+  --primary-dark: #E6C19E;
+  --primary-soft: #33271E;
+  --primary-fg:   #16120F;
+  --green:     #7FCBA4;
+  --green-bg:  #1B3528;
+  --red:       #F29A9A;
+  --red-bg:    #3A1C1C;
+  --blue:      #8DBBF0;
+  --blue-bg:   #1A2C42;
+  --pink:      #EBA0BA;
+  --pink-bg:   #3A1F29;
+  --shadow-pop: 0 18px 40px -12px rgba(0, 0, 0, 0.6);
 }
 
 /* ── RESET ───────────────────────────────────────────────────── */
@@ -95,6 +109,7 @@ body {
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
+  line-height: 1.5;
   min-height: 100vh;
   transition: background 0.3s, color 0.3s;
   -webkit-font-smoothing: antialiased;
@@ -103,18 +118,83 @@ body {
 button    { font-family: inherit; cursor: pointer; }
 input,
 select,
-textarea  { font-family: inherit; font-size: 0.9rem; }
+textarea  { font-family: inherit; font-size: max(16px, 1rem); } /* <16px hace que el iPhone haga zoom al tocar el campo */
 
-/* ── ETIQUETA TIPO "EYEBROW" (uppercase, tracking ancho) ────────
-   Chico texto de categoría/sección, tratamiento editorial ─────── */
+/* Foco visible solo al navegar con teclado (no al tocar/clickear) —
+   el outline por defecto del navegador se pierde contra el avellana. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Quien pidió "reducir movimiento" en su sistema no ve animaciones ni
+   transiciones (el cambio de estado sigue pasando, solo que sin viaje). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Texto solo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── BAJADA / ANTETÍTULO ──────────────────────────────────────
+   Itálica de Bodoni en avellana, como el "Lencería y Corsetería"
+   debajo del logo — en vez de las mayúsculas espaciadas de antes. ── */
 .eyebrow {
   display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  font-weight: 400;
   color: var(--primary);
 }
+
+/* ── ADORNO DE LA MARCA ─────────────────────────────────────────
+   La hojita del logo entre dos líneas finas, como la raya debajo de
+   "SoleMio". Es el único adorno del sitio: va debajo de los títulos
+   de página y separando secciones de la landing, en ningún otro lado.
+   La hoja es una máscara (no una imagen) para que tome el color del
+   texto y funcione igual en modo oscuro. ──────────────────────── */
+.ornamento {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(220px, 60%);
+  color: var(--brand);
+}
+.ornamento::before,
+.ornamento::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.ornamento-hoja {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.4 20.6c-.9-2.2-3.6-3.7-5.5-5.6C5 13.1 4.4 10.4 6 8.6c1.4-1.6 3.9-1.5 5.4.3.3-2.6 2.3-4.4 4.6-4 2.6.5 3.7 3.4 2.5 6.3-1.1 2.8-4.3 5-5.3 7.6-.2.6-.4 1.2-.8 1.8z'/%3E%3Cpath d='M12.3 20.9c.6-1.4 1.9-2.1 3.1-1.7.9.3 1.1 1.3.4 1.8' fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12.4 20.6c-.9-2.2-3.6-3.7-5.5-5.6C5 13.1 4.4 10.4 6 8.6c1.4-1.6 3.9-1.5 5.4.3.3-2.6 2.3-4.4 4.6-4 2.6.5 3.7 3.4 2.5 6.3-1.1 2.8-4.3 5-5.3 7.6-.2.6-.4 1.2-.8 1.8z'/%3E%3Cpath d='M12.3 20.9c.6-1.4 1.9-2.1 3.1-1.7.9.3 1.1 1.3.4 1.8' fill='none' stroke='%23000' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.ornamento.centrado { margin-left: auto; margin-right: auto; }
 
 /* ── LOGO (compartido entre topbar de catálogo y tarjeta de login) ── */
 .logo-word {
@@ -122,21 +202,21 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
   font-size: 1.6rem;
   font-weight: 500;
   letter-spacing: -0.005em;
-  color: var(--primary);
+  color: var(--brand);
 }
 
 .logo-flourish {
   font-size: 1rem;
-  color: var(--primary);
+  color: var(--brand);
   opacity: 0.55;
 }
 
 .logo-tag {
-  font-size: 0.68rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.9rem;
   font-weight: 400;
-  color: var(--text-3);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  color: var(--text-2);
 }
 
 /* ── MARCO DE IMAGEN (tipo polaroid fino, estética editorial) ──── */
@@ -147,26 +227,37 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
 }
 .frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-/* ── BOTONES ─────────────────────────────────────────────────── */
+/* ── BOTONES ─────────────────────────────────────────────────────
+   En minúscula normal (antes eran mayúsculas espaciadas) y con 44px
+   de alto como mínimo, lo recomendado para tocar con el dedo. ───── */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.1rem;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.55rem 1.2rem;
   border-radius: var(--radius);
   border: 1px solid var(--border-md);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.93rem;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  line-height: 1.2;
+  text-decoration: none;
   transition: var(--trans);
   white-space: nowrap;
 }
 
 .btn:hover  { border-color: var(--primary); color: var(--primary); }
 .btn:active { transform: scale(0.98); }
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .btn.primary {
   background: var(--primary);
@@ -193,33 +284,34 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
 }
 .btn.danger:hover { background: var(--red-bg); border-color: transparent; }
 
-.btn.sm  { padding: 0.35rem 0.75rem; font-size: 0.7rem; }
+/* Chico: solo para zonas densas del panel de admin, no para clientas */
+.btn.sm  { min-height: 34px; padding: 0.35rem 0.8rem; font-size: 0.82rem; }
 
 .btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   stroke: currentColor;
   flex-shrink: 0;
 }
 
 /* ── CAMPOS DE FORMULARIO ───────────────────────────────────── */
-.field { margin-bottom: 1rem; }
+.field { margin-bottom: 1.1rem; }
 
 .field label {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.87rem;
+  font-weight: 500;
   color: var(--text-2);
-  margin-bottom: 0.35rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin-bottom: 0.4rem;
 }
 
 .field input,
 .field select,
 .field textarea {
   width: 100%;
+  min-height: 44px;
   padding: 0.6rem 0.8rem;
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border-md);
   border-radius: var(--radius);
   color: var(--text);
@@ -231,10 +323,10 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
 .field textarea:focus {
   outline: none;
   border-color: var(--primary);
-  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
-.field textarea { height: 72px; resize: vertical; }
+.field textarea { height: 84px; resize: vertical; }
 
 .field-row {
   display: grid;
@@ -243,6 +335,6 @@ textarea  { font-family: inherit; font-size: 0.9rem; }
 }
 
 /* ── SCROLLBAR ───────────────────────────────────────────────── */
-::-webkit-scrollbar         { width: 5px; height: 5px; }
+::-webkit-scrollbar         { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track   { background: transparent; }
 ::-webkit-scrollbar-thumb   { background: var(--border-md); border-radius: 99px; }

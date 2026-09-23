@@ -2,26 +2,14 @@
    landing.js — Recibidor: novedades del catálogo + acceso invitado
    ================================================================ */
 import { sb, esAdmin, irAlCatalogo } from './supabase-client.js';
-import { ICON, initTheme, toggleTheme } from './theme.js';
+import { initTheme, toggleTheme, cargarColoresPersonalizados } from './theme.js';
 import { initCarritoUI } from './carrito.js';
 import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
+import { renderTarjetaProducto } from './tarjeta-producto.js';
 
 let rolActual = 'guest';
-
-const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
-function esProductoNuevo(p) {
-  return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
-}
-
-function fmtARS(n) {
-  return '$\u202F' + Math.round(n).toLocaleString('es-AR');
-}
-
-function resolverImagen(p) {
-  return p.imagen_custom || p.imagen_scraper || p.imagen || '';
-}
 
 async function cargarDestacados() {
   const grid = document.getElementById('destacados-grid');
@@ -46,23 +34,10 @@ async function cargarDestacados() {
     return;
   }
 
-  grid.innerHTML = data.map(p => {
-    const img = resolverImagen(p);
-    return `
-    <article class="dest-card" onclick="verCatalogo()">
-      <div class="frame dest-frame">
-        ${esProductoNuevo(p) ? `<span class="badge nuevo dest-badge-nuevo">Nuevo</span>` : ''}
-        ${img
-          ? `<img src="${img}" alt="${p.nombre}" loading="lazy"
-                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-          : ''}
-        <div class="dest-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
-      </div>
-      ${p.marca ? `<span class="dest-marca">${p.marca}</span>` : ''}
-      <div class="dest-name">${p.nombre}</div>
-      <div class="dest-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
-    </article>`;
-  }).join('');
+  // Misma tarjeta que el catálogo (con código y "Agregar al carrito");
+  // se esperan los colores personalizados para que los puntitos salgan bien.
+  await cargarColoresPersonalizados();
+  grid.innerHTML = data.map(p => renderTarjetaProducto(p)).join('');
 }
 
 async function detectarRol() {

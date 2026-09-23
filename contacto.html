@@ -40,7 +40,7 @@
 <meta name="twitter:title" content="SoleMio — Contacto">
 <meta name="twitter:description" content="Contactate con SoleMio por Instagram o WhatsApp, o visitanos en Tandil.">
 <meta name="twitter:image" content="https://solemiocatalogo.juansegundofrias.workers.dev/img/hero.webp">
-<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
@@ -54,86 +54,94 @@
 <!-- TOPBAR (contenido inyectado por topbar.js, igual en todas las páginas) -->
 <header class="topbar site-header-topbar" id="topbar-slot"></header>
 
-<section class="contact-hero">
-  <span class="eyebrow">Estamos para ayudarte</span>
-  <h1>Contacto</h1>
-  <p>Escribinos, te respondemos a la brevedad.</p>
-</section>
+<main class="contacto">
+  <header class="contact-hero">
+    <h1>Contacto</h1>
+    <div class="ornamento centrado" aria-hidden="true"><span class="ornamento-hoja"></span></div>
+    <p>Escribinos por WhatsApp y te respondemos a la brevedad. En el local atendemos con turno.</p>
+  </header>
 
-<section class="contact-grid">
+  <div class="contact-layout">
+    <ul class="contact-list">
+      <li>
+        <a class="contact-row" href="https://wa.me/542494003595" target="_blank" rel="noopener">
+          <span class="contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+          </span>
+          <span class="contact-row-body">
+            <span class="contact-card-label">WhatsApp</span>
+            <span class="contact-value">+54 2494 00-3595</span>
+          </span>
+          <span class="contact-card-cta">Escribir</span>
+        </a>
+      </li>
+      <li>
+        <a class="contact-row" href="https://www.instagram.com/solemio.tandil/" target="_blank" rel="noopener">
+          <span class="contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="contact-row-body">
+            <span class="contact-card-label">Instagram</span>
+            <span class="contact-value">@solemio.tandil</span>
+          </span>
+          <span class="contact-card-cta">Ver perfil</span>
+        </a>
+      </li>
+      <li>
+        <div class="contact-row">
+          <span class="contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+          </span>
+          <span class="contact-row-body">
+            <span class="contact-card-label">Dirección</span>
+            <span class="contact-value">Tacuari 33, Tandil, Buenos Aires</span>
+          </span>
+        </div>
+      </li>
+      <li>
+        <div class="contact-row">
+          <span class="contact-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+          <span class="contact-row-body">
+            <span class="contact-card-label">Atención</span>
+            <span class="contact-value">Solo con reserva previa. Coordiná tu horario por WhatsApp.</span>
+          </span>
+        </div>
+      </li>
+    </ul>
 
-  <a class="contact-card" href="https://wa.me/542494003595" target="_blank" rel="noopener">
-    <div class="contact-icon wa">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-      </svg>
-    </div>
-    <div class="contact-card-body">
-      <span class="contact-card-label">WhatsApp</span>
-      <p>+54 2494 00-3595</p>
-      <span class="contact-card-cta">Enviar mensaje →</span>
-    </div>
-  </a>
-
-  <a class="contact-card" href="https://www.instagram.com/solemio.tandil/" target="_blank" rel="noopener">
-    <div class="contact-icon ig">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="2" width="20" height="20" rx="5"/>
-        <circle cx="12" cy="12" r="4"/>
-        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
-      </svg>
-    </div>
-    <div class="contact-card-body">
-      <span class="contact-card-label">Instagram</span>
-      <p>@solemio.tandil</p>
-      <span class="contact-card-cta">Ver perfil →</span>
-    </div>
-  </a>
-
-  <div class="contact-card contact-card-static">
-    <div class="contact-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-      </svg>
-    </div>
-    <div class="contact-card-body">
-      <span class="contact-card-label">Dirección</span>
-      <p>Tacuari 33<br>Tandil, Buenos Aires</p>
+    <div class="contact-map-section">
+      <div class="contact-map">
+        <iframe
+          title="Mapa: Tacuari 33, Tandil"
+          src="https://www.google.com/maps?q=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen>
+        </iframe>
+      </div>
+      <a class="contact-map-link"
+         href="https://www.google.com/maps/search/?api=1&query=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina"
+         target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        Abrir en Google Maps
+      </a>
     </div>
   </div>
-
-  <div class="contact-card contact-card-static">
-    <div class="contact-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-    </div>
-    <div class="contact-card-body">
-      <span class="contact-card-label">Atención</span>
-      <p>Solo con reserva previa<br>Coordiná tu horario por WhatsApp</p>
-    </div>
-  </div>
-
-</section>
-
-<section class="contact-map-section">
-  <div class="frame contact-map">
-    <iframe
-      src="https://www.google.com/maps?q=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina&output=embed"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      allowfullscreen>
-    </iframe>
-  </div>
-  <a class="contact-map-link"
-     href="https://www.google.com/maps/search/?api=1&query=Tacuari+33,+Tandil,+Buenos+Aires,+Argentina"
-     target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-    </svg>
-    Ver en Google Maps
-  </a>
-</section>
+</main>
 
 <footer class="site-footer" id="footer-slot"></footer>
 

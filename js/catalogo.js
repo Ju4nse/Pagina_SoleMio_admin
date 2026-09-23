@@ -5,7 +5,8 @@
    ================================================================ */
 import { sb, esAdmin }        from './supabase-client.js';
 import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados, guardarColorPersonalizado } from './theme.js';
-import { initCarritoUI, agregarAlCarrito } from './carrito.js';
+import { initCarritoUI }      from './carrito.js';
+import { renderTarjetaProducto, resolverImagen, marcaLegible } from './tarjeta-producto.js';
 import { renderTopbar }       from './topbar.js';
 import { renderFooter }       from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
@@ -20,11 +21,6 @@ let productosVisibles   = 50;
 let editingProdId       = null;
 let marcaFiltro         = '';    // marca elegida en el menú "Marcas" del topbar
 let categoriaFiltro     = '';    // categoría elegida en el sidebar del catálogo
-
-const UNA_SEMANA_MS = 7 * 24 * 60 * 60 * 1000;
-function esProductoNuevo(p) {
-  return !!p.creado_en && (Date.now() - new Date(p.creado_en).getTime()) < UNA_SEMANA_MS;
-}
 
 /* Mismas categorías que ofrece el picker del modal de edición (ver
    openProdModal) — de ahí sale el valor guardado en p.categoria. Un
@@ -96,14 +92,6 @@ document.addEventListener('visibilitychange', () => {
    ================================================================ */
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-}
-
-function fmtARS(n) {
-  return '$\u202F' + Math.round(n).toLocaleString('es-AR');
-}
-
-function resolverImagen(p) {
-  return p.imagen_custom || p.imagen_scraper || p.imagen || '';
 }
 
 
@@ -275,7 +263,7 @@ function renderCatalogo(resetear = false) {
     if (marca) {
       marcaActivaEl.style.display = '';
       marcaActivaEl.innerHTML = `
-        <strong>${marca}</strong>
+        <strong>${marcaLegible(marca)}</strong>
         <button type="button" class="marca-activa-quitar" onclick="quitarFiltroMarcaUI()" title="Ver todas las marcas">✕</button>`;
     } else {
       marcaActivaEl.style.display = 'none';
@@ -320,56 +308,35 @@ function renderCatalogo(resetear = false) {
   const visibles = lista.slice(0, productosVisibles);
   const hayMas   = lista.length > productosVisibles;
 
-  grid.innerHTML = visibles.map((p, i) => {
-    const img      = p.imagen;
+  grid.innerHTML = visibles.map(p => {
+    if (!isAdmin()) return renderTarjetaProducto(p);
+
+    // Admin: misma tarjeta (con ID), más stock/destacado y sus acciones
+    // en lugar de "Agregar al carrito".
     const enStock  = p.stock === true || p.stock === 'in stock';
     const cantidad = p.num_stock ?? null;
+    const badgeStock = enStock ? (cantidad != null ? `En stock (${cantidad})` : 'En stock') : 'Sin stock';
 
-    const badgeStock = isAdmin()
-      ? (enStock ? (cantidad != null ? `En stock (${cantidad})` : 'En stock') : 'Sin stock')
-      : null; // el stock es un dato interno: no se muestra a invitados
-
-    return `
-    <a class="prod-card" style="animation-delay:${i * 30}ms" href="producto.html?id=${encodeURIComponent(p.id)}">
-      ${img
-        ? `<img class="prod-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-        : ''}
-      <div class="prod-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
-      <div class="prod-body">
-        <div style="font-size:.7rem;color:var(--text-3);font-family:monospace;margin-bottom:.2rem">ID: ${p.id}</div>
-        <div class="prod-name">${p.nombre}</div>
-        <div class="prod-meta">${[p.color, p.talles].filter(Boolean).join(' · ')}</div>
-        <div class="prod-price">${fmtARS(Math.round(p.precio * 1.5))}</div>
-        <div class="prod-badges">
-          ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
-          ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
-          ${p.marca ? `<span class="badge marca">${p.marca}</span>` : ''}
-          ${p.destacado && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">★ Destacado</span>` : ''}
-          ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
-        </div>
-        ${isAdmin() ? `
+    return renderTarjetaProducto(p, {
+      badges: `
+        <span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>
+        ${p.destacado     ? `<span class="badge destacado">Destacado</span>` : ''}
+        ${p.imagen_custom ? `<span class="badge info">Foto custom</span>` : ''}`,
+      acciones: `
         <div class="prod-actions">
-          <button class="btn sm ghost" onclick="event.preventDefault();event.stopPropagation();openProdModal('${p.id}')">
+          <button type="button" class="btn sm ghost" onclick="openProdModal('${p.id}')">
             ${ICON.edit} Editar
           </button>
           <button type="button" class="btn sm ${p.disponible ? 'ghost' : 'primary'}"
             title="El cliente ${p.disponible ? 'sí puede ver y comprar' : 'no puede ver ni comprar'} este producto ahora"
-            onclick="event.preventDefault();event.stopPropagation();toggleDisponibleUI('${p.id}', ${!p.disponible})">
+            onclick="toggleDisponibleUI('${p.id}', ${!p.disponible})">
             ${p.disponible ? 'Disponible' : 'No disponible'}
           </button>
-          <button class="btn sm danger" onclick="event.preventDefault();event.stopPropagation();confirmarEliminar('${p.id}')">
+          <button type="button" class="btn sm danger" onclick="confirmarEliminar('${p.id}')" aria-label="Eliminar producto">
             ${ICON.trash}
           </button>
-        </div>` : `
-        <div class="prod-quickadd">
-          <button type="button" class="btn sm primary" ${!p.disponible ? 'disabled' : ''}
-            onclick="event.preventDefault();event.stopPropagation();agregarAlCarritoRapidoUI('${p.id}')">
-            ${ICON.cart} Agregar
-          </button>
-        </div>`}
-      </div>
-    </a>`;
+        </div>`,
+    });
   }).join('');
 
   if (hayMas) {
@@ -385,32 +352,6 @@ function renderCatalogo(resetear = false) {
 function cargarMas() {
   productosVisibles += 50;
   renderCatalogo();
-}
-
-/* Agrega un producto al carrito directo desde su tarjeta del catálogo,
-   sin pasar por su detalle. Va sin talle/color: se eligen después en
-   el carrito (ver carrito-page.js). Si el producto tiene talles y/o
-   colores para elegir, cada click agrega una línea separada (en vez
-   de sumar cantidad a una ya pendiente de elección), para poder
-   agregar el mismo producto varias veces y darle a cada uno un talle
-   o color distinto — si dos terminan con la misma combinación, el
-   carrito las fusiona solo en ese momento. */
-function agregarAlCarritoRapido(id) {
-  const p = productos.find(x => x.id === id);
-  if (!p) return;
-
-  const necesitaSeleccion = !!(p.talles || p.color);
-
-  agregarAlCarrito({
-    productoId:     p.id,
-    nombre:         p.nombre,
-    precioUnitario: Math.round(p.precio * 1.5),
-    imagen:         p.imagen,
-    talle:          '',
-    color:          '',
-    cantidad:       1,
-    separado:       necesitaSeleccion,
-  });
 }
 
 /* ── MENÚ "MARCAS" DEL TOPBAR — panel que se despliega al hacer
@@ -429,7 +370,7 @@ function renderMarcasMenu(marcas, marcaActual) {
     ? '<span class="marcas-empty">Todavía no hay marcas cargadas</span>'
     : `<button type="button" class="marcas-item${marcaActual ? '' : ' active'}" data-marca="">Todas las marcas</button>` +
       marcas.map(m =>
-        `<button type="button" class="marcas-item${m === marcaActual ? ' active' : ''}" data-marca="${m}">${m}</button>`
+        `<button type="button" class="marcas-item${m === marcaActual ? ' active' : ''}" data-marca="${m}">${marcaLegible(m)}</button>`
       ).join('');
 
   panels.forEach(panel => { panel.innerHTML = html; });
@@ -1666,6 +1607,11 @@ async function startApp() {
 
   await new Promise(r => requestAnimationFrame(r));
 
+  // Los tonos que el admin eligió a mano ("Natural", "Avellana"…) para
+  // los puntitos de color de las tarjetas. No frena la carga: si llegan
+  // después que los productos, se vuelve a dibujar la grilla.
+  cargarColoresPersonalizados().then(() => { if (productos.length) renderCatalogo(); });
+
   await cargarProductos();
   iniciarRealtime();
 
@@ -1722,7 +1668,6 @@ async function init() {
 window.toggleTheme          = toggleTheme;
 window.renderCatalogo       = renderCatalogo;
 window.cargarMas            = cargarMas;
-window.agregarAlCarritoRapidoUI = agregarAlCarritoRapido;
 window.toggleCategoriaSidebarUI = toggleCategoriaSidebar;
 window.toggleMarcasMobileUI     = toggleMarcasMobile;
 window.quitarFiltroMarcaUI      = quitarFiltroMarca;

@@ -14,10 +14,10 @@
 
 .login-card {
   background: var(--surface);
-  border: 1px solid var(--border-md);
-  border-top: 2px solid var(--primary);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 3rem 2.25rem 2.25rem;
+  box-shadow: var(--shadow-pop);
+  padding: 2.75rem 2.25rem 2rem;
   width: 100%;
   max-width: 380px;
   animation: slideup 0.22s ease;
@@ -43,10 +43,8 @@
 }
 
 .login-logo .logo-tag {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 1rem;
+  color: var(--text-2);
 }
 
 /* ── LOGO EN LOGIN ───────────────────────────────────────────── */
@@ -58,7 +56,7 @@
 }
 
 .login-logo-img {
-  max-width: 180px;
+  max-width: 230px;
   max-height: 100px;
   width: auto;
   height: auto;
@@ -74,26 +72,29 @@
 /* ── OJO PARA VER CONTRASEÑA ─────────────────────────────────── */
 .toggle-pass {
   position: absolute;
-  right: 10px;
-  bottom: 9px;
+  right: 4px;
+  bottom: 2px;
+  width: 40px;
+  height: 40px;
   background: none;
   border: none;
+  border-radius: var(--radius);
   color: var(--text-3);
   cursor: pointer;
-  padding: 2px;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: color 0.15s;
 }
 .toggle-pass:hover { color: var(--text-2); }
 .toggle-pass svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
 }
 
 .login-error {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--red);
   min-height: 20px;
   margin-bottom: 0.5rem;
@@ -110,15 +111,22 @@
 .login-btn {
   width: 100%;
   justify-content: center;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-bottom: 1rem;
 }
 
 .login-hint {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.87rem;
   color: var(--text-3);
+  margin-top: 0.4rem;
+}
+
+.login-back {
+  display: inline-block;
+  padding: 0.5rem;
+  color: var(--primary);
+  text-underline-offset: 3px;
 }
 
 /* ── DIVIDER Y BOTÓN INVITADO ─────────────────────────────────── */
@@ -128,7 +136,7 @@
   gap: .75rem;
   margin: .75rem 0;
   color: var(--text-3);
-  font-size: .75rem;
+  font-size: .87rem;
 }
 .login-divider::before,
 .login-divider::after {
@@ -141,9 +149,7 @@
 .guest-btn {
   width: 100%;
   justify-content: center;
-  padding: .65rem 1rem;
-  font-size: .78rem;
-  letter-spacing: 0.03em;
+  font-size: .93rem;
   color: var(--text-2);
   border-color: var(--border-md);
   margin-bottom: 1rem;

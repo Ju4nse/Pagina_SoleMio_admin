@@ -1,103 +1,118 @@
 /* ================================================================
    landing.css — Estilos exclusivos del recibidor
-   Estética editorial: tipografía serif, marcos finos, mucho aire.
+   El título en Bodoni grande es lo que se recuerda de la página; todo
+   lo demás queda quieto. La foto del hero viene sobre fondo blanco,
+   igual que la página, así que va sin marco: la figura queda "suelta".
    ================================================================ */
 
 /* ── HERO ────────────────────────────────────────────────────── */
 .hero {
   max-width: 1160px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 5rem;
+  padding: 1rem 1.5rem 4rem;
 }
 
 .hero-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 3rem;
   align-items: center;
 }
 
-@media (max-width: 860px) {
-  .hero-inner { grid-template-columns: 1fr; gap: 2.5rem; }
-}
+.hero-copy .eyebrow { margin-bottom: 1rem; }
 
 .hero-copy h1 {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(2.2rem, 4.2vw, 3.2rem);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  font-size: clamp(2.7rem, 6.2vw, 4.9rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
   color: var(--text);
-  margin: 0.9rem 0 1.1rem;
+  margin: 0 0 1.5rem;
   text-wrap: balance;
 }
 
-/* Cada frase del título no se parte: corta entre frases, nunca dejando "Tandil," suelto */
-.hero-copy h1 span { white-space: nowrap; }
-
 .hero-sub {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--text-2);
   line-height: 1.65;
-  max-width: 34ch;
-  margin-bottom: 2rem;
+  max-width: 44ch;
+  margin-bottom: 2.25rem;
 }
 
 .hero-actions {
   display: flex;
-  gap: 0.85rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.hero-btn { padding: 0.75rem 1.6rem; }
+.hero-btn { padding: 0.75rem 1.6rem; min-height: 48px; font-size: 1rem; }
 
-.hero-visual { position: relative; }
-
-.hero-frame {
-  aspect-ratio: 4/5;
-  transform: rotate(1deg);
-  box-shadow: 0 24px 48px -20px rgba(30, 20, 10, 0.25);
+.hero-visual {
+  position: relative;
+  display: flex;
+  justify-content: center;
 }
-.hero-frame img { border-radius: 1px; }
 
-.hero-frame-logo {
-  width: 60%;
-  height: 60%;
-  object-fit: contain;
-  margin: 20% auto;
+.hero-visual img {
   display: block;
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  aspect-ratio: 683 / 1024;
+  object-fit: cover;
 }
-[data-theme="dark"] .hero-frame-logo { filter: brightness(0) invert(1); }
 
-/* ── ESENCIA ─────────────────────────────────────────────────── */
+/* En modo oscuro el blanco de la foto no se funde con la página:
+   ahí sí va recortada con bordes suaves, como una foto. */
+[data-theme="dark"] .hero-visual img { border-radius: var(--radius-lg); }
+
+.hero-logo-fallback {
+  width: 80%;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  margin: 20% auto;
+}
+
+@media (max-width: 860px) {
+  .hero { padding-bottom: 3rem; }
+  .hero-inner { grid-template-columns: 1fr; gap: 2rem; }
+  .hero-visual img {
+    max-width: none;
+    aspect-ratio: 4 / 5;
+    object-position: center 30%;
+  }
+}
+
+/* ── CÓMO TE ATENDEMOS ───────────────────────────────────────── */
 .essence {
-  background: var(--surface2);
-  padding: 5rem 1.5rem;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  background: var(--primary-soft);
+  padding: 4.5rem 1.5rem;
 }
 
 .essence-inner {
   max-width: 680px;
   margin: 0 auto;
+  text-align: center;
 }
 
 .essence-text {
   font-family: var(--font-serif);
-  font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+  font-size: clamp(1.35rem, 2.6vw, 1.7rem);
   line-height: 1.5;
   color: var(--text);
-  margin: 1rem 0 2rem;
+  margin: 1.75rem 0 1.5rem;
+  text-wrap: pretty;
 }
 
 .essence-quote {
-  border-left: 2px solid var(--primary);
-  padding: 0.2rem 0 0.2rem 1.25rem;
+  font-family: var(--font-serif);
   font-style: italic;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: var(--text-2);
   line-height: 1.6;
-  margin-bottom: 2.5rem;
+  max-width: 48ch;
+  margin: 0 auto 2.75rem;
 }
 
 .essence-stats {
@@ -108,24 +123,25 @@
   padding-top: 2rem;
 }
 
-.essence-stat-title {
-  display: block;
+.essence-stats dt {
   font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   color: var(--primary);
   margin-bottom: 0.25rem;
 }
 
-.essence-stat-sub {
-  font-size: 0.72rem;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.essence-stats dd {
+  font-size: 0.93rem;
+  color: var(--text-2);
+}
+
+@media (max-width: 520px) {
+  .essence-stats { grid-template-columns: 1fr; }
 }
 
 /* ── DESTACADOS ──────────────────────────────────────────────── */
 .destacados {
-  padding: 5rem 1.5rem;
+  padding: 4.5rem 1.5rem 1rem;
 }
 
 .destacados-inner {
@@ -135,120 +151,63 @@
 
 .destacados-hd {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
 }
-
-.destacados-link {
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--text-2);
-  text-decoration: none;
-  transition: var(--trans);
-}
-.destacados-link:hover { color: var(--primary); }
 
 .destacados-title {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
-  margin-bottom: 2rem;
+  font-size: clamp(1.9rem, 3.4vw, 2.5rem);
 }
 
-.destacados-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.75rem;
-}
-
-.dest-card {
-  cursor: pointer;
-}
-
-.dest-frame {
-  position: relative;
-  aspect-ratio: 3/4;
-  margin-bottom: 0.85rem;
+.destacados-link {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  padding: 0.5rem 0;
   transition: var(--trans);
 }
-.dest-card:hover .dest-frame { border-color: var(--primary); }
-
-.dest-badge-nuevo {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 1;
-}
-
-.dest-thumb-ph {
-  width: 100%;
-  height: 100%;
-  background: var(--surface2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.dest-thumb-ph svg { width: 28px; height: 28px; stroke: var(--text-3); }
-
-.dest-marca {
-  font-size: 0.64rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 0.3rem;
-  display: block;
-}
-
-.dest-name {
-  font-size: 0.85rem;
-  line-height: 1.3;
-  margin-bottom: 0.35rem;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.dest-price {
-  font-family: var(--font-price);
-  font-weight: 500;
-  font-variant-numeric: lining-nums tabular-nums;
-  font-size: 1.05rem;
-  color: var(--primary);
-}
+.destacados-link:hover { color: var(--primary-dark); }
 
 .destacados-grid .empty {
   grid-column: 1/-1;
   text-align: center;
   padding: 2.5rem 1rem;
   color: var(--text-3);
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
-/* ── CTA DE VISITA ───────────────────────────────────────────── */
+/* ── VISITA ──────────────────────────────────────────────────── */
 .visit-cta {
-  background: var(--primary-soft);
-  padding: 4.5rem 1.5rem;
+  padding: 4.5rem 1.5rem 1rem;
   text-align: center;
 }
 
-.visit-cta-inner { max-width: 480px; margin: 0 auto; }
+.visit-cta-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  padding-top: 3.5rem;
+  border-top: 1px solid var(--border);
+}
 
 .visit-cta h2 {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-size: clamp(1.8rem, 3.2vw, 2.3rem);
   color: var(--text);
-  margin: 0.75rem 0 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .visit-cta p {
-  font-size: 0.85rem;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--text-2);
   margin-bottom: 1.75rem;
 }

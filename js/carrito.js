@@ -10,6 +10,7 @@
    ================================================================ */
 import { sb } from './supabase-client.js';
 import { ICON } from './theme.js';
+import { nombreLegible } from './texto.js';
 
 const CARRITO_KEY      = 'solemio-carrito';
 const MIS_PEDIDOS_KEY  = 'solemio-mis-pedidos';
@@ -280,8 +281,8 @@ function renderDrawerBody() {
               : `<div class="carrito-item-img-ph">${ICON.shoe}</div>`}
           </div>
           <div class="carrito-item-info">
-            <div class="carrito-item-nombre">${g.nombre}</div>
-            <div class="carrito-item-attrs">${[g.talle, g.color].filter(Boolean).join(' · ') || '&nbsp;'}</div>
+            <div class="carrito-item-nombre">${nombreLegible(g.nombre)}</div>
+            <div class="carrito-item-attrs">${[g.talle && `Talle ${g.talle}`, g.color && nombreLegible(g.color)].filter(Boolean).join(', ') || '&nbsp;'}</div>
             <div class="carrito-item-precio">${fmtARS(g.precioUnitario)} c/u</div>
           </div>
           <div class="carrito-item-qty">

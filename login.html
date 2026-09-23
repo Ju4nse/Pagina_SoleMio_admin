@@ -29,7 +29,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SoleMio — Ingresar</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="icon" type="image/svg+xml" href="img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&display=swap" rel="stylesheet">
@@ -43,7 +43,7 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="login-img-wrap">
-        <img src="img/logo.png" alt="SoleMio" class="login-logo-img"
+        <img src="img/logo-wordmark-extendido.png" alt="SoleMio, lencería y corsetería" class="login-logo-img"
              onerror="this.style.display='none';document.getElementById('login-logo-text').style.display='block'">
         <span class="logo-word" id="login-logo-text" style="display:none">SoleMio</span>
       </div>
@@ -51,15 +51,15 @@
     </div>
 
     <div class="field">
-      <label>Usuario</label>
+      <label for="login-user">Usuario</label>
       <input type="text" id="login-user" placeholder="admin"
              autocomplete="username" onkeydown="if(event.key==='Enter') doLogin()">
     </div>
     <div class="field" style="position:relative">
-      <label>Contraseña</label>
+      <label for="login-pass">Contraseña</label>
       <input type="password" id="login-pass" placeholder="••••••••"
              autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
-      <button class="toggle-pass" onclick="togglePass()" aria-label="Ver contraseña" tabindex="-1">
+      <button type="button" class="toggle-pass" onclick="togglePass()" aria-label="Ver contraseña">
         <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -69,12 +69,12 @@
     </div>
 
     <div class="login-error" id="login-error"></div>
-    <button class="btn primary login-btn" onclick="doLogin()">Ingresar</button>
+    <button type="button" class="btn primary login-btn" onclick="doLogin()">Ingresar</button>
 
     <div class="login-divider"><span>o</span></div>
 
-    <button class="btn guest-btn" onclick="doGuestLogin()">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;stroke:currentColor">
+    <button type="button" class="btn guest-btn" onclick="doGuestLogin()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
         <circle cx="12" cy="12" r="3"/>
       </svg>
@@ -82,8 +82,8 @@
     </button>
 
     <p class="login-hint">Acceso restringido al personal autorizado</p>
-    <p class="login-hint" style="margin-top:.5rem">
-      <a href="landing.html" style="color:var(--text-3)">← Volver al sitio</a>
+    <p class="login-hint">
+      <a href="landing.html" class="login-back">Volver al sitio</a>
     </p>
   </div>
 </div>

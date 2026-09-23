@@ -121,11 +121,10 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  min-height: 44px;
   font-family: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.93rem;
+  font-weight: 500;
   color: var(--text);
   background: none;
   border: none;
@@ -161,7 +160,7 @@
      continuación de la barra y no como una tarjeta flotando aparte */
   border-top: 1px solid var(--border);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow-pop);
   /* grid (no CSS columns) para que más columnas = menos filas de forma
      predecible, y el max-height + scroll de abajo funcione siempre —
      con "columns" el recorte por altura es inconsistente entre
@@ -200,11 +199,11 @@
   width: 100%;
   text-align: left;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text-2);
   background: none;
   border: none;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   cursor: pointer;
   transition: var(--trans);
   overflow-wrap: break-word;
@@ -246,29 +245,26 @@
   margin-left: auto;
 }
 
-/* Mismo look que .site-nav (landing/contacto): mayúsculas, tracking
-   amplio y subrayado en el activo — para que Inicio/Catálogo/Contacto
-   se vean idénticos en todas las páginas del sitio. */
+/* Mismo look en todas las páginas del sitio: minúscula normal y una
+   rayita avellana debajo de la página en la que estás. */
 .topbar-nav a {
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.93rem;
+  font-weight: 400;
   color: var(--text-2);
   text-decoration: none;
-  padding-bottom: 4px;
+  padding: 0.35rem 0 0.25rem;
   border-bottom: 1px solid transparent;
   transition: var(--trans);
 }
 .topbar-nav a:hover { color: var(--text); }
-.topbar-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+.topbar-nav a.active { color: var(--text); border-bottom-color: var(--brand); }
 
 /* ── BOTONES CIRCULARES (tema / cuenta / logout) — misma posición y
    estilo que el ícono de login en landing/contacto ────────────── */
 .theme-btn,
 .icon-btn {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border-md);
   background: var(--surface);
@@ -290,8 +286,8 @@
    .topbar-nav.mobile-open más abajo y toggleMobileNavUI en topbar.js */
 .hamburger-btn {
   display: none;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border-md);
   background: var(--surface);
@@ -306,8 +302,8 @@
 
 .theme-btn-icon svg,
 .icon-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.8;
@@ -345,10 +341,10 @@
   right: 0;
   background: var(--surface);
   border: 1px solid var(--border-md);
-  border-radius: var(--radius);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
   padding: 0.4rem;
-  min-width: 175px;
+  min-width: 190px;
   display: none;
   flex-direction: column;
   z-index: 25;
@@ -363,11 +359,12 @@
   width: 100%;
   text-align: left;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   color: var(--text-2);
   background: none;
   border: none;
-  padding: 0.55rem 0.6rem;
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--trans);
@@ -396,11 +393,10 @@
 .catalogo-sidebar { margin-top: 2.6rem; }
 
 .sidebar-title {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text);
   margin: 0 0 0.6rem;
 }
 
@@ -445,18 +441,18 @@
   width: 100%;
   text-align: left;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text-2);
   background: none;
   border: none;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   cursor: pointer;
   transition: var(--trans);
 }
 .categoria-item:hover  { color: var(--primary); }
 .categoria-item.active { color: var(--primary); font-weight: 500; }
 
-.categoria-count { font-size: 0.72rem; color: var(--text-3); }
+.categoria-count { font-size: 0.8rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
 
 .categoria-empty {
   font-size: 0.82rem;
@@ -604,7 +600,8 @@
 
 .search-wrap input {
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2rem;
+  min-height: 42px;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
   background: var(--surface);
   border: 1px solid var(--border-md);
   border-radius: var(--radius);
@@ -615,6 +612,7 @@
 .search-wrap input:focus {
   outline: none;
   border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 select {
@@ -659,7 +657,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .prod-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  gap: 1rem;
+  gap: 2.25rem 1.25rem;
 }
 
 /* En celulares, minmax(196px,1fr) casi siempre termina en 1 sola
@@ -671,39 +669,40 @@ select:focus { outline: none; border-color: var(--primary); }
 @media (max-width: 560px) {
   .prod-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
+    gap: 1.75rem 0.75rem;
   }
 }
 
+/* ── TARJETA DE PRODUCTO (ver tarjeta-producto.js) ───────────────
+   Sin caja ni borde: la foto (que ya viene sobre blanco) va directo
+   sobre la página y el texto debajo. Toda la tarjeta es clickeable
+   gracias al ::after de .prod-link, que se estira sobre el <article>;
+   los botones quedan por encima (z-index) y siguen andando solos. ── */
 .prod-card {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  transition: var(--trans);
 }
 
-.prod-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
+.prod-media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
 }
 
 .prod-thumb {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  height: 100%;
   object-fit: cover;
-  background: var(--surface2);
   display: block;
 }
 
 .prod-thumb-ph {
   width: 100%;
-  aspect-ratio: 3 / 4;
-  background: var(--surface2);
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -715,30 +714,125 @@ select:focus { outline: none; border-color: var(--primary); }
   stroke: var(--text-3);
 }
 
-.prod-body    { padding: 0.875rem 1rem 1rem; }
+.prod-card.no-disponible .prod-media { opacity: 0.5; }
+
+.prod-nuevo {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--primary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.prod-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding-top: 0.8rem;
+}
+
+/* Marca a la izquierda, código a la derecha — el código siempre
+   visible (las clientas lo mandan por WhatsApp para consultar). */
+.prod-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-bottom: 0.2rem;
+}
+
+.prod-marca {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+
+.prod-id {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
 
 .prod-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.3;
-  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-bottom: 0.45rem;
   color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.prod-meta {
-  font-size: 0.75rem;
+.prod-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.prod-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.prod-card:hover .prod-link { color: var(--primary); }
+
+/* El foco de teclado se dibuja alrededor de toda la tarjeta, no solo
+   del nombre (que es el link real). */
+.prod-link:focus-visible { outline: none; }
+.prod-card:has(.prod-link:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.prod-variantes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  font-size: 0.83rem;
   color: var(--text-3);
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
+  margin-bottom: 0.55rem;
 }
 
+.prod-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.prod-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(43, 35, 32, 0.2);
+  flex-shrink: 0;
+}
+[data-theme="dark"] .prod-dot { border-color: rgba(255, 255, 255, 0.28); }
+
+.prod-dot-mas { font-size: 0.78rem; margin-left: 1px; }
+
+/* margin-top:auto: los precios (y los botones) de una misma fila
+   quedan alineados aunque un nombre ocupe una línea y otro dos. */
 .prod-price {
   font-family: var(--font-price);
   font-weight: 500;
   font-variant-numeric: lining-nums tabular-nums;
   font-size: 1.15rem;
-  color: var(--primary);
-  margin-bottom: 0.6rem;
+  color: var(--text);
+  margin-top: auto;
+  margin-bottom: 0.7rem;
 }
 
 .prod-badges {
@@ -748,30 +842,46 @@ select:focus { outline: none; border-color: var(--primary); }
   margin-bottom: 0.75rem;
 }
 
+.prod-actions,
+.prod-quickadd {
+  position: relative;
+  z-index: 1;
+}
+
 .prod-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .prod-quickadd { display: flex; }
-.prod-quickadd .btn { width: 100%; justify-content: center; }
+.prod-quickadd .btn { width: 100%; }
+
+/* En dos columnas de celular "Agregar al carrito" no entra en una
+   línea: ahí dice solo "Agregar" (el aria-label sigue completo). */
+.prod-quickadd-corto { display: none; }
+@media (max-width: 560px) {
+  .prod-quickadd-largo { display: none; }
+  .prod-quickadd-corto { display: inline; }
+  .prod-quickadd .btn  { padding-left: 0.5rem; padding-right: 0.5rem; }
+}
 
 /* ── BADGES ──────────────────────────────────────────────────── */
 .badge {
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 500;
   padding: 0.18rem 0.6rem;
   border-radius: 99px;
-  letter-spacing: 0.02em;
 }
 
-.badge.stock   { background: var(--green-bg); color: var(--green); }
-.badge.nostock { background: var(--red-bg);   color: var(--red);   }
-.badge.marca   { background: var(--surface2); color: var(--text-2); }
-.badge.nuevo   { background: var(--primary-soft); color: var(--primary-dark); }
+.badge.stock     { background: var(--green-bg); color: var(--green); }
+.badge.nostock   { background: var(--red-bg);   color: var(--red);   }
+.badge.marca     { background: var(--surface2); color: var(--text-2); }
+.badge.nuevo     { background: var(--primary-soft); color: var(--primary-dark); }
+.badge.destacado { background: var(--primary-soft); color: var(--primary-dark); }
+.badge.info      { background: var(--blue-bg); color: var(--blue); }
 
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(30, 22, 18, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -787,6 +897,7 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .modal {
   background: var(--surface);
+  box-shadow: var(--shadow-pop);
   border: 1px solid var(--border-md);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
@@ -905,7 +1016,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .prod-preview-dot.activo { background: var(--primary); }
 
 .prod-preview-hint {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: var(--text-3);
   line-height: 1.4;
 }
@@ -914,7 +1025,7 @@ select:focus { outline: none; border-color: var(--primary); }
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--text-2);
 }
 
@@ -994,7 +1105,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .foto-item-url {
   flex: 1;
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -1048,7 +1159,7 @@ select:focus { outline: none; border-color: var(--primary); }
 }
 
 .talle-stock-input-wrap label {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--text-3);
   margin: 0;
 }
@@ -1086,7 +1197,7 @@ select:focus { outline: none; border-color: var(--primary); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   padding: 0.18rem 0.55rem;
   color: var(--text-2);
   cursor: pointer;
@@ -1252,7 +1363,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .variantes-grid-table thead th {
   color: var(--text-2);
   font-weight: 500;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   background: var(--surface2);
 }
 
@@ -1289,7 +1400,7 @@ select:focus { outline: none; border-color: var(--primary); }
   width: 56px;
   margin-top: 0.3rem;
   padding: 0.2rem 0.3rem;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   text-align: center;
   color: var(--text-2);
   border-radius: var(--radius-sm);
@@ -1309,7 +1420,7 @@ select:focus { outline: none; border-color: var(--primary); }
   border-radius: 99px;
   background: var(--primary);
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 600;
   line-height: 1;
   display: none;
@@ -1333,7 +1444,7 @@ select:focus { outline: none; border-color: var(--primary); }
   border-radius: 99px;
   background: var(--red);
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 600;
   line-height: 1;
   display: none;
@@ -1365,7 +1476,7 @@ select:focus { outline: none; border-color: var(--primary); }
   background: var(--surface);
   border: 1px solid var(--border-md);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  box-shadow: var(--shadow-pop);
   padding: 0.75rem 0.85rem;
   transform: translateY(-8px);
   opacity: 0;
@@ -1419,14 +1530,12 @@ select:focus { outline: none; border-color: var(--primary); }
 .carrito-toast-body { flex: 1; min-width: 0; }
 
 .carrito-toast-titulo {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .carrito-toast-nombre {
-  font-size: 0.85rem;
+  font-size: 0.93rem;
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -1439,9 +1548,11 @@ select:focus { outline: none; border-color: var(--primary); }
   border: none;
   color: var(--text-3);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   flex-shrink: 0;
-  padding: 0.2rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
 }
 .carrito-toast-cerrar:hover { color: var(--text); }
 
@@ -1456,7 +1567,7 @@ select:focus { outline: none; border-color: var(--primary); }
 .carrito-drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(30, 22, 18, 0.5);
   z-index: 300;
   opacity: 0;
   pointer-events: none;
@@ -1498,19 +1609,22 @@ select:focus { outline: none; border-color: var(--primary); }
 
 .carrito-drawer-header h2 {
   font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-size: 1.5rem;
+  font-weight: 400;
   margin: 0;
 }
 
 .carrito-drawer-cerrar {
   background: transparent;
   border: none;
-  color: var(--text-3);
+  color: var(--text-2);
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0.3rem;
+  font-size: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
 }
+.carrito-drawer-cerrar:hover { background: var(--surface2); }
 .carrito-drawer-cerrar:hover { color: var(--text); }
 
 .carrito-drawer-footer {
@@ -1548,7 +1662,7 @@ body.modal-abierto-lock { overflow: hidden; }
   margin: auto;
   text-align: center;
   color: var(--text-2);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   line-height: 1.5;
 }
 
@@ -1599,19 +1713,19 @@ body.modal-abierto-lock { overflow: hidden; }
 .carrito-item-info { flex: 1; min-width: 0; }
 
 .carrito-item-nombre {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--text);
 }
 
 .carrito-item-attrs {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--text-3);
   margin-top: 0.15rem;
 }
 
 .carrito-item-precio {
-  font-size: 0.78rem;
+  font-size: 0.87rem;
   color: var(--text-2);
   margin-top: 0.2rem;
 }
@@ -1624,16 +1738,22 @@ body.modal-abierto-lock { overflow: hidden; }
   flex-shrink: 0;
 }
 
+/* 34px de círculo visible, pero el área que responde al dedo llega a
+   ~44px gracias al ::after (sin agrandar el botón en la fila). */
 .btn-qty {
-  width: 24px;
-  height: 24px;
+  position: relative;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid var(--border-md);
   background: var(--surface);
   color: var(--text-2);
+  font-size: 1rem;
+  line-height: 1;
   cursor: pointer;
   transition: var(--trans);
 }
+.btn-qty::after { content: ''; position: absolute; inset: -5px; }
 .btn-qty:hover { border-color: var(--primary); color: var(--primary); }
 
 .btn-quitar-item {
@@ -1641,9 +1761,11 @@ body.modal-abierto-lock { overflow: hidden; }
   border: none;
   color: var(--text-3);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   flex-shrink: 0;
-  padding: 0.3rem;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
 }
 .btn-quitar-item:hover { color: var(--red); }
 
@@ -1653,7 +1775,7 @@ body.modal-abierto-lock { overflow: hidden; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-bottom: 0.6rem;
 }
 
@@ -1661,12 +1783,12 @@ body.modal-abierto-lock { overflow: hidden; }
   font-family: var(--font-price);
   font-weight: 500;
   font-variant-numeric: lining-nums tabular-nums;
-  font-size: 1.2rem;
-  color: var(--primary);
+  font-size: 1.35rem;
+  color: var(--text);
 }
 
 .carrito-nota {
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   color: var(--text-3);
   line-height: 1.45;
   margin: 0 0 0.85rem;
@@ -1682,7 +1804,7 @@ body.modal-abierto-lock { overflow: hidden; }
 }
 
 .carrito-error {
-  font-size: 0.78rem;
+  font-size: 0.87rem;
   color: var(--red);
   background: var(--red-bg);
   padding: 0.5rem 0.7rem;
@@ -1715,7 +1837,7 @@ body.modal-abierto-lock { overflow: hidden; }
 
 .carrito-listo p {
   color: var(--text-2);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   line-height: 1.6;
   margin: 0 0 1.5rem;
 }
@@ -1726,7 +1848,7 @@ body.modal-abierto-lock { overflow: hidden; }
 /* Vive acá (no en producto.css) porque catalogo.html no carga
    producto.css y el modal de editar producto también usa estos chips. */
 .attr-tag {
-  font-size: 0.78rem;
+  font-size: 0.87rem;
   color: var(--text-2);
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1769,8 +1891,9 @@ body.modal-abierto-lock { overflow: hidden; }
 }
 
 .modal-title {
-  font-size: 1rem;
-  font-weight: 500;
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 400;
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -1797,7 +1920,7 @@ body.modal-abierto-lock { overflow: hidden; }
   text-align: center;
   padding: 3.5rem 1rem;
   color: var(--text-3);
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
 .empty svg {
@@ -1810,12 +1933,10 @@ body.modal-abierto-lock { overflow: hidden; }
 
 /* ── BADGE DE ROL (topbar) ────────────────────────────────────── */
 .role-badge {
-  font-size: .7rem;
+  font-size: .8rem;
   font-weight: 500;
-  padding: .2rem .65rem;
+  padding: .2rem .7rem;
   border-radius: 99px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
 }
 
 .role-badge.admin {
@@ -1850,38 +1971,39 @@ body.modal-abierto-lock { overflow: hidden; }
 [data-role="guest"] .catalogo-layout .toolbar { display: none; }
 
 /* ── FOOTER COMPARTIDO (footer.js) ──────────────────────────────
-   Fondo en --primary-soft (el tinte clarito ya usado en el resto del
-   sitio para fondos suaves, ej. chips seleccionados) — texto en los
-   mismos grises de siempre, así queda correcto en tema claro y
-   oscuro sin necesidad de tonos aparte. */
+   Fondo en --primary-soft ("Natural", el tinte nude de la paleta):
+   con la página en blanco, es lo que marca el final del sitio. ── */
 .site-footer {
   background: var(--primary-soft);
   color: var(--text);
-  margin-top: 4rem;
+  margin-top: 5rem;
 }
 
+/* Grilla (no flex-wrap): en anchos intermedios las 4 columnas pasan a
+   2×2 parejas, en vez de dejar "Atención" sola en una segunda fila. */
 .footer-inner {
   max-width: 1160px;
   margin: 0 auto;
   padding: 3rem 1.5rem 2rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2.5rem;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 2rem 2.5rem;
 }
 
 .footer-brand { max-width: 260px; }
 
 .footer-logo {
   font-family: var(--font-serif);
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   font-weight: 500;
-  color: var(--text);
+  color: var(--brand);
 }
 
 .footer-tagline {
-  margin: 0.5rem 0 0;
-  font-size: 0.78rem;
+  margin: 0.35rem 0 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.95rem;
   color: var(--text-2);
   line-height: 1.5;
 }
@@ -1890,22 +2012,22 @@ body.modal-abierto-lock { overflow: hidden; }
 
 .footer-col-title {
   display: block;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.6rem;
 }
 
+/* min-height 32px: cada link se puede tocar sin pegarle al de al lado */
 .footer-col a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.82rem;
-  color: var(--text);
+  min-height: 32px;
+  font-size: 0.9rem;
+  color: var(--text-2);
   text-decoration: none;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.15rem;
   transition: var(--trans);
 }
 
@@ -1921,7 +2043,7 @@ body.modal-abierto-lock { overflow: hidden; }
 }
 
 .footer-col p {
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text-2);
   margin: 0 0 0.3rem;
   line-height: 1.5;
@@ -1929,16 +2051,16 @@ body.modal-abierto-lock { overflow: hidden; }
 .footer-col p:last-child { margin-bottom: 0; }
 
 .footer-bottom {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-md);
   padding: 1rem 1.5rem 1.5rem;
   max-width: 1160px;
   margin: 0 auto;
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-  color: var(--text-3);
+  font-size: 0.8rem;
+  color: var(--text-2);
 }
 
 .footer-bottom a {
+  margin-left: 0.75rem;
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -2002,7 +2124,7 @@ body.modal-abierto-lock { overflow: hidden; }
     top: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    height: 34px;
+    height: 38px; /* = alto de los botones redondos, para quedar centrado con ellos */
     display: flex;
     align-items: center;
     margin: 0;
@@ -2028,7 +2150,7 @@ body.modal-abierto-lock { overflow: hidden; }
     right: 0;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+    box-shadow: var(--shadow-pop);
     padding: 0.4rem 1.25rem 0.75rem;
     gap: 0;
     z-index: 25;
@@ -2051,9 +2173,10 @@ body.modal-abierto-lock { overflow: hidden; }
     gap: 0.4rem;
   }
 
-  .icon-btn {
-    width: 30px;
-    height: 30px;
+  .icon-btn,
+  .hamburger-btn {
+    width: 38px;
+    height: 38px;
   }
 
   .role-badge {
@@ -2094,7 +2217,7 @@ body.modal-abierto-lock { overflow: hidden; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow-pop);
   padding: 0.4rem 1.25rem 0.6rem;
   gap: 0;
   margin: 0;

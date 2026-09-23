@@ -89,6 +89,12 @@ export const COLOR_MAP = {
   'morado': '#6c3483', 'dorado': '#caa94a', 'plateado': '#c0c0c0',
   'animal print': '#a67b5b', 'leopardo': '#a67b5b', 'coral': '#ff7f50',
   'salmon': '#fa8072',
+  // nombres que usan los proveedores del catálogo (aproximados; el admin
+  // los puede ajustar con el cuentagotas y quedan en colores_personalizados)
+  'avellana': '#a8825f', 'dulce de leche': '#c08a4e', 'nougat': '#c9a98a',
+  'skin': '#e6c2a6', 'marfil': '#f3ecdc', 'topo': '#8b7b6e',
+  'gris melange': '#b7b5b0', 'marino': '#1b2a4a', 'azul francia': '#2f5da8',
+  'aero': '#a9c6e0',
 };
 
 export function normalizarColor(nombre) {

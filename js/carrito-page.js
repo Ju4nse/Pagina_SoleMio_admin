@@ -6,7 +6,7 @@
    falta sesión: funciona igual para invitados y para admin.
    ================================================================ */
 import { sb, esAdmin } from './supabase-client.js';
-import { ICON, initTheme, toggleTheme, hexDeColor } from './theme.js';
+import { ICON, initTheme, toggleTheme, hexDeColor, cargarColoresPersonalizados } from './theme.js';
 import {
   leerCarrito, quitarItem, cambiarCantidad, totalCarrito,
   enviarPedidoSupabase, actualizarBadge, fmtARS,
@@ -14,6 +14,7 @@ import {
   actualizarPreciosCarrito,
 } from './carrito.js';
 import { renderTopbar } from './topbar.js';
+import { nombreLegible } from './texto.js';
 import { renderFooter } from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
 
@@ -107,7 +108,7 @@ function renderSelectorItem(it, idx) {
         <div class="attr-group">
           <span class="attr-label">Elegí un talle</span>
           ${talles.map(t => `
-            <button type="button" class="attr-tag selector-chip" onclick="elegirTalleItemUI(${idx},&quot;${t.replace(/"/g, '&quot;')}&quot;)">${t}</button>
+            <button type="button" class="attr-tag selector-chip talle-chip" onclick="elegirTalleItemUI(${idx},&quot;${t.replace(/"/g, '&quot;')}&quot;)">${t}</button>
           `).join('')}
         </div>` : ''}
       ${faltaColor ? `
@@ -117,7 +118,7 @@ function renderSelectorItem(it, idx) {
             const hex = hexDeColor(c);
             return `
               <button type="button" class="color-tag selector-chip" onclick="elegirColorItemUI(${idx},&quot;${c.replace(/"/g, '&quot;')}&quot;)">
-                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${c}
+                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${nombreLegible(c)}
               </button>`;
           }).join('')}
         </div>` : ''}
@@ -188,8 +189,8 @@ function renderCarrito(items) {
                     : `<div class="carrito-item-img-ph">${ICON.shoe}</div>`}
                 </div>
                 <div class="carrito-item-info">
-                  <div class="carrito-item-nombre">${it.nombre}</div>
-                  <div class="carrito-item-attrs">${[it.talle, it.color].filter(Boolean).join(' · ') || '&nbsp;'}</div>
+                  <div class="carrito-item-nombre">${nombreLegible(it.nombre)}</div>
+                  <div class="carrito-item-attrs">${[it.talle && `Talle ${it.talle}`, it.color && nombreLegible(it.color)].filter(Boolean).join(', ') || '&nbsp;'}</div>
                   <div class="carrito-item-precio">${fmtARS(it.precioUnitario)} c/u</div>
                 </div>
               </a>
@@ -384,7 +385,9 @@ async function init() {
   // los ítems agregados sin elegirlas) y re-renderiza cuando llegan.
   // De paso actualiza los precios: el carrito guarda el precio del
   // momento en que se agregó cada producto, que puede haber cambiado.
-  cargarVariantesParaItems(leerCarrito()).then(() => {
+  // Junto con los tonos de color que el admin definió a mano
+  // ("Natural"…), para que los puntitos de color salgan bien.
+  Promise.all([cargarVariantesParaItems(leerCarrito()), cargarColoresPersonalizados()]).then(() => {
     actualizarPreciosCarrito(precioUnitarioDeItem);
     render();
   });

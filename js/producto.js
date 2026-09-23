@@ -10,6 +10,7 @@ import { renderTopbar }       from './topbar.js';
 import { renderFooter }       from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
 import { subirFotoProducto }  from './subir-foto.js';
+import { renderTarjetaProducto, nombreLegible, marcaLegible } from './tarjeta-producto.js';
 
 /* ================================================================
    CONTACTO / REDES
@@ -125,6 +126,14 @@ function renderNoEncontrado() {
     </div>`;
 }
 
+/* Link de WhatsApp con el mensaje ya escrito, código incluido: así la
+   consulta llega con el producto identificado sin que la clienta tenga
+   que copiarlo. */
+function linkConsultaWhatsApp(p) {
+  const texto = `Hola! Quería consultar por ${nombreLegible(p.nombre, p.marca)} (código ${p.id}).`;
+  return `${CONTACTO.whatsapp}?text=${encodeURIComponent(texto)}`;
+}
+
 function renderProducto(p, prev, next, similares) {
   actualizarMetaSEO(p);
 
@@ -138,41 +147,26 @@ function renderProducto(p, prev, next, similares) {
   document.getElementById('producto-content').innerHTML = `
     <nav class="breadcrumb">
       <a href="catalogo.html">Catálogo</a>
-      ${p.marca ? `<span>/</span><a href="catalogo.html">${p.marca}</a>` : ''}
-      <span>/</span><span class="breadcrumb-current">${p.nombre}</span>
+      ${p.marca ? `<span>/</span><a href="catalogo.html">${marcaLegible(p.marca)}</a>` : ''}
+      <span>/</span><span class="breadcrumb-current">${nombreLegible(p.nombre, p.marca)}</span>
     </nav>
 
     <div class="product-box">
 
       <div class="product-media">
         <div id="galeria-container">${renderGaleria()}</div>
-
-        <div class="social-row">
-          <a class="icon-btn" href="${CONTACTO.whatsapp}" target="_blank" rel="noopener" title="Consultar por WhatsApp" aria-label="WhatsApp">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-            </svg>
-          </a>
-          <a class="icon-btn" href="${CONTACTO.instagram}" target="_blank" rel="noopener" title="Ver en Instagram" aria-label="Instagram">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="5"/>
-              <circle cx="12" cy="12" r="4"/>
-              <circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none"/>
-            </svg>
-          </a>
-        </div>
       </div>
 
       <div class="product-info">
-        ${p.marca ? `<div class="eyebrow">${p.marca}</div>` : ''}
-        <h1 class="view-name">${p.nombre}</h1>
+        ${p.marca ? `<div class="view-marca">${marcaLegible(p.marca)}</div>` : ''}
+        <h1 class="view-name">${nombreLegible(p.nombre, p.marca)}</h1>
 
         <div class="product-meta-row">
-          <span class="meta-code">ID: ${p.id}</span>
+          <span class="meta-code">Código ${p.id}</span>
           ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
           ${badgeStock ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${badgeStock}</span>` : ''}
-          ${!p.disponible && isAdmin() ? `<span class="badge" style="background:var(--red-bg);color:var(--red)">No disponible</span>` : ''}
-          ${p.imagen_custom && isAdmin() ? `<span class="badge" style="background:var(--blue-bg,#e8f0fe);color:var(--blue,#1a73e8)">Foto custom</span>` : ''}
+          ${!p.disponible && isAdmin() ? `<span class="badge nostock">No disponible</span>` : ''}
+          ${p.imagen_custom && isAdmin() ? `<span class="badge info">Foto custom</span>` : ''}
         </div>
 
         <div class="view-price" id="view-price">${fmtARS(precioMostrado())}</div>
@@ -180,7 +174,13 @@ function renderProducto(p, prev, next, similares) {
         <div id="selector-compra-container">${renderSelectorCompra()}</div>
 
         <div class="product-actions">
-          <a class="btn ghost" href="catalogo.html">← Volver al catálogo</a>
+          <a class="btn" href="${linkConsultaWhatsApp(p)}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            Consultar por WhatsApp
+          </a>
+          <a class="btn ghost" href="${CONTACTO.instagram}" target="_blank" rel="noopener">Ver en Instagram</a>
           ${isAdmin() ? `<button class="btn primary" onclick="openProdModal()">${ICON.edit} Editar</button>` : ''}
         </div>
 
@@ -370,30 +370,32 @@ function renderSelectorCompra() {
   return `
     <div class="selector-compra">
       ${talles.length ? `
-        <div class="attr-group">
-          <span class="attr-label">Talle</span>
+        <div class="attr-group" role="group" aria-label="Talle">
+          <span class="attr-label">Talle${selTalle ? `: <strong>${selTalle}</strong>` : ''}</span>
           ${talles.map(t => `
-            <button type="button" class="attr-tag selector-chip ${selTalle === t ? 'selected' : ''}"
+            <button type="button" class="attr-tag selector-chip talle-chip ${selTalle === t ? 'selected' : ''}"
+              aria-pressed="${selTalle === t}"
               onclick="seleccionarTalleUI(&quot;${t.replace(/"/g, '&quot;')}&quot;)">${t}</button>
           `).join('')}
         </div>` : ''}
       ${colores.length ? `
-        <div class="attr-group">
-          <span class="attr-label">Color</span>
+        <div class="attr-group" role="group" aria-label="Color">
+          <span class="attr-label">Color${selColor ? `: <strong>${nombreLegible(selColor)}</strong>` : ''}</span>
           ${colores.map(c => {
             const hex = hexDeColor(c);
             return `
               <button type="button" class="color-tag selector-chip ${selColor === c ? 'selected' : ''}"
+                aria-pressed="${selColor === c}"
                 onclick="seleccionarColorUI(&quot;${c.replace(/"/g, '&quot;')}&quot;)">
-                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${c}
+                <span class="color-dot ${hex ? '' : 'color-dot-generic'}" style="${hex ? `background:${hex}` : ''}"></span>${nombreLegible(c)}
               </button>`;
           }).join('')}
         </div>` : ''}
       <div class="selector-compra-actions">
-        <div class="qty-stepper">
-          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(-1)">−</button>
-          <span id="selector-cantidad">${cantidadSel}</span>
-          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(1)">+</button>
+        <div class="qty-stepper" role="group" aria-label="Cantidad">
+          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(-1)" aria-label="Uno menos">−</button>
+          <span id="selector-cantidad" aria-live="polite">${cantidadSel}</span>
+          <button type="button" class="btn-qty" onclick="cambiarCantidadSelectorUI(1)" aria-label="Uno más">+</button>
         </div>
         <button type="button" class="btn primary" onclick="agregarAlCarritoDesdeProductoUI()">Agregar al carrito</button>
       </div>
@@ -462,12 +464,12 @@ function renderPrevNextStrip(prev, next) {
       ${prev
         ? `<a class="prod-nav-link prod-nav-prev" href="producto.html?id=${encodeURIComponent(prev.id)}">
              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-             <span>${prev.nombre}</span>
+             <span>${nombreLegible(prev.nombre, prev.marca)}</span>
            </a>`
         : `<span></span>`}
       ${next
         ? `<a class="prod-nav-link prod-nav-next" href="producto.html?id=${encodeURIComponent(next.id)}">
-             <span>${next.nombre}</span>
+             <span>${nombreLegible(next.nombre, next.marca)}</span>
              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
            </a>`
         : `<span></span>`}
@@ -479,27 +481,15 @@ function renderSimilares(marca, lista) {
 
   return `
     <section class="similares-section">
-      <h2 class="similares-title">Más de ${marca}</h2>
+      <h2 class="similares-title">Más de ${marcaLegible(marca)}</h2>
       <div class="prod-grid">
         ${lista.map(p => {
-          const img      = resolverImagen(p);
-          const enStock  = p.stock === true || p.stock === 'in stock';
-          return `
-          <a class="prod-card" href="producto.html?id=${encodeURIComponent(p.id)}">
-            ${img
-              ? `<img class="prod-thumb" src="${img}" alt="${p.nombre}" loading="lazy"
-                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-              : ''}
-            <div class="prod-thumb-ph" style="${img ? 'display:none' : ''}">${ICON.shoe}</div>
-            <div class="prod-body">
-              <div class="prod-name">${p.nombre}</div>
-              <div class="prod-price">${fmtARS(Math.round((p.precio || 0) * 1.5))}</div>
-              <div class="prod-badges">
-                ${esProductoNuevo(p) ? `<span class="badge nuevo">Nuevo</span>` : ''}
-                ${isAdmin() ? `<span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>` : ''}
-              </div>
-            </div>
-          </a>`;
+          if (!isAdmin()) return renderTarjetaProducto(p);
+          const enStock = p.stock === true || p.stock === 'in stock';
+          return renderTarjetaProducto(p, {
+            badges: `<span class="badge ${enStock ? 'stock' : 'nostock'}">${enStock ? 'En stock' : 'Sin stock'}</span>`,
+            acciones: '',
+          });
         }).join('')}
       </div>
     </section>`;

@@ -32,6 +32,14 @@ Each page is a self-contained triplet: `foo.html` + `js/foo.js` + `css/foo.css`,
 - `js/footer.js` — renders the shared footer (`renderFooter()`) into `<footer id="footer-slot">`.
 - `js/carrito.js` — cart **state** (localStorage-backed) plus the cart **drawer** (slide-in panel, opened from the topbar cart icon without navigating away) and the "toast" notification shown when something is added. `js/carrito-page.js` is the separate full-page cart view (`carrito.html`) built on top of the same state functions — don't confuse the two files.
 - `js/pedidos-alertas.js` — admin-only: a bell icon + live count in the topbar, and a toast when a new `pedido` comes in, wired via a Supabase realtime subscription. No-ops entirely for guests.
+- `js/tarjeta-producto.js` — the one product card used everywhere (catalog grid, "Más de <marca>" on `producto.html`, landing destacados). It **must always show the product ID and the "Agregar al carrito" button** (owner requirement: customers quote the ID over WhatsApp). Admin passes `opts.acciones` to swap the add button for Editar/Disponible/Eliminar. The card is an `<article>` with a stretched link (`.prod-link::after`), not an `<a>` wrapping buttons.
+- `js/texto.js` — display-only formatting: `nombreLegible()` turns supplier ALL-CAPS product names into sentence case (keeping the brand capitalized), `marcaLegible()` does the same for brands. Never write these back to the DB.
+
+## Visual tokens (css/shared.css)
+
+- `--brand` (#A97C58) is the exact logo bronze — **logo and ornaments only**. White text on it fails contrast (3.4:1), so every button/link/text uses `--primary` (#86603F, 5.6:1). Don't swap them back.
+- Page background is white on purpose: product photos come on white and blend into the page. "Natural" (`--primary-soft`) is for bands like the footer.
+- No tracked-uppercase labels, no monospace, sentence-case buttons ≥44px tall. The `.ornamento` (leaf between two rules, echoing the logo) is the only decoration — keep it to page titles and landing section breaks.
 
 When adding a new page, copy the init pattern from an existing simple one (`js/no-encontrado.js` is the shortest example): detect role, call `renderTopbar`/`renderFooter`/`initAlertasPedidos`, then page-specific logic.
 

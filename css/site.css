@@ -24,8 +24,9 @@ header.site-header-topbar {
 
 /* ── RESPONSIVE: MOBILE ──────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* frena el scroll horizontal si algo se pasa por poco */
-  html, body { overflow-x: hidden; }
+  /* frena el scroll horizontal si algo se pasa por poco — solo en html:
+     en body rompe el position:sticky de la topbar en Chromium mobile */
+  html { overflow-x: hidden; }
 
   header.site-header-topbar {
     padding: 1.25rem 1rem 1rem;

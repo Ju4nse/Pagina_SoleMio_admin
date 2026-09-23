@@ -11,6 +11,7 @@ import { renderTopbar } from './topbar.js';
 import { renderFooter } from './footer.js';
 import { initAlertasPedidos } from './pedidos-alertas.js';
 import { esc } from './html.js';
+import { nombreLegible } from './texto.js';
 
 let rolActual = 'guest';
 
@@ -143,7 +144,7 @@ function renderPedido(p, items) {
 
   root.innerHTML = `
     <div style="max-width:640px;margin:0 auto 3rem">
-      <a href="pedido-estado.html" style="font-size:0.78rem;color:var(--text-2)">← Mis pedidos</a>
+      <a href="pedido-estado.html" class="volver-link">Mis pedidos</a>
       <h1 class="carrito-page-title">Tu pedido</h1>
 
       <div class="pedido-detalle-cliente" style="margin-bottom:1.25rem">
@@ -192,7 +193,7 @@ function renderItemEstado(it) {
   return `
     <div class="pedido-item-edit" style="align-items:center">
       <div class="pedido-item-edit-info">
-        <div class="pedido-item-edit-nombre">${esc(it.producto_nombre)}</div>
+        <div class="pedido-item-edit-nombre">${esc(nombreLegible(it.producto_nombre))}</div>
         <div style="font-size:.78rem;color:var(--text-3);margin-top:.25rem">
           Pediste: ${esc(pedidoAttrs || 'sin detalle')} · x${cantPedida}
         </div>
