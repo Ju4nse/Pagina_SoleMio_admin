@@ -329,15 +329,15 @@ function renderCatalogo(resetear = false) {
         ${p.imagen_custom ? `<span class="badge info">Foto custom</span>` : ''}`,
       acciones: `
         <div class="prod-actions">
-          <button type="button" class="btn sm ghost" onclick="openProdModal('${p.id}')">
+          <button type="button" class="btn sm ghost accion-editar" onclick="openProdModal('${p.id}')">
             ${ICON.edit} Editar
           </button>
-          <button type="button" class="btn sm ${p.disponible ? 'ghost' : 'primary'}"
+          <button type="button" class="btn sm accion-estado ${p.disponible ? '' : 'primary'}"
             title="El cliente ${p.disponible ? 'sí puede ver y comprar' : 'no puede ver ni comprar'} este producto ahora"
             onclick="toggleDisponibleUI('${p.id}', ${!p.disponible})">
             ${p.disponible ? 'Disponible' : 'No disponible'}
           </button>
-          <button type="button" class="btn sm danger" onclick="confirmarEliminar('${p.id}')" aria-label="Eliminar producto">
+          <button type="button" class="btn sm danger accion-eliminar" onclick="confirmarEliminar('${p.id}')" aria-label="Eliminar producto">
             ${ICON.trash}
           </button>
         </div>`,
@@ -1360,7 +1360,11 @@ async function openProdModal(id) {
           <div class="prod-preview-photo" id="prod-preview-photo"></div>
           <div class="prod-preview-dots" id="prod-preview-dots"></div>
           <button type="button" class="btn sm ghost" id="prod-eyedropper-btn" onclick="usarCuentagotasUI()">
-            🎨 Cuentagotas
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/>
+              <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>
+            </svg>
+            Cuentagotas
           </button>
           <div class="prod-eyedropper-resultado" id="prod-eyedropper-resultado"></div>
           <p class="prod-preview-hint">

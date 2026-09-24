@@ -901,7 +901,20 @@ select:focus { outline: none; border-color: var(--primary); }
   z-index: 1;
 }
 
-.prod-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* Acciones del admin en la tarjeta: el estado (Disponible / No
+   disponible) arriba a lo ancho, y Editar + eliminar abajo, en la misma
+   fila — en una sola fila no entran y el tacho quedaba suelto. */
+.prod-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "estado   estado"
+    "editar   eliminar";
+  gap: 0.4rem;
+}
+.prod-actions .accion-estado   { grid-area: estado; }
+.prod-actions .accion-editar   { grid-area: editar; justify-self: start; }
+.prod-actions .accion-eliminar { grid-area: eliminar; }
 
 .prod-quickadd { display: flex; }
 .prod-quickadd .btn { width: 100%; }
@@ -1439,6 +1452,14 @@ select:focus { outline: none; border-color: var(--primary); }
 .variantes-grid-table td > input {
   display: block;
   margin: 0 auto;
+}
+
+/* ".field" delante: sin eso, los 44px de alto y el ancho completo de
+   .field input (shared.css) hacían la grilla enorme */
+.field .variante-stock-input,
+.field .variante-precio-input {
+  width: 72px;
+  min-height: 32px;
 }
 
 .variante-stock-input {
